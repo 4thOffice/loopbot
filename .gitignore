@@ -4,3 +4,4 @@ cache/
 __pycache__/
 keys.py
 *.json
+dataPerEmail.txt

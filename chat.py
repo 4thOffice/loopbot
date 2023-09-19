@@ -11,6 +11,7 @@ loopbotID = "user_1552217"
 authkey = keys.authKey
 fromYear = 2021
 offsetHistoryId = ""
+dataPerEmail = []
 
 #hardcoded messages to ignore -> system messages
 messagestoExclude= ["Wohoo! Your account was successfully upgraded to a pro plan. We can't wait to see what Loop will do for you and your team.",
@@ -22,7 +23,13 @@ messagestoExclude= ["Wohoo! Your account was successfully upgraded to a pro plan
                     "Wohoo! Your account was successfully upgraded to a paid plan. We can't wait to see what Loop will do for you and your team.",
                     "Let us know how you get on with trying out Loop.",
                     "Let us know how you get on with trying out Loop. Remember, I'm here to support you throughout your journey",
-                    "Your free trial has ended."]
+                    "Your free trial has ended",
+                    "Your account was successfully",
+                    "successfully added you to the reporting and personal rules early beta programs",
+                    "free trial",
+                    "upgraded to a paid plan",
+                    "why not download Loop to give us a try",
+                    "Checking in to see how the trial is going."]
 
 def checkIfSystemMessage(commentToCheck):
     if "tags" in commentToCheck and "tags" in commentToCheck["tags"] and "resources" in commentToCheck["tags"]["tags"]:
@@ -62,6 +69,7 @@ def getComments(historySize, userID, historyID):
 
         response = requests.post(endpoint_url, headers=headers, json=data)
         
+        loopbot_responded = False
         if response.status_code == 200:
             commentsJson = []
             for item in response.json()["resources"]: #for each comment in a conversation
@@ -83,12 +91,15 @@ def getComments(historySize, userID, historyID):
                 
                 if item["author"]["id"] == loopbotID:
                     sender = "our response"
+                    loopbot_responded = True
                 else:
                     sender = "their message"
 
                 commentInstance = comment.comment(commentID, sender, quoteCommentID, datetime_string, commentMessage)
                 commentsJson.append(commentInstance.__dict__) #LIST OF JSONS FOR EACH COMMENT in a conversation
             
+            if loopbot_responded == False:
+                commentsJson.clear()
             return commentsJson
         else:
             print(f"Error: {response.status_code} - {response.text}")
@@ -141,6 +152,7 @@ def getConversations(historySize):
     
     if response.status_code == 200:
         userIDs = []
+        userEmails = []
         items = response.json()["resources"]
         if len(items) <= 0: #if empty response
             return []
@@ -150,16 +162,21 @@ def getConversations(historySize):
                 #check if not group:
                 if item["sharedTags"]["parent"]["$type"] == "ResourceBase" and item["cardId"].startswith("CC_"):
                     userID1 = item["snippet"]["sender"]["id"]
+                    userEmail = "-"
                     if(userID1 == loopbotID):
-                            userID2 = item["toList"]["resources"][0]["id"]
-                            userIDs.append(userID2)
+                        userID2 = item["toList"]["resources"][0]["id"]
+                        userEmail = item["toList"]["resources"][0]["email"]
+                        userIDs.append(userID2)
+                        userEmails.append(userEmail)
                     else:
+                        userEmail = item["snippet"]["sender"]["email"]
                         userIDs.append(userID1)
+                        userEmails.append(userEmail)
             except:
                 print("Error while gathering userID")
         offsetHistoryId = response.json()["offsetHistoryId"]
         print("Finished gathering user IDs.")
-        return userIDs
+        return [userIDs, userEmails]
     else:
         print(f"Error: {response.status_code} - {response.text}")
     
@@ -169,7 +186,14 @@ def getAllChatData(amountOfConversations, amountOfcomments, chunkSize):
     allComments = {}
 
     for groupIndex in range(0, math.ceil(amountOfConversations/chunkSize)):
-        userIDs = getConversations(min(chunkSize, amountOfConversations - (groupIndex*chunkSize)))
+        conversationsReturned = getConversations(min(chunkSize, amountOfConversations - (groupIndex*chunkSize)))
+
+        if len(conversationsReturned) < 2:
+            print("Finished gathering all chat data for group ", groupIndex, "...")
+            break
+        userIDs = conversationsReturned[0]
+        userEmails = conversationsReturned[1]
+
         if len(userIDs) <= 0:
             print("Finished gathering all chat data for group ", groupIndex, "...")
             break
@@ -177,7 +201,9 @@ def getAllChatData(amountOfConversations, amountOfcomments, chunkSize):
         for i, userID in enumerate(userIDs):
             print("gathering chat data for user: ", groupIndex*chunkSize + i)
             comments = getComments(amountOfcomments, userID, "")
-            if len(comments) > 0: #only add cinversation to the final list if it includes non-system comments
+            if len(comments) > 0: #only add conversation to the final list if it includes non-system comments
+                #allComments[userEmails[i]] = comments
+                dataPerEmail.append((userEmails[i], len(comments)))
                 allComments["conversation" + str(groupIndex*chunkSize + i)] = comments
 
         print("Finished gathering all chat data for group ", groupIndex, "...")
@@ -195,3 +221,8 @@ if __name__ == "__main__":
     #print(chatData)
     f.write(chatData)
     f.close()
+
+    with open('dataPerEmail.txt', 'w') as fp:
+        for item in dataPerEmail:
+            # write each item on a new line
+            fp.write("email: " + item[0] + " | comment count: " + str(item[1]) + "\n")

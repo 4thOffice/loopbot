@@ -46,9 +46,12 @@ def printRelavantChats(relavant_chats):
 #find relavant information abotu a query
 def findRelavantChats(input):
     relavant_chats = db.similarity_search_with_score(input, k=3)
-    #print(relavant_chats)
+    #relavant_chats = db.similarity_search_with_score(input, k=3, search_type="hybrid")
+    #relavant_chats = db.max_marginal_relevance_search_with_score_by_vector(underlying_embeddings.embed_query(input), 2)
 
-    printRelavantChats(relavant_chats)
+    #print(relavant_chats)
+    print(relavant_chats)
+    #printRelavantChats(relavant_chats)
     return relavant_chats
 
 while(1):
@@ -57,11 +60,11 @@ while(1):
     message_prompt = PromptTemplate(
     input_variables=["relavant_messages", "chat_history", "human_input"],
     template="You are a helpful assistant answering questions about our platform " + "Loop Email" + """". User asked the following question: {human_input} 
-    Here are relavant messages to the topic user asks about: {relavant_messages}.
-
-    Do your best to answer correctly based on this information.
+    Here are previous conversations with other users similar to the topic user asked about: {relavant_messages}.
 
     Do NOT mention relavant_messages you have been provided. Act like you are customer support.
+
+    Do NOT say if the issue is known or not and if our team is working/investigating on it. Just provide a helpful answer.
 
     Answer should be formal and short.
 
@@ -70,12 +73,16 @@ while(1):
     Metadata description:
     context: conversation context
     
-    Previous conversation: {chat_history}
+    Previous conversation with this user: {chat_history}
+
+    Do your best to answer correctly based on chat history and previous similar conversations.
     """
     )
     
-    relavantChats = findRelavantChats(user_input)
-
+    #relavantChats = findRelavantChats(user_input)
+    relavantChats = findRelavantChats(user_input + "  " + memory.load_memory_variables({})["chat_history"])
+    
+    #print(memory.load_memory_variables({})["chat_history"])
     accurateEnough = False
     minimumScore = 0.25 #(L2 distance)
     for comment in relavantChats:
@@ -87,10 +94,11 @@ while(1):
         relavantChats_noscore = [relavantChat[0] for relavantChat in relavantChats]
         
         chain = LLMChain(
-        llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
+        llm=ChatOpenAI(temperature="0", model_name='gpt-3.5-turbo-16k'),
+        #llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
         prompt=message_prompt,
         memory=memory,
-        verbose=True
+        verbose=False
         )
         reply = chain.run({"human_input": user_input, "relavant_messages": relavantChats_noscore})
         print("------------------------------------------------")
