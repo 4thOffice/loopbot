@@ -1,0 +1,135 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #f2f2f2;
+  color: #2f2f2f;
+  font-family: "Sono", sans-serif;
+}
+
+.chatbox {
+  background-color: #d3d3d3;
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  margin-right: -50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat {
+  height: 100%;
+}
+
+.prompt-form {
+  margin-top: auto;
+  background-color: white;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.prompt-form input {
+  width: 100%;
+  color: #636363;
+  border: none;
+  padding: 10px 14px 10px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 18px;
+}
+
+.prompt-form button {
+  background-color: #6344df;
+  color: #f2f2f2;
+  border: none;
+  padding: 10px 14px 10px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+ul {
+  list-style: none;
+  width: 600px;
+  height: 500px;
+  overflow-y: auto;
+}
+
+.message {
+  font-size: 18px;
+  background-color: #e0e0e0;
+  margin-bottom: 8px;
+  padding: 16px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+@media screen and (max-width: 650px) {
+  .features div div {
+    gap: 1rem;
+  }
+
+  .feature-btn {
+    font-size: 16px;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .feature-btn {
+    font-size: 12px;
+  }
+}
+
+.error_msg {
+  color: rgb(255, 104, 104);
+  font-weight: 600;
+}
+
+.balance {
+  padding-top: 2rem;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+button:hover {
+  cursor: pointer;
+  transform: scale(102%);
+}
+
+button:disabled {
+  background-color: #636363;
+}
+
+ul::-webkit-scrollbar {
+  width: 10px;
+}
+
+ul::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+ul::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+ul::-webkit-scrollbar-horizontal {
+  display: none;
+}
