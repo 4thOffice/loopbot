@@ -9,18 +9,39 @@ body {
   font-family: "Sono", sans-serif;
 }
 
+.promptbox {
+  margin: auto;
+  width: 600px;
+  height: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 2rem;
+  margin-top: 2rem;
+}
+
+.promptbox textarea {
+  color: #636363;
+  background-color: #d3d3d3;
+  border: none;
+  font-family: inherit;
+  font-weight: 400;
+  height: 100%;
+  font-size: 18px;
+  margin-top: 1rem;
+  border-radius: 8px;
+  resize: none;
+}
+
 .chatbox {
   background-color: #d3d3d3;
-  position: absolute;
-  top: 30%;
-  left: 50%;
-  margin-right: -50%;
-  transform: translate(-50%, -50%);
+  margin: auto;
   width: 600px;
   height: 350px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-bottom: 2rem;
 }
 
 .chat {
@@ -77,8 +98,17 @@ ul {
 
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: end;
   gap: 1px;
+}
+
+.user {
+  background-color: #c0c0c0;
+  align-items: start;
+}
+
+.message .sender {
+  font-weight: 600;
 }
 
 @media screen and (max-width: 650px) {
@@ -131,5 +161,22 @@ ul::-webkit-scrollbar-thumb {
 }
 
 ul::-webkit-scrollbar-horizontal {
+  display: none;
+}
+
+textarea::-webkit-scrollbar {
+  width: 10px;
+}
+
+textarea::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+utextareal::-webkit-scrollbar-horizontal {
   display: none;
 }

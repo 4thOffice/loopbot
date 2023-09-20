@@ -2,17 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import Message from "./message";
 import axios from "axios";
 
-function ChatBox() {
+function ChatBox({ promptText, setPromptText }) {
   const messagesEndRef = useRef(null);
   const [errorMsg, setErrorMsg] = useState(false);
-  const [messages, setMessages] = useState([
-    { sender: "Loopbot", content: "Testing" },
-    { sender: "User", content: "qefqefq" },
-    { sender: "Loopbot", content: "Testeqfqefqef qegqegqe eqfqegqing" },
-    { sender: "Loopbot", content: "Testeqfqefqef qegqegqe eqfqegqing" },
-    { sender: "Loopbot", content: "Testeqfqefqef qegqegqe eqfqegqing" },
-    { sender: "Loopbot", content: "Testegqe eqfqegqing" },
-  ]);
+  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView();
@@ -20,7 +13,11 @@ function ChatBox() {
   return (
     <div className="chatbox">
       <Chat messages={messages} messagesEndRef={messagesEndRef} />
-      <PromptField setMessages={setMessages} setErrorMsg={setErrorMsg} />
+      <PromptField
+        setMessages={setMessages}
+        setErrorMsg={setErrorMsg}
+        promptText={promptText}
+      />
     </div>
   );
 }
@@ -36,7 +33,7 @@ function Chat({ messages, messagesEndRef }) {
   );
 }
 
-function PromptField({ setMessages, setErrorMsg }) {
+function PromptField({ setMessages, setErrorMsg, promptText }) {
   const [isFetching, setIsFetching] = useState("");
   const [userQuery, setUserQuery] = useState();
 
@@ -44,22 +41,36 @@ function PromptField({ setMessages, setErrorMsg }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (userQuery) {
+      try {
+        setIsFetching(true);
+        const response = await axios.get(`${backendBaseUrl}/get_answer`, {
+          params: {
+            query: userQuery,
+            prompt: promptText,
+          },
+        });
+        console.log(response);
 
-    try {
-      setIsFetching(true);
-      const response = await axios.get(`${backendBaseUrl}/get_answer`, {
-        params: {
-          query: userQuery,
-        },
-      });
-      console.log(response);
-      setMessages((msgs) => msgs.push(response[0]));
-      setIsFetching(false);
-      setErrorMsg(false);
-    } catch (error) {
-      setErrorMsg(true);
-      setIsFetching(false);
-      console.error("Error:", error);
+        const userMsg = {
+          sender: "User",
+          content: userQuery,
+        };
+
+        const aiMsg = {
+          sender: "Loopbot",
+          content: response["data"],
+        };
+
+        setMessages((msgs) => msgs.concat([userMsg, aiMsg]));
+        setUserQuery("");
+        setIsFetching(false);
+        setErrorMsg(false);
+      } catch (error) {
+        setErrorMsg(true);
+        setIsFetching(false);
+        console.error("Error:", error);
+      }
     }
   }
 
@@ -72,7 +83,7 @@ function PromptField({ setMessages, setErrorMsg }) {
         onChange={(e) => setUserQuery(e.target.value)}
       />
       <button className="btn btn-large" disabled={isFetching}>
-        Send
+        {isFetching ? "Loading" : "Send"}
       </button>
     </form>
   );
