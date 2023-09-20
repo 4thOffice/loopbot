@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import Message from "./message";
 import axios from "axios";
 
-function ChatBox({ promptText, setPromptText }) {
+function ChatBox({
+  promptText,
+  setPromptText,
+  setSimilarChats,
+  invalidPrompt,
+}) {
   const messagesEndRef = useRef(null);
   const [errorMsg, setErrorMsg] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -17,6 +22,8 @@ function ChatBox({ promptText, setPromptText }) {
         setMessages={setMessages}
         setErrorMsg={setErrorMsg}
         promptText={promptText}
+        setSimilarChats={setSimilarChats}
+        invalidPrompt={invalidPrompt}
       />
     </div>
   );
@@ -33,7 +40,13 @@ function Chat({ messages, messagesEndRef }) {
   );
 }
 
-function PromptField({ setMessages, setErrorMsg, promptText }) {
+function PromptField({
+  setMessages,
+  setErrorMsg,
+  promptText,
+  setSimilarChats,
+  invalidPrompt,
+}) {
   const [isFetching, setIsFetching] = useState("");
   const [userQuery, setUserQuery] = useState();
 
@@ -59,8 +72,10 @@ function PromptField({ setMessages, setErrorMsg, promptText }) {
 
         const aiMsg = {
           sender: "Loopbot",
-          content: response["data"],
+          content: response["data"]["reply"],
         };
+
+        setSimilarChats(response["data"]["similarChats"]);
 
         setMessages((msgs) => msgs.concat([userMsg, aiMsg]));
         setUserQuery("");
@@ -82,7 +97,7 @@ function PromptField({ setMessages, setErrorMsg, promptText }) {
         value={userQuery}
         onChange={(e) => setUserQuery(e.target.value)}
       />
-      <button className="btn btn-large" disabled={isFetching}>
+      <button className="btn btn-large" disabled={isFetching || invalidPrompt}>
         {isFetching ? "Loading" : "Send"}
       </button>
     </form>

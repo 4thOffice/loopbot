@@ -1,4 +1,6 @@
+import json
 import os
+import numpy as np
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import (
     ChatPromptTemplate,
@@ -58,6 +60,7 @@ class LoopBot:
 
         print("Finished embbeding")
 
+
     #print relavant information about a query
     def printRelavantChats(relavant_chats):
         for i, comment in enumerate(relavant_chats):
@@ -113,7 +116,7 @@ class LoopBot:
             #llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
             prompt=message_prompt,
             memory=self.memory,
-            verbose=True
+            verbose=False
             )
             reply = chain.run({"human_input": user_input, "relavant_messages": relavantChats_noscore})
         else:
@@ -123,4 +126,12 @@ class LoopBot:
         #print(self.memory.load_memory_variables({})["chat_history"].split("\n")[:4])
         #print("------------------------------------------------")
         #print(reply)
-        return reply
+
+        similarChats = []
+        for comment in relavantChats:
+            context = comment[0].metadata["context"].split("    ")
+            similarChats.append({"context": context, "score": float(comment[1])})
+            #print(context)
+
+        #print(json.dumps(similarChats, indent=2, default=self.convert_to_serializable))
+        return reply, similarChats

@@ -13,9 +13,11 @@ def get_answer():
     query = request.args.get('query', type=str)
     prompt = request.args.get('prompt', type=str)
     print("query:\n", query)
-    reply = lb.returnAnswer(query, prompt)
+    reply, similarChats = lb.returnAnswer(query, prompt)
     print("reply:\n", reply)
-    return reply
+
+    return_data = {"reply": reply, "similarChats": similarChats}
+    return jsonify(return_data)
 
 @app.route('/get_prompt', methods=['GET'])
 def get_prompt():

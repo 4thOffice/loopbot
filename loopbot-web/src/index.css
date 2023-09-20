@@ -9,6 +9,20 @@ body {
   font-family: "Sono", sans-serif;
 }
 
+.similar-chats {
+  background-color: #d3d3d3;
+  margin: auto;
+  width: 600px;
+  height: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 2rem;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 18px;
+}
+
 .promptbox {
   margin: auto;
   width: 600px;
@@ -42,6 +56,10 @@ body {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 2rem;
+}
+
+.similar-chat {
+  margin-bottom: 1rem;
 }
 
 .chat {
