@@ -48,7 +48,7 @@ function PromptField({
   invalidPrompt,
 }) {
   const [isFetching, setIsFetching] = useState("");
-  const [userQuery, setUserQuery] = useState();
+  const [userQuery, setUserQuery] = useState("");
 
   const backendBaseUrl = "http://127.0.0.1:5000";
 

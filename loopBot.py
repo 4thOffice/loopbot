@@ -97,9 +97,21 @@ class LoopBot:
         
         #PRVA 2 RELAVANT CHATA STA OD USER INOUT IN ZADNJI JE OD USERINPUT + HISTORY
 
-        #relavantChats = findRelavantChats(user_input)
-        relavantChats = self.findRelavantChats((("user question: " + user_input).join(self.memory.load_memory_variables({})["chat_history"].split("\n")[:4])))
+        relavantChatsQuery = self.findRelavantChats(user_input)
+        relavantChatsHistory = self.findRelavantChats((("user question: " + user_input).join(self.memory.load_memory_variables({})["chat_history"].split("\n")[:4])))
         
+        #Take 2 top results for query similarity search (if similarity not over threshold) and 1 for whole history similarity search
+        relavantChats = []
+        for comment in relavantChatsQuery:
+            if len(relavantChats) > 2:
+                break
+            if comment[1] < 0.4:
+                relavantChats.append(comment)
+        for comment in relavantChatsHistory:
+            if len(relavantChats) > 3:
+                break
+            relavantChats.append(comment)
+
         #print(memory.load_memory_variables({})["chat_history"])
         accurateEnough = False
         minimumScore = 0.25 #(L2 distance)

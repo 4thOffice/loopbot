@@ -9,6 +9,9 @@ body {
   font-family: "Sono", sans-serif;
 }
 
+h3 {
+  text-align: center;
+}
 .similar-chats {
   background-color: #d3d3d3;
   margin: auto;
@@ -60,6 +63,7 @@ body {
 
 .similar-chat {
   margin-bottom: 1rem;
+  font-size: 18px;
 }
 
 .chat {

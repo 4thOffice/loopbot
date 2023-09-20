@@ -24,19 +24,26 @@ function Chat({ context, score, index }) {
       <p>
         <b>{"Score: " + score}</b>
       </p>
-      <p>{context[0]}</p>
+
+      {context[0].split("\n").map((msg, index) => (
+        <Msg
+          sender={msg.split("::")[0]}
+          content={msg.split("::")[1]}
+          key={index}
+        />
+      ))}
     </li>
   );
 }
 
 function Msg({ sender, content }) {
   return (
-    <li>
+    <div>
       <span>
         <b>{sender + ": "}</b>
       </span>
       <span>{content}</span>
-    </li>
+    </div>
   );
 }
 export default SimilarChats;
