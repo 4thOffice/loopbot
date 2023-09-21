@@ -20,11 +20,15 @@ from datetime import datetime
 
 class LoopBot:
 
-    prompt_starting = "You are a helpful assistant answering questions about our platform " + "Loop Email" + """".
+    prompt_starting = """Lets think step by step.
+
+You are a helpful assistant answering questions about our platform "Loop Email".
     
 User asked the following question: {human_input} 
         
 Here are previous conversations with other users similar to the topic user asked about: {relavant_messages}.
+
+Do NOT mention this previous conversations information.
 
 Do NOT mention previous conversations with other users you have been provided. Act like you are customer support.
 
@@ -36,6 +40,8 @@ Metadata description:
     context: conversation context
         
 Chat history with this user: {chat_history}
+
+Do NOT mention this Chat history information.
 
 Do your best to answer the following user question: {human_input} correctly based on chat history with this user and previous similar conversations."""
 
