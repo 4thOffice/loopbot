@@ -45,7 +45,7 @@ class LoopBot:
 
         underlying_embeddings = OpenAIEmbeddings()
         fs = LocalFileStore("./cache/")
-        json_path='split.json'
+        json_path='./jsons/split.json'
         self.memory = ConversationBufferMemory(memory_key="chat_history", input_key="human_input")
 
 

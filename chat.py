@@ -217,7 +217,7 @@ def getAllChatData(amountOfConversations, amountOfcomments, chunkSize):
 if __name__ == "__main__":
     chatData = getAllChatData(10000, 1000, 1000)
 
-    f = open("chats.json", "w")
+    f = open("./jsons/chats.json", "w")
     #print(chatData)
     f.write(chatData)
     f.close()
