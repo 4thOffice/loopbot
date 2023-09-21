@@ -16,7 +16,7 @@ function App() {
         <h3>Chat</h3>
         {errorMsg ? (
           <p className="error_msg">
-            There was an issue with connecting to the backend server.
+            There was an issue with gathering data from the server.
           </p>
         ) : (
           ""

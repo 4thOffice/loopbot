@@ -20,23 +20,24 @@ from datetime import datetime
 
 class LoopBot:
 
-    prompt = "You are a helpful assistant answering questions about our platform " + "Loop Email" + """". User asked the following question: {human_input} 
-        Here are previous conversations with other users similar to the topic user asked about: {relavant_messages}.
-
-        Do NOT mention previous conversations with other users you have been provided. Act like you are customer support.
-
-        If our team is working/investigating on the solution, just say that we will check.
-
-        Answer should be formal and short.
-
-        If you do not know the answer, just say you do not know the answer.
-
-        Metadata description:
-        context: conversation context
+    prompt_starting = "You are a helpful assistant answering questions about our platform " + "Loop Email" + """".
+    
+User asked the following question: {human_input} 
         
-        Chat history with this user: {chat_history}
+Here are previous conversations with other users similar to the topic user asked about: {relavant_messages}.
 
-        Do your best to answer correctly based on chat history with this user and previous similar conversations."""
+Do NOT mention previous conversations with other users you have been provided. Act like you are customer support.
+
+Answer should be formal and short.
+
+If you do not know the answer, just say you do not know the answer.
+
+Metadata description:
+    context: conversation context
+        
+Chat history with this user: {chat_history}
+
+Do your best to answer the following user question: {human_input} correctly based on chat history with this user and previous similar conversations."""
 
     def __init__(self, openAI_APIKEY):
         global loader
@@ -90,23 +91,23 @@ class LoopBot:
                 del self.memoryStorage[userID]
 
     def getPrompt(self):
-        return self.prompt
+        return self.prompt_starting
     
-    def returnAnswer(self, query, prompt, userID):
+    def returnAnswer(self, query, _prompt, userID):
         if userID not in self.memoryStorage:
             memory = ConversationBufferMemory(memory_key="chat_history", input_key="human_input")
             self.memoryStorage[userID] = {"memory": memory, "createdDatetime": datetime.now()}
         else:
             memory = self.memoryStorage[userID]["memory"]
-
-        self.prompt = prompt
+        
+        prompt = _prompt
         
         user_input = query
 
         print(memory)
         message_prompt = PromptTemplate(
         input_variables=["relavant_messages", "chat_history", "human_input"],
-        template=self.prompt
+        template=prompt
         )
         
         #PRVA 2 RELAVANT CHATA STA OD USER INOUT IN ZADNJI JE OD USERINPUT + HISTORY
@@ -138,8 +139,8 @@ class LoopBot:
             relavantChats_noscore = [relavantChat[0] for relavantChat in relavantChats]
             
             chain = LLMChain(
-            #llm=ChatOpenAI(temperature="0", model_name='gpt-3.5-turbo-16k'),
-            llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
+            llm=ChatOpenAI(temperature="0", model_name='gpt-3.5-turbo-16k'),
+            #llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
             prompt=message_prompt,
             memory=self.memoryStorage[userID]["memory"],
             verbose=False

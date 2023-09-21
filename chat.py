@@ -29,7 +29,9 @@ messagestoExclude= ["Wohoo! Your account was successfully upgraded to a pro plan
                     "free trial",
                     "upgraded to a paid plan",
                     "why not download Loop to give us a try",
-                    "Checking in to see how the trial is going."]
+                    "Checking in to see how the trial is going.",
+                    "Welcome to Loop!",
+                    "Your account was changed to a sponsored account"]
 
 def checkIfSystemMessage(commentToCheck):
     if "tags" in commentToCheck and "tags" in commentToCheck["tags"] and "resources" in commentToCheck["tags"]["tags"]:
