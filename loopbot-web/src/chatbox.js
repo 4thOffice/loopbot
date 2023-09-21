@@ -50,7 +50,7 @@ function PromptField({
   const [isFetching, setIsFetching] = useState("");
   const [userQuery, setUserQuery] = useState("");
 
-  const backendBaseUrl = "http://localhost:5000";
+  const backendBaseUrl = "http://127.0.0.1:5000";
 
   async function handleSubmit(e) {
     e.preventDefault();
