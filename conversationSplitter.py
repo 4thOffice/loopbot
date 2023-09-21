@@ -1,7 +1,7 @@
 import json
 from dateutil import parser
 
-f = open('./jsons/chatsBigCollection.json')
+f = open('./jsons/chats.json')
 
 relavanceTimeLimit = 72 #48 hours, load all comments that are at most this far apart from each other
 
