@@ -5,7 +5,7 @@ import loopBot
 import keys
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://192.168.124.75:3000"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 lb = None
 
 @app.route('/get_answer', methods=['GET'])
@@ -30,7 +30,7 @@ def get_prompt():
 
 if __name__ == '__main__':
     lb = loopBot.LoopBot(keys.openAI_APIKEY)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
     #while(1):
     #    query = str(input())
