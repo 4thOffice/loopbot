@@ -7,9 +7,9 @@ function ChatBox({
   setPromptText,
   setSimilarChats,
   invalidPrompt,
+  setErrorMsg,
 }) {
   const messagesEndRef = useRef(null);
-  const [errorMsg, setErrorMsg] = useState(false);
   const [messages, setMessages] = useState([]);
   const [userid, setUserid] = useState("");
 
@@ -106,6 +106,7 @@ function PromptField({
   return (
     <form className="prompt-form" onSubmit={handleSubmit}>
       <input
+        autoFocus
         type="text"
         placeholder="Write your question..."
         value={userQuery}

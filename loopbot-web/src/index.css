@@ -62,7 +62,7 @@ h3 {
 .chatbox {
   background-color: #d3d3d3;
   margin: auto;
-  width: 100%;
+  width: 50%;
   height: 50vh;
   display: flex;
   flex-direction: column;
@@ -161,6 +161,7 @@ ul {
 .error_msg {
   color: rgb(255, 104, 104);
   font-weight: 600;
+  text-align: center;
 }
 
 .balance {

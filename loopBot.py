@@ -23,9 +23,9 @@ class LoopBot:
     prompt = "You are a helpful assistant answering questions about our platform " + "Loop Email" + """". User asked the following question: {human_input} 
         Here are previous conversations with other users similar to the topic user asked about: {relavant_messages}.
 
-        Do NOT mention relavant_messages you have been provided. Act like you are customer support.
+        Do NOT mention previous conversations with other users you have been provided. Act like you are customer support.
 
-        Do NOT say if the issue is known or not and if our team is working/investigating on it. Just provide a helpful answer.
+        If our team is working/investigating on the solution, just say that we will check.
 
         Answer should be formal and short.
 
@@ -34,9 +34,9 @@ class LoopBot:
         Metadata description:
         context: conversation context
         
-        Previous conversation with this user: {chat_history}
+        Chat history with this user: {chat_history}
 
-        Do your best to answer correctly based on chat history and previous similar conversations."""
+        Do your best to answer correctly based on chat history with this user and previous similar conversations."""
 
     def __init__(self, openAI_APIKEY):
         global loader
@@ -117,12 +117,12 @@ class LoopBot:
         #Take 2 top results for query similarity search (if similarity not over threshold) and 1 for whole history similarity search
         relavantChats = []
         for comment in relavantChatsQuery:
-            if len(relavantChats) > 2:
+            if len(relavantChats) >= 2:
                 break
             if comment[1] < 0.4:
                 relavantChats.append(comment)
         for comment in relavantChatsHistory:
-            if len(relavantChats) > 3:
+            if len(relavantChats) >= 3:
                 break
             relavantChats.append(comment)
 
@@ -138,8 +138,8 @@ class LoopBot:
             relavantChats_noscore = [relavantChat[0] for relavantChat in relavantChats]
             
             chain = LLMChain(
-            llm=ChatOpenAI(temperature="0", model_name='gpt-3.5-turbo-16k'),
-            #llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
+            #llm=ChatOpenAI(temperature="0", model_name='gpt-3.5-turbo-16k'),
+            llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
             prompt=message_prompt,
             memory=self.memoryStorage[userID]["memory"],
             verbose=False

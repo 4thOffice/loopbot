@@ -43,7 +43,7 @@ function Msg({ sender, content }) {
       <span>
         <b>{sender + ": "}</b>
       </span>
-      <span>{content}</span>
+      <span>{content ? content.slice(2, -3) : ""}</span>
     </div>
   );
 }
