@@ -12,8 +12,11 @@ lb = None
 def get_answer():
     query = request.args.get('query', type=str)
     prompt = request.args.get('prompt', type=str)
+    userID = request.args.get('userID', type=str)
+
+    lb.checkForOutdatedMemory()
     print("query:\n", query)
-    reply, similarChats = lb.returnAnswer(query, prompt)
+    reply, similarChats = lb.returnAnswer(query, prompt, userID)
     print("reply:\n", reply)
 
     return_data = {"reply": reply, "similarChats": similarChats}

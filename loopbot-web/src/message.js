@@ -4,7 +4,11 @@ function Message({ message }) {
   return (
     <li className={"message " + (message.sender === "User" ? "user" : "")}>
       <p className="sender">{message.sender}</p>
-      <p className="content">{message.content}</p>
+      <div className="content">
+        {message.content.split("\\n").map((str, index) => (
+          <p key={index}>{str}</p>
+        ))}
+      </div>
     </li>
   );
 }

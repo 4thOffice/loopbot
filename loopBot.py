@@ -16,6 +16,7 @@ import loader
 from langchain.memory import ConversationBufferMemory
 from langchain.storage import LocalFileStore
 from langchain.embeddings import OpenAIEmbeddings, CacheBackedEmbeddings
+from datetime import datetime
 
 class LoopBot:
 
@@ -46,7 +47,8 @@ class LoopBot:
         underlying_embeddings = OpenAIEmbeddings()
         fs = LocalFileStore("./cache/")
         json_path='./jsons/split.json'
-        self.memory = ConversationBufferMemory(memory_key="chat_history", input_key="human_input")
+        self.memoryStorage = {}
+        #self.memory = ConversationBufferMemory(memory_key="chat_history", input_key="human_input")
 
 
         #EMBEDDING PROCESS
@@ -81,15 +83,27 @@ class LoopBot:
         #printRelavantChats(relavant_chats)
         return relavant_chats
 
+    def checkForOutdatedMemory(self):
+        for userID in self.memoryStorage:
+            timePassed = datetime.now() - self.memoryStorage[userID]["createdDatetime"]
+            if (timePassed.total_seconds() / 60) > 60:
+                del self.memoryStorage[userID]
+
     def getPrompt(self):
         return self.prompt
     
-    def returnAnswer(self, query, prompt):
+    def returnAnswer(self, query, prompt, userID):
+        if userID not in self.memoryStorage:
+            memory = ConversationBufferMemory(memory_key="chat_history", input_key="human_input")
+            self.memoryStorage[userID] = {"memory": memory, "createdDatetime": datetime.now()}
+        else:
+            memory = self.memoryStorage[userID]["memory"]
 
         self.prompt = prompt
         
         user_input = query
 
+        print(memory)
         message_prompt = PromptTemplate(
         input_variables=["relavant_messages", "chat_history", "human_input"],
         template=self.prompt
@@ -98,7 +112,7 @@ class LoopBot:
         #PRVA 2 RELAVANT CHATA STA OD USER INOUT IN ZADNJI JE OD USERINPUT + HISTORY
 
         relavantChatsQuery = self.findRelavantChats(user_input)
-        relavantChatsHistory = self.findRelavantChats((("user question: " + user_input).join(self.memory.load_memory_variables({})["chat_history"].split("\n")[:4])))
+        relavantChatsHistory = self.findRelavantChats((("user question: " + user_input).join(memory.load_memory_variables({})["chat_history"].split("\n")[:4])))
         
         #Take 2 top results for query similarity search (if similarity not over threshold) and 1 for whole history similarity search
         relavantChats = []
@@ -127,7 +141,7 @@ class LoopBot:
             llm=ChatOpenAI(temperature="0", model_name='gpt-3.5-turbo-16k'),
             #llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
             prompt=message_prompt,
-            memory=self.memory,
+            memory=self.memoryStorage[userID]["memory"],
             verbose=False
             )
             reply = chain.run({"human_input": user_input, "relavant_messages": relavantChats_noscore})
@@ -146,5 +160,5 @@ class LoopBot:
             #print(context)
 
         #print(json.dumps(similarChats, indent=2, default=self.convert_to_serializable))
-        #reply = reply.replace("\n", "\\n")
+        reply = reply.replace("\n", "\\n")
         return reply, similarChats

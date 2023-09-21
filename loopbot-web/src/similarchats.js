@@ -43,7 +43,7 @@ function Msg({ sender, content }) {
       <span>
         <b>{sender + ": "}</b>
       </span>
-      <span className="display-linebreak">{content}</span>
+      <span>{content}</span>
     </div>
   );
 }

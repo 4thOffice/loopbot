@@ -11,10 +11,18 @@ function ChatBox({
   const messagesEndRef = useRef(null);
   const [errorMsg, setErrorMsg] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [userid, setUserid] = useState("");
+
+  console.log(userid);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView();
   }, [messages]);
+
+  useEffect(() => {
+    setUserid(String(Math.floor(Math.random() * 99999999999)));
+  }, []);
+
   return (
     <div className="chatbox">
       <Chat messages={messages} messagesEndRef={messagesEndRef} />
@@ -24,6 +32,7 @@ function ChatBox({
         promptText={promptText}
         setSimilarChats={setSimilarChats}
         invalidPrompt={invalidPrompt}
+        userid={userid}
       />
     </div>
   );
@@ -46,11 +55,15 @@ function PromptField({
   promptText,
   setSimilarChats,
   invalidPrompt,
+  userid,
 }) {
   const [isFetching, setIsFetching] = useState("");
   const [userQuery, setUserQuery] = useState("");
 
   const backendBaseUrl = "http://192.168.124.75:5000";
+  {
+    /*const backendBaseUrl = "http://192.168.124.75:5000";*/
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -61,6 +74,7 @@ function PromptField({
           params: {
             query: userQuery,
             prompt: promptText,
+            userID: userid,
           },
         });
         console.log(response);
