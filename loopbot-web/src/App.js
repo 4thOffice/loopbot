@@ -12,13 +12,6 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h3>Prompt</h3>
-        <PromptBox
-          promptText={promptText}
-          setPromptText={setPromptText}
-          invalidPrompt={invalidPrompt}
-          setInvalidPrompt={setInvalidPrompt}
-        />
         <h3>Chat</h3>
         <ChatBox
           promptText={promptText}
@@ -26,8 +19,16 @@ function App() {
           setSimilarChats={setSimilarChats}
           invalidPrompt={invalidPrompt}
         />
-        <h3>Similar chats</h3>
-        <SimilarChats similarChats={similarChats} />
+
+        <div className="bottom-container">
+          <PromptBox
+            promptText={promptText}
+            setPromptText={setPromptText}
+            invalidPrompt={invalidPrompt}
+            setInvalidPrompt={setInvalidPrompt}
+          />
+          <SimilarChats similarChats={similarChats} />
+        </div>
       </header>
     </div>
   );

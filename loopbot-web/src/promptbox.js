@@ -50,6 +50,7 @@ function PromptBox({
 
   return (
     <div className="promptbox">
+      <h3>Prompt</h3>
       {invalidPrompt ? (
         <p className="error_msg">
           {

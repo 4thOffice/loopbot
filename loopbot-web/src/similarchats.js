@@ -1,6 +1,7 @@
 function SimilarChats({ similarChats }) {
   return (
     <div className="similar-chats">
+      <h3>Prompt</h3>
       <ul>
         {similarChats.map((chat, index) => (
           <Chat

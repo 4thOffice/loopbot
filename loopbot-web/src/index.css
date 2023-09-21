@@ -12,29 +12,35 @@ body {
 h3 {
   text-align: center;
 }
+
+.bottom-container {
+  display: flex;
+  flex-direction: row;
+}
+
 .similar-chats {
-  background-color: #d3d3d3;
   margin: auto;
   width: 600px;
-  height: 250px;
+  height: 260px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 2rem;
   font-family: inherit;
   font-weight: 400;
   font-size: 18px;
 }
 
+.similar-chats ul {
+  background-color: #d3d3d3;
+}
+
 .promptbox {
   margin: auto;
   width: 600px;
-  height: 250px;
+  height: 260px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 2rem;
-  margin-top: 2rem;
 }
 
 .promptbox textarea {
@@ -45,7 +51,6 @@ h3 {
   font-weight: 400;
   height: 100%;
   font-size: 18px;
-  margin-top: 1rem;
   border-radius: 8px;
   resize: none;
 }
@@ -53,8 +58,8 @@ h3 {
 .chatbox {
   background-color: #d3d3d3;
   margin: auto;
-  width: 600px;
-  height: 350px;
+  width: 100%;
+  height: 50vh;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -68,6 +73,7 @@ h3 {
 
 .chat {
   height: 100%;
+  width: 100%;
 }
 
 .prompt-form {
