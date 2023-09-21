@@ -5,7 +5,7 @@ import loopBot
 import keys
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/*": {"origins": "http://192.168.124.75:3000"}})
 lb = None
 
 @app.route('/get_answer', methods=['GET'])

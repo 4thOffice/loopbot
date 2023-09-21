@@ -146,4 +146,5 @@ class LoopBot:
             #print(context)
 
         #print(json.dumps(similarChats, indent=2, default=self.convert_to_serializable))
+        #reply = reply.replace("\n", "testNewLine")
         return reply, similarChats
