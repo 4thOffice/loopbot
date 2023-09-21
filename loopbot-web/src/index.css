@@ -18,10 +18,14 @@ h3 {
   flex-direction: row;
 }
 
+.display-linebreak {
+  white-space: pre-line;
+}
+
 .similar-chats {
   margin: auto;
-  width: 600px;
-  height: 260px;
+  width: 49%;
+  height: 40vh;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -36,8 +40,8 @@ h3 {
 
 .promptbox {
   margin: auto;
-  width: 600px;
-  height: 260px;
+  width: 49%;
+  height: 40vh;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -111,7 +115,6 @@ h3 {
 
 ul {
   list-style: none;
-  width: 600px;
   height: 500px;
   overflow-y: auto;
 }

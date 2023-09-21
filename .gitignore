@@ -3,9 +3,9 @@ cache/
 .vscode/
 __pycache__/
 keys.py
-*.json
+jsons/*.json
 dataPerEmail.txt
-
+package-lock.json
 .DS_STORE
 node_modules
 scripts/flow/*/.flowconfig

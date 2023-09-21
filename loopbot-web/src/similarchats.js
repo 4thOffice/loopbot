@@ -1,7 +1,7 @@
 function SimilarChats({ similarChats }) {
   return (
     <div className="similar-chats">
-      <h3>Prompt</h3>
+      <h3>Similar conversations</h3>
       <ul>
         {similarChats.map((chat, index) => (
           <Chat
@@ -43,7 +43,7 @@ function Msg({ sender, content }) {
       <span>
         <b>{sender + ": "}</b>
       </span>
-      <span>{content}</span>
+      <span className="display-linebreak">{content}</span>
     </div>
   );
 }
