@@ -1,19 +1,38 @@
 import ChatBox from "./chatbox";
+import axios from "axios";
+import { useState } from "react";
 
-function Message({ message, setMessages, ind }) {
+function Message({ message, setMessages, ind, backendBaseUrl }) {
+  const [isUpdating, setIsUpdating] = useState(false);
+
   async function handleVote(vote) {
-    setMessages((msgs) =>
-      msgs.map((msg, index) =>
-        index === ind
-          ? {
-              sender: msg.sender,
-              query: msg.query,
-              content: msg.content,
-              vote: vote,
-            }
-          : msg
-      )
-    );
+    try {
+      setIsUpdating(true);
+      const response = await axios.put(`${backendBaseUrl}/vote`, {
+        params: {
+          vote: vote,
+          query: message.query,
+          content: message.content,
+        },
+      });
+      console.log(response);
+      setMessages((msgs) =>
+        msgs.map((msg, index) =>
+          index === ind
+            ? {
+                sender: msg.sender,
+                query: msg.query,
+                content: msg.content,
+                vote: vote,
+              }
+            : msg
+        )
+      );
+      setIsUpdating(false);
+    } catch (error) {
+      setIsUpdating(false);
+      console.error("Error:", error);
+    }
   }
 
   return (
@@ -30,6 +49,7 @@ function Message({ message, setMessages, ind }) {
             className={
               "vote-btn " + (message.vote === "upvoted" ? "voted" : "")
             }
+            disabled={isUpdating}
             onClick={() => handleVote("upvoted")}
           >
             👍
@@ -38,6 +58,7 @@ function Message({ message, setMessages, ind }) {
             className={
               "vote-btn " + (message.vote === "downvoted" ? "voted" : "")
             }
+            disabled={isUpdating}
             onClick={() => handleVote("downvoted")}
           >
             👎

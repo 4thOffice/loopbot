@@ -8,6 +8,7 @@ function ChatBox({
   setSimilarChats,
   invalidPrompt,
   setErrorMsg,
+  backendBaseUrl,
 }) {
   const messagesEndRef = useRef(null);
   const [messages, setMessages] = useState([]);
@@ -29,6 +30,7 @@ function ChatBox({
         messages={messages}
         setMessages={setMessages}
         messagesEndRef={messagesEndRef}
+        backendBaseUrl={backendBaseUrl}
       />
       <PromptField
         setMessages={setMessages}
@@ -37,12 +39,13 @@ function ChatBox({
         setSimilarChats={setSimilarChats}
         invalidPrompt={invalidPrompt}
         userid={userid}
+        backendBaseUrl={backendBaseUrl}
       />
     </div>
   );
 }
 
-function Chat({ messages, setMessages, messagesEndRef }) {
+function Chat({ messages, setMessages, messagesEndRef, backendBaseUrl }) {
   console.log(messages);
   return (
     <ul className="chat">
@@ -52,6 +55,7 @@ function Chat({ messages, setMessages, messagesEndRef }) {
           setMessages={setMessages}
           key={index}
           ind={index}
+          backendBaseUrl={backendBaseUrl}
         />
       ))}
       <div ref={messagesEndRef}></div>
@@ -67,14 +71,10 @@ function PromptField({
   invalidPrompt,
   userid,
   setAiResponsesInfo,
+  backendBaseUrl,
 }) {
   const [isFetching, setIsFetching] = useState("");
   const [userQuery, setUserQuery] = useState("");
-
-  const backendBaseUrl = "http://127.0.0.1:5000";
-  {
-    /*const backendBaseUrl = "http://192.168.124.75:5000";*/
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();

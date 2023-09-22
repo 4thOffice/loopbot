@@ -28,6 +28,10 @@ def get_prompt():
     print("prompt:\n", prompt)
     return prompt
 
+@app.route('/vote', methods=['PUT'])
+def handle_vote():
+    return jsonify(lb.handleVote())
+
     #return get_normal_transactions(starting_block, wallet_address, API_KEY, endpoint)
 
 

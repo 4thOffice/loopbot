@@ -87,7 +87,7 @@ Do your best to answer the following user message: {human_input} correctly based
         return relavant_chats
 
     def checkForOutdatedMemory(self):
-        for userID in self.memoryStorage:
+        for userID in self.memoryStorage.copy():
             timePassed = datetime.now() - self.memoryStorage[userID]["createdDatetime"]
             if (timePassed.total_seconds() / 60) > 60:
                 del self.memoryStorage[userID]
@@ -95,6 +95,9 @@ Do your best to answer the following user message: {human_input} correctly based
     def getPrompt(self):
         return self.prompt_starting
     
+    def handleVote(self):
+        return "called"
+
     def returnAnswer(self, query, _prompt, userID):
         if userID not in self.memoryStorage:
             memory = ConversationBufferMemory(memory_key="chat_history", input_key="human_input")

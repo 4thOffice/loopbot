@@ -10,6 +10,11 @@ function App() {
   const [invalidPrompt, setInvalidPrompt] = useState(false);
   const [errorMsg, setErrorMsg] = useState(false);
 
+  const backendBaseUrl = "http://192.168.124.75:5000";
+  {
+    /*const backendBaseUrl = "http://192.168.124.75:5000";*/
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -27,6 +32,7 @@ function App() {
           setSimilarChats={setSimilarChats}
           invalidPrompt={invalidPrompt}
           setErrorMsg={setErrorMsg}
+          backendBaseUrl={backendBaseUrl}
         />
 
         <div className="bottom-container">
@@ -35,6 +41,7 @@ function App() {
             setPromptText={setPromptText}
             invalidPrompt={invalidPrompt}
             setInvalidPrompt={setInvalidPrompt}
+            backendBaseUrl={backendBaseUrl}
           />
           <SimilarChats similarChats={similarChats} />
         </div>
