@@ -39,7 +39,7 @@ Metadata description:
         
 Chat history with this user: {chat_history}
 
-Do your best to answer the following user question: {human_input} correctly based on chat history with this user and previous similar conversations."""
+Do your best to answer the following user message: {human_input} correctly based on chat history with this user and previous similar conversations."""
 
     def __init__(self, openAI_APIKEY):
         global loader

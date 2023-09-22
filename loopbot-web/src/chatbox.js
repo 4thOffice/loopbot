@@ -25,7 +25,11 @@ function ChatBox({
 
   return (
     <div className="chatbox">
-      <Chat messages={messages} messagesEndRef={messagesEndRef} />
+      <Chat
+        messages={messages}
+        setMessages={setMessages}
+        messagesEndRef={messagesEndRef}
+      />
       <PromptField
         setMessages={setMessages}
         setErrorMsg={setErrorMsg}
@@ -38,11 +42,17 @@ function ChatBox({
   );
 }
 
-function Chat({ messages, messagesEndRef }) {
+function Chat({ messages, setMessages, messagesEndRef }) {
+  console.log(messages);
   return (
     <ul className="chat">
       {messages.map((msg, index) => (
-        <Message message={msg} key={index} />
+        <Message
+          message={msg}
+          setMessages={setMessages}
+          key={index}
+          ind={index}
+        />
       ))}
       <div ref={messagesEndRef}></div>
     </ul>
@@ -56,11 +66,12 @@ function PromptField({
   setSimilarChats,
   invalidPrompt,
   userid,
+  setAiResponsesInfo,
 }) {
   const [isFetching, setIsFetching] = useState("");
   const [userQuery, setUserQuery] = useState("");
 
-  const backendBaseUrl = "http://192.168.124.75:5000";
+  const backendBaseUrl = "http://127.0.0.1:5000";
   {
     /*const backendBaseUrl = "http://192.168.124.75:5000";*/
   }
@@ -82,11 +93,14 @@ function PromptField({
         const userMsg = {
           sender: "User",
           content: userQuery,
+          vote: "neutral",
         };
 
         const aiMsg = {
           sender: "Loopbot",
+          query: userQuery,
           content: response["data"]["reply"],
+          vote: "neutral",
         };
 
         setSimilarChats(response["data"]["similarChats"]);

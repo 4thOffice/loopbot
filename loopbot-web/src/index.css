@@ -133,6 +133,26 @@ ul {
   gap: 1px;
 }
 
+.vote-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.vote-btn {
+  background-color: #838383;
+  color: #f2f2f2;
+  border: none;
+  padding: 8px 10px 8px;
+  border-radius: 32px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.voted {
+  background-color: #6344df;
+}
+
 .user {
   background-color: #c0c0c0;
   align-items: start;
