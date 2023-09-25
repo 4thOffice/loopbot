@@ -26,7 +26,7 @@ def get_answer():
 def get_prompt():
     prompt = lb.getPrompt()
     print("prompt:\n", prompt)
-    return prompt
+    return jsonify(prompt)
 
 @app.route('/vote', methods=['PUT'])
 def handle_vote():
