@@ -10,7 +10,7 @@ function App() {
   const [invalidPrompt, setInvalidPrompt] = useState(false);
   const [errorMsg, setErrorMsg] = useState(false);
 
-  const backendBaseUrl = "http://192.168.124.75:5000";
+  const backendBaseUrl = "http://127.0.0.1:5000";
   {
     /*const backendBaseUrl = "http://192.168.124.75:5000";*/
   }

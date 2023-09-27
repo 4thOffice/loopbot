@@ -1,5 +1,7 @@
 qna
-cache/
+cache_loopbot_conversations/
+cache_good_responses/
+cache_bad_responses/
 .vscode/
 __pycache__/
 keys.py

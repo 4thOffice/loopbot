@@ -1,7 +1,7 @@
 import json
 from dateutil import parser
 
-f = open('./jsons/chats.json')
+f = open('../jsons/chats.json')
 
 relavanceTimeLimit = 72 #48 hours, load all comments that are at most this far apart from each other
 
@@ -53,7 +53,7 @@ for i, conversation in enumerate(data):
     convIndex += 1    
 
 json_string = json.dumps(subConversations, indent=2)
-f = open("./jsons/split.json", "w")
+f = open("../jsons/split.json", "w")
 #print(chatData)
 f.write(json_string)
 f.close()
