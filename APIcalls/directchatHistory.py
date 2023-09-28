@@ -70,7 +70,7 @@ def getAllComments(historySize, userID):
         "$type": "SearchQueryComment",
         "size": historySize,
         "historyId": "",
-        "sortOrder": "Ascending",
+        "sortOrder": "Descending",
         "sortType": "ModifiedDate",
         "commonCommentConditions": {
             "cardTypes": ["CardChat"],
@@ -96,6 +96,8 @@ def getAllComments(historySize, userID):
 
             comment = {"sender": sender, "content": commentMessage, "creationTime": creationTime}
             comments.append(comment)
+            
+        comments.reverse()
         return comments
     else:
         print(f"Error: {response.status_code} - {response.text}")

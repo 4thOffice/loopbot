@@ -42,9 +42,28 @@ class JSONLoader(BaseLoader):
                     context = ""
 
                     for otherMsg in conversationData:
-                        context += otherMsg["sender"] + ":: [" + otherMsg["message"] + "]  \n"
+                        context += otherMsg["sender"] + ": [" + otherMsg["message"] + "]"
 
                     metadata = dict(sender=sender, conversationID=conversationID, context=context)
                     
                     docs.append(Document(page_content=message, metadata=metadata))
+        return docs
+    
+    def loadResponses(self) -> List[Document]:
+        """Load and return documents from the JSON file."""
+
+        docs=[]
+        # Load JSON file
+        with open(self.file_path) as file:
+            data = json.load(file)
+
+            # Iterate through responses
+            for response in data["responses"]:
+                AIresponse = response["AIresponse"]
+                context = response["context"]
+
+                metadata = dict(AIresponse=AIresponse)
+                
+                docs.append(Document(page_content=context, metadata=metadata))
+
         return docs

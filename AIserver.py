@@ -20,20 +20,20 @@ def get_answer():
 
 @app.route('/handle_good_response', methods=['PUT'])
 def handle_good_response():
-    context = request.args.get('context', type=str)
+    recipient_userID = request.args.get('recipient_userID', type=str)
     AIresponse = request.args.get('AIresponse', type=str)
 
     print(AIresponse)
-    ret = AIhelper_.handleGoodResponse(context, AIresponse)
+    ret = AIhelper_.handleGoodResponse(recipient_userID, AIresponse)
 
     return jsonify(ret)
 
 @app.route('/handle_bad_response', methods=['PUT'])
 def handle_bad_response():
-    context = request.args.get('context', type=str)
+    recipient_userID = request.args.get('recipient_userID', type=str)
     AIresponse = request.args.get('AIresponse', type=str)
 
-    ret = AIhelper_.handleBadResponse(context, AIresponse)
+    ret = AIhelper_.handleBadResponse(recipient_userID, AIresponse)
 
     return jsonify(ret)
 
