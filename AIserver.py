@@ -1,3 +1,4 @@
+import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import keys
@@ -11,8 +12,9 @@ AIhelper_ = None
 def get_answer():
     sender_userID = request.args.get('sender_userID', type=str)
     recipient_userID = request.args.get('recipient_userID', type=str)
+    badResponses = json.loads(request.args.get('badResponses', type=str))
 
-    reply, memory = AIhelper_.returnAnswer(recipient_userID, sender_userID)
+    reply, memory = AIhelper_.returnAnswer(recipient_userID, sender_userID, badResponses)
     print("reply:\n", reply)
 
     answer = {"reply": reply, "context": memory}
@@ -23,7 +25,6 @@ def handle_good_response():
     recipient_userID = request.args.get('recipient_userID', type=str)
     AIresponse = request.args.get('AIresponse', type=str)
 
-    print(AIresponse)
     ret = AIhelper_.handleGoodResponse(recipient_userID, AIresponse)
 
     return jsonify(ret)

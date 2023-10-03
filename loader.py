@@ -42,7 +42,7 @@ class JSONLoader(BaseLoader):
                     context = ""
 
                     for otherMsg in conversationData:
-                        context += otherMsg["sender"] + ": [" + otherMsg["message"] + "]"
+                        context += otherMsg["sender"] + ": " + otherMsg["message"] + """    """
 
                     metadata = dict(sender=sender, conversationID=conversationID, context=context)
                     

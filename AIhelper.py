@@ -2,6 +2,7 @@ import json
 import os
 import numpy as np
 import json
+from langchain.schema import SystemMessage
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import (
     ChatPromptTemplate,
@@ -22,33 +23,28 @@ import sys
 sys.path.append('./APIcalls')
 import APIcalls.directchatHistory as directchatHistory
 from langchain.docstore.document import Document
+from langchain.evaluation import load_evaluator, EmbeddingDistance
 
 class AIhelper:
 
     prompt_loopbot = """Lets think step by step.
 
-I am answering questions about our platform "Loop Email".
+You are answering questions about our platform "Loop Email".
     
-Here are previous conversations with other users that MAY be similar to the topic user asked about: {relavant_messages}.
+Here are relavant conversations with other people with similar topic:
+{relavant_messages}.
 
-Answer should be formal and short.
-
-Chat history with this user: {memory}
-
-User last said: {human_input}
-
-Provide me with an answer I can send next based on chat history with this user."""
+Answer should be formal and short."""
 
 
     prompt_regular_user = """Lets think step by step.
+
+You are talking to a user.
+I want you to reply to a user based on the following information:
     
-Here are previous conversations with other users that MAY be similar to the topic user asked about: {relavant_messages}.
+{relavant_messages}
 
-Chat history with this user: {memory}
-
-User last said: {human_input}
-
-Reply to the user."""
+"""
 
 
     def __init__(self, openAI_APIKEY):
@@ -73,18 +69,31 @@ Reply to the user."""
         print("Finished embbeding loopbot data")
 
 
-        #GOOD & BAD RESPONSES EMBEDDING 
+        #GOOD RESPONSES EMBEDDING 
         fs = LocalFileStore("./cache_good_responses/")
         json_path='./jsons/good_responses.json'
-        self.cached_embedder = CacheBackedEmbeddings.from_bytes_store(
+        cached_embedder_good = CacheBackedEmbeddings.from_bytes_store(
             underlying_embeddings, fs, namespace=underlying_embeddings.model
         )
 
         loader_ = loader.JSONLoader(file_path=json_path)
         documents = loader_.loadResponses()
-        self.db_good_responses = FAISS.from_documents(documents, cached_embedder)
+        self.db_good_responses = FAISS.from_documents(documents, cached_embedder_good)
 
-        print("Finished embbeding good & bad responses data")
+        print("Finished embbeding good responses data")
+
+        # BAD RESPONSES EMBEDDING 
+        fs = LocalFileStore("./cache_bad_responses/")
+        json_path='./jsons/bad_responses.json'
+        cached_embedder_bad = CacheBackedEmbeddings.from_bytes_store(
+            underlying_embeddings, fs, namespace=underlying_embeddings.model
+        )
+
+        loader_ = loader.JSONLoader(file_path=json_path)
+        documents = loader_.loadResponses()
+        self.db_bad_responses = FAISS.from_documents(documents, cached_embedder_bad)
+
+        print("Finished embbeding good responses data")
 
     def write_json(self, new_data, filepath):
         with open(filepath,'r+') as file:
@@ -108,7 +117,51 @@ Reply to the user."""
 
         return relavant_chats
     
-    def findGoodResponses(self, recipient_userID):
+    def findResponses(self, recipient_userID):
+        context = directchatHistory.getAllComments(5, recipient_userID)
+        contextLastTopic = directchatHistory.getLastTopic(context)
+
+        if len(contextLastTopic) > 0:
+            context = contextLastTopic
+
+        lastMsg1 = context[-1]["content"]
+        
+        context = directchatHistory.memoryPostProcess(context)
+
+        goodResponses = self.db_good_responses.similarity_search_with_score(context, k=3)
+        badResponses = self.db_bad_responses.similarity_search_with_score(context, k=3)
+
+        responsesGood = []
+        print("good:")
+        for response in goodResponses:
+            print("score", response[1])
+            print("data", response[0])
+            if response[1] <= 0.07:
+                print("lastMsg1: ", lastMsg1)
+                lastMsg2 = response[0].page_content.split("\n")[-2]
+                print("lastMsg2: ", lastMsg2)
+ 
+                evaluator = load_evaluator("pairwise_embedding_distance", distance_metric=EmbeddingDistance.EUCLIDEAN)
+                distance = evaluator.evaluate_string_pairs(
+                    prediction=lastMsg1, prediction_b=lastMsg2
+                )
+
+                print("distance: ", distance["score"])
+
+                if distance["score"] < 0.2:
+                    responsesGood.append(response[0].metadata["AIresponse"])
+
+        responsesBad = []
+        print("bad:")
+        for response in badResponses:
+            print("score", response[1])
+            print("data", response[0])
+            if response[1] <= 0.07:
+                responsesBad.append(response[0].metadata["AIresponse"])
+            
+        return responsesGood, responsesBad
+
+    def handleGoodResponse(self, recipient_userID, AIresponse):
         context = directchatHistory.getAllComments(5, recipient_userID)
         contextLastTopic = directchatHistory.getLastTopic(context)
 
@@ -116,26 +169,12 @@ Reply to the user."""
             context = contextLastTopic
             
         context = directchatHistory.memoryPostProcess(context)
-
-        goodResponses = self.db_good_responses.similarity_search_with_score(context, k=3)
-
-        responses = []
-        for response in goodResponses:
-            print("score", response[1])
-            print("data", response[0])
-            if response[1] <= 0.03:
-                responses.append(response[0].metadata["AIresponse"])
-            
-        return responses
-
-    def handleGoodResponse(self, recipient_userID, AIresponse):
-        context = directchatHistory.getAllComments(5, recipient_userID)
-        context = directchatHistory.memoryPostProcess(context)
+        context += "\n" + AIresponse
 
         good_responses = self.db_good_responses.similarity_search_with_score(context, k=1)
-
+        
         #check if similar good responses already exist
-        if good_responses[0][1] > 0.03:
+        if good_responses[0][1] > 0.04:
             new_document = Document(page_content=context, metadata=dict(AIresponse=AIresponse))
             self.db_good_responses.add_documents([new_document])
 
@@ -144,14 +183,45 @@ Reply to the user."""
         return (AIresponse + " -> handeled as positive")
     
     def handleBadResponse(self, recipient_userID, AIresponse):
+
+        context = directchatHistory.getAllComments(5, recipient_userID)
+        contextLastTopic = directchatHistory.getLastTopic(context)
+
+        if len(contextLastTopic) > 0:
+            context = contextLastTopic
+            
+        context = directchatHistory.memoryPostProcess(context)
+        context += "\n" + AIresponse
+
+        bad_responses = self.db_bad_responses.similarity_search_with_score(context, k=1)
+        
+        print("distance:", bad_responses[0][1])
+
+        #check if similar good responses already exist
+        if bad_responses[0][1] > 0.04:
+            new_document = Document(page_content=context, metadata=dict(AIresponse=AIresponse))
+            self.db_bad_responses.add_documents([new_document])
+
+            self.write_json({"context": context, "AIresponse": AIresponse}, "./jsons/bad_responses.json")
+
         return (AIresponse + "  -> handeled as negative")
 
-    def returnAnswer(self, recipient_userID, sender_userID):
+    def returnAnswer(self, recipient_userID, sender_userID, badResponsesPrevious):
+        conversationBuffer = ConversationBufferMemory()
+        
         regular_user = True
         if sender_userID == "user_1552217":
             regular_user = False
 
-        comments = directchatHistory.getAllComments(1000, recipient_userID)
+        comments = directchatHistory.getAllComments(10, recipient_userID)
+
+        for message in comments:
+            sender = message['sender']
+            content = message['content']
+            if sender == "my response":
+                conversationBuffer.chat_memory.add_ai_message(content)
+            else:
+                conversationBuffer.chat_memory.add_user_message(content)
 
         if len(comments) == 0:
             return "Hello!", ""
@@ -185,38 +255,62 @@ Reply to the user."""
                     break
                 relavantChats.append(comment)
 
-            relavantChats_noscore = [relavantChat[0] for relavantChat in relavantChats]
+            #relavantChats_noscore = [relavantChat[0].metadata["context"] for relavantChat in relavantChats]
+            relavantChats_noscore = ""
+            for index, relavantChat in enumerate(relavantChats):
+                relavantChats_noscore += f"\nConversation {index}:\n"
+                relavantChats_noscore += relavantChat[0].metadata["context"]
         
         else:
-            relavantChats_noscore = "No relavant conversations"
+            relavantChats_noscore = ""
 
-        goodResponses = self.findGoodResponses(recipient_userID)
+        goodResponses, badResponses = self.findResponses(recipient_userID)
         
+        system_prompt = SystemMessage(content="You are a chatbot having a conversation with a human.")
+
         if len(goodResponses) > 0:
-            prompt = prompt + """
+            system_prompt.content = system_prompt.content + """
 
-Use the following reply options as starting point: """ + str(goodResponses) + """
+Use the following reply options as starting point: \n"""
+            for index, response in enumerate(goodResponses, start=1):
+                system_prompt.content += f"- {response}\n"
 
-Do not forget to also use other information you have been provided."""
-            
+        if len(badResponses) > 0 or len(badResponsesPrevious) > 0:
+
+            system_prompt.content = system_prompt.content + """
+
+DO NOT use the following replies. They are examples of BAD replies. Come up with something totally different from these: \n"""
+            for index, response in enumerate(badResponses + badResponsesPrevious, start=1):
+                system_prompt.content += f"- {response}\n"
+
+        prompt = prompt + """
+
+Answer to this message from user: """ + user_input + """
+
+Reply to the user last messages best as you can based on chat history and examples of bad replies you have been provided. Also take information from relavant conversations You have been provided. Only provide a reply to user's last message. Provide a message I can copy and paste - no explaination or chat history and unneccessary content. Give a reply that is different from bad reply examples"""
+        
+        print(conversationBuffer.load_memory_variables({}))
+
         message_prompt = PromptTemplate(
-        input_variables=["human_input", "relavant_messages", "memory"],
+        input_variables=["relavant_messages"],
         template=prompt
         )
+
+        # Create a human message template
+        human_message_template = HumanMessagePromptTemplate.from_template(prompt)
+
+        # Create a chat prompt template from the system message, chat history placeholder, and human message template
+        chat_prompt = ChatPromptTemplate.from_messages([system_prompt, human_message_template])
+
             
         chain = LLMChain(
-        llm=ChatOpenAI(temperature="0", model_name='gpt-3.5-turbo-16k'),
+        llm=ChatOpenAI(temperature="1.0", model_name='gpt-3.5-turbo-16k'),
         #llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
-        prompt=message_prompt,
+        prompt=chat_prompt,
+        memory=conversationBuffer,
         verbose=True
         )
-        reply = chain.run({"human_input": user_input, "relavant_messages": relavantChats_noscore, "memory": memory})
-
-        """similarChats = []
-        for comment in relavantChats:
-            context = comment[0].metadata["context"].split("    ")
-            similarChats.append({"context": context, "score": float(comment[1])})
-            #print(context)"""
+        reply = chain.run({"relavant_messages": str(relavantChats_noscore)})
 
         reply = reply.replace("\n", "\\n")
         return reply, memory
