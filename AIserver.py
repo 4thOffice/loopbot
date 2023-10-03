@@ -3,10 +3,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import keys
 import AIhelper
+import AIrephraser
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 AIhelper_ = None
+AIrephraser_ = None
 
 @app.route('/get_answer', methods=['GET'])
 def get_answer():
@@ -38,9 +40,19 @@ def handle_bad_response():
 
     return jsonify(ret)
 
+@app.route('/rephrase', methods=['GET'])
+def rephrase():
+    message = request.args.get('message', type=str)
+    prompt = request.args.get('prompt', type=str)
+
+    rephrased_message = AIrephraser_.rephraseMessage(message, prompt)
+
+    return jsonify(rephrased_message)
+
 
 if __name__ == '__main__':
     AIhelper_ = AIhelper.AIhelper(keys.openAI_APIKEY)
+    AIrephraser_ = AIrephraser.AIrephraser(keys.openAI_APIKEY)
     app.run(host='0.0.0.0', port=5000, debug=True)
 
     #while(1):
