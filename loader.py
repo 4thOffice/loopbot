@@ -61,8 +61,9 @@ class JSONLoader(BaseLoader):
             for response in data["responses"]:
                 AIresponse = response["AIresponse"]
                 context = response["context"]
+                score = response["score"]
 
-                metadata = dict(AIresponse=AIresponse)
+                metadata = dict(AIresponse=AIresponse, score=score)
                 
                 docs.append(Document(page_content=context, metadata=metadata))
 

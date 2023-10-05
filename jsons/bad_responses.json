@@ -2,7 +2,28 @@
   "responses": [
     {
       "context": "",
-      "AIresponse": "test"
+      "AIresponse": "",
+      "score": 0
+    },
+    {
+      "context": "user: I seem to have lost a lot of starred emails with the update I did manually the other day. is there any way to get them back?\nuser: tell me about loop\nuser: unable to accept meeting on loop. is there a workaround?\nAI: We are aware of the issue with accepting meeting invites in Loop Email. Our team is currently working on a solution to address this problem. In the meantime, a possible workaround is to try accepting the meeting invite through the web version of Loop. Than\nuser: doesnt work on web either\nWe sincerely apologize for the inconvenience you are encountering with our platform. Our team is actively conducting an investigation into the issue and diligently working towards a timely resolution. We would like to express our gratitude for bringing this matter to our attention. You will receive a compensation for your troubles.\\n\\nWe apologize for the inconvenience you are facing. Our team is aware of the issue and is working on resolving it. We appreciate your patience and understanding.",
+      "AIresponse": "We sincerely apologize for the inconvenience you are encountering with our platform. Our team is actively conducting an investigation into the issue and diligently working towards a timely resolution. We would like to express our gratitude for bringing this matter to our attention. You will receive a compensation for your troubles.\\n\\nWe apologize for the inconvenience you are facing. Our team is aware of the issue and is working on resolving it. We appreciate your patience and understanding.",
+      "score": 14
+    },
+    {
+      "context": "AI: hey, snebergerniko@gmail.com\nAI: hvala\nuser: sem poslal povabilo\nAI: super hvala\nuser: sem dodal tvoj racun za testerja v internal testing, predlagam da si prvo nalozis testflight app iz app store, preden to vabilo odpres :), sicer pa sledi navodilom\nApologies for the inconvenience. Thank you for bringing this issue to our attention. Our team is currently looking into this and will provide a fix as soon as possible. Your feedback is much appreciated.",
+      "AIresponse": "Apologies for the inconvenience. Thank you for bringing this issue to our attention. Our team is currently looking into this and will provide a fix as soon as possible. Your feedback is much appreciated.",
+      "score": 2
+    },
+    {
+      "context": "AI: hey, snebergerniko@gmail.com\nAI: hvala\nuser: sem poslal povabilo\nAI: super hvala\nuser: sem dodal tvoj racun za testerja v internal testing, predlagam da si prvo nalozis testflight app iz app store, preden to vabilo odpres :), sicer pa sledi navodilom\nI have added your account for testing in internal testing. I suggest you first download the TestFlight app from the App Store before opening the invitation. Please follow the instructions.",
+      "AIresponse": "I have added your account for testing in internal testing. I suggest you first download the TestFlight app from the App Store before opening the invitation. Please follow the instructions.",
+      "score": 13
+    },
+    {
+      "context": "AI: Realno dela z temi modules k si poslou k sm zdj sele extractu k je trajal 100 let\nAI: tega res nism prcakovou haha hvala ti \ud83d\udc4c\nuser: Perfecto! Np \ud83d\udc4d\nWe apologize for the inconvenience. Our team is aware of the issue and is working on fixing it. Thank you for bringing it to our attention.",
+      "AIresponse": "We apologize for the inconvenience. Our team is aware of the issue and is working on fixing it. Thank you for bringing it to our attention.",
+      "score": 7
     }
   ]
 }

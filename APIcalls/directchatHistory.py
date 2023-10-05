@@ -138,6 +138,21 @@ def memoryPostProcess(comments):
     result = '\n'.join(formatted_messages)
     return result
 
+def memoryPostProcessForStorage(comments):
+    formatted_messages = []
+
+    for message in comments:
+        sender = message['sender']
+        content = message['content']
+        
+        if sender == 'my response':
+            formatted_messages.append(f'AI: {content}')
+        elif sender == 'their message':
+            formatted_messages.append(f'user: {content}')
+
+    result = '\n'.join(formatted_messages)
+    return result
+
 #allComments = getAllComments(50, "user_1552217")
 #print(allComments)
 #lastTopic = getLastTopic(allComments)
