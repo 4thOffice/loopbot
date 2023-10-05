@@ -1,4 +1,5 @@
 import os
+import time
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.embeddings import OpenAIEmbeddings
@@ -10,12 +11,9 @@ from langchain.embeddings import OpenAIEmbeddings, CacheBackedEmbeddings
 import sys
 sys.path.append('./APIcalls')
 import APIcalls.directchatHistory as directchatHistory
-from langchain.docstore.document import Document
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 import promptCreator
 from langchain.vectorstores.faiss import FAISS
-from langchain.docstore.document import Document
-import jsonOperations
 import userFeedbackHandler
 
 class AIhelper:
@@ -70,7 +68,7 @@ class AIhelper:
 
         print("Finished embbeding good responses data")
 
-        self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=5)
+        self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=1)
 
     #print relavant information about a query
     def printRelavantChats(relavant_chats):
@@ -83,8 +81,10 @@ class AIhelper:
 
     #find relavant information abotu a query
     def findRelavantChats(self, input):
+        start_time1 = time.time()
         relavant_chats = self.db_loopbot_data.similarity_search_with_score(input, k=3)
-
+        start_time2 = time.time()
+        print("relavant chat finding duration:", start_time2-start_time1)
         return relavant_chats
     
     def findResponses(self, recipient_userID):
@@ -143,6 +143,8 @@ class AIhelper:
         return (AIresponse + "  -> handeled as negative")
 
     def returnAnswer(self, recipient_userID, sender_userID, badResponsesPrevious):
+        start_time1 = time.time()
+        
         conversationBuffer = ConversationBufferMemory()
         
         regular_user = True
@@ -198,16 +200,25 @@ class AIhelper:
         goodResponses, badResponses = self.findResponses(recipient_userID)
         
         chat_prompt = promptCreator.createPrompt(goodResponses, badResponses, badResponsesPrevious, user_input, not regular_user)
-            
+        
+        end_time1 = time.time()
+        start_time2 = time.time()
         chain = LLMChain(
         llm=ChatOpenAI(temperature="1.0", model_name='gpt-3.5-turbo-16k'),
-        #llm=ChatOpenAI(temperature="0", model_name='gpt-4'),
+        #llm=ChatOpenAI(temperature="1.0", model_name='gpt-4'),
         prompt=chat_prompt,
         memory=conversationBuffer,
         verbose=True
         )
         reply = chain.run({"relavant_messages": str(relavantChats_noscore)})
 
+        end_time2 = time.time()
+
+        elapsed_time = end_time1 - start_time1
+        print(f"Time taken to execute preprocess steps: {elapsed_time:.6f} seconds")
+
+        elapsed_time = end_time2 - start_time2
+        print(f"Time taken to execute CHATGPT API call: {elapsed_time:.6f} seconds")
         reply = reply.replace("\n", "\\n")
         return reply, memory
     

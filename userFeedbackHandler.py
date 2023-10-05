@@ -114,7 +114,7 @@ class UserFeedbackHandler:
             new_document = Document(page_content=context, metadata=dict(AIresponse=AIresponse, score=1))
             db_bad_responses.add_documents([new_document])
 
-            self.bad_responses_json = jsonOperations.write_json({"context": context, "AIresponse": AIresponse, "score": 1}, self.bad_responses_json)
+            self.bad_responses_json = jsonOperations.append_json({"context": context, "AIresponse": AIresponse, "score": 1}, self.bad_responses_json)
         else:
             if(len(db_bad_responses.docstore._dict) > 0):
                 closestDoc = db_bad_responses.search(context, k=1, search_type="similarity")

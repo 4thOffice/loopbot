@@ -1,5 +1,4 @@
 import os
-import json
 from langchain.schema import SystemMessage
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import (
@@ -7,8 +6,6 @@ from langchain.prompts.chat import (
     HumanMessagePromptTemplate,
 )
 from langchain.chains import LLMChain
-import keys
-
 
 class AIrephraser:
 
@@ -17,6 +14,8 @@ class AIrephraser:
     prompt_shorter = """Make the following text shorter:
 {message}"""
     prompt_longer = """Make the following text longer:
+{message}"""
+    prompt_friendlier = """Make the following text more friendly. Add emojis:
 {message}"""
 
 
@@ -34,6 +33,8 @@ class AIrephraser:
             human_message_template = HumanMessagePromptTemplate.from_template(self.prompt_longer)
         elif prompt == "shorter":
             human_message_template = HumanMessagePromptTemplate.from_template(self.prompt_shorter)
+        elif prompt == "friendlier":
+            human_message_template = HumanMessagePromptTemplate.from_template(self.prompt_friendlier)
         
         chat_prompt = ChatPromptTemplate.from_messages([system_prompt, human_message_template])
 
