@@ -68,7 +68,7 @@ class AIhelper:
 
         print("Finished embbeding good responses data")
 
-        self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=1)
+        self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=2)
 
     #print relavant information about a query
     def printRelavantChats(relavant_chats):
@@ -179,11 +179,13 @@ class AIhelper:
             #Take 2 top results for query similarity search (if similarity not over threshold) and 1 for whole history similarity search
             relavantChats = []
             for comment in relavantChatsQuery:
+                print(comment)
                 if len(relavantChats) >= 1:
                     break
                 if comment[1] < 0.4:
                     relavantChats.append(comment)
             for comment in relavantChatsHistory:
+                print(comment)
                 if len(relavantChats) >= 3:
                     break
                 relavantChats.append(comment)
@@ -193,6 +195,7 @@ class AIhelper:
             for index, relavantChat in enumerate(relavantChats):
                 relavantChats_noscore += f"\nConversation {index}:\n"
                 relavantChats_noscore += relavantChat[0].metadata["context"]
+                #relavantChats_noscore += relavantChat[0].page_content
         
         else:
             relavantChats_noscore = ""

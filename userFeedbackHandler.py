@@ -75,7 +75,7 @@ class UserFeedbackHandler:
                             scoreTemp = doc.metadata["score"]
 
                             if scoreTemp <= 0:
-                                self.bad_responses_json = jsonOperations.delete_from_json(self.db_bad_responses_json, contextTemp)
+                                self.bad_responses_json = jsonOperations.delete_from_json(self.bad_responses_json, contextTemp)
                                 continue
 
                             key_list=list(db_bad_responses.index_to_docstore_id.keys())

@@ -43,7 +43,7 @@ Use the following reply options as starting point: \n"""
 
             system_prompt.content = system_prompt.content + """
 
-DO NOT use the following replies. They are examples of BAD replies. Come up with something totally different from these:: \n"""
+DO NOT use the following replies. They are examples of BAD replies. Think from a different perspective and come up with something content-wise totally different from these: \n"""
             for index, response in enumerate(badResponses + badResponsesPrevious, start=1):
                 system_prompt.content += f"- {response}\n"
 

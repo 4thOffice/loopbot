@@ -15,11 +15,12 @@ def get_answer():
     sender_userID = request.args.get('sender_userID', type=str)
     recipient_userID = request.args.get('recipient_userID', type=str)
     badResponses = json.loads(request.args.get('badResponses', type=str))
+    responseID = json.loads(request.args.get('responseID', type=str))
 
     reply, memory = AIhelper_.returnAnswer(recipient_userID, sender_userID, badResponses)
     print("reply:\n", reply)
 
-    answer = {"reply": reply, "context": memory}
+    answer = {"reply": reply, "context": memory, "responseID": responseID}
     return jsonify(answer)
 
 @app.route('/handle_good_response', methods=['PUT'])

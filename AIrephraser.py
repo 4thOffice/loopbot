@@ -11,7 +11,7 @@ class AIrephraser:
 
     prompt_more_formal = """Make the following text more formal:
 {message}"""
-    prompt_shorter = """Make the following text shorter:
+    prompt_shorter = """Make the following text a lot shorter:
 {message}"""
     prompt_longer = """Make the following text longer:
 {message}"""

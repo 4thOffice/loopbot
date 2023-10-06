@@ -32,6 +32,7 @@ class JSONLoader(BaseLoader):
             # Iterate through conversations
             for conversationIndex, conversation in enumerate(data):
                 conversationData = data[conversation]
+                
                 for msgIndex, msg in enumerate(conversationData):
                     ID = msg['id']
                     sender = msg['sender']
