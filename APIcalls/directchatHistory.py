@@ -117,10 +117,14 @@ def getLastTopic(comments):
         commentsInTopic.append(comment)
         i -= 1
     
-    if comments[1] in commentsInTopic and getTimeDifference(comments[0]["creationTime"], comments[1]["creationTime"]) < timeDifferenceThreshold:
+    if len(comments) == 1:
+        commentsInTopic.append(comments[0])
+    elif comments[1] in commentsInTopic and getTimeDifference(comments[0]["creationTime"], comments[1]["creationTime"]) < timeDifferenceThreshold:
         commentsInTopic.append(comments[0])
 
     commentsInTopic.reverse()
+
+    print("comments in topic: ", commentsInTopic)
     return commentsInTopic
 
 def memoryPostProcess(comments):

@@ -4,11 +4,14 @@ from flask_cors import CORS
 import keys
 import AIhelper
 import AIrephraser
+import requests
+import AIregular
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 AIhelper_ = None
 AIrephraser_ = None
+AIregular_ = None
 
 @app.route('/get_answer', methods=['GET'])
 def get_answer():
@@ -50,10 +53,32 @@ def rephrase():
 
     return jsonify(rephrased_message)
 
+@app.route('/get_user_id', methods=['GET'])
+def get_user_id():
+
+    short_lived_token = request.args.get('short_lived_token', type=str)
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {short_lived_token}'
+    }
+
+    response = requests.get('https://api.intheloop.io/api/v1/user', headers=headers)
+    print("userID ", response.json()["id"])
+    return jsonify(response.json()["id"])
+
+
+@app.route('/get_answer_regular', methods=['GET'])
+def get_answer_regular():
+    user_input = request.args.get('user_input', type=str)
+    reply = AIregular_.returnAnswer(user_input)
+
+    return jsonify(reply)
 
 if __name__ == '__main__':
     AIhelper_ = AIhelper.AIhelper(keys.openAI_APIKEY)
     AIrephraser_ = AIrephraser.AIrephraser(keys.openAI_APIKEY)
+    AIregular_ = AIregular.AIregular(keys.openAI_APIKEY)
     app.run(host='0.0.0.0', port=5000, debug=True)
 
     #while(1):
