@@ -6,7 +6,32 @@
       "score": 0
     },
     {
-      "context": "AI: zdj*\nuser: Lah tud na zoomcek skocva da vidm kaj delas, pa ti lahko mogoce bols pomagam \ud83d\ude42\nAI: to bi blo supr ce mas cas\nAI: sam minutko mi dej\nAI: evo sm v DTA\nWait for user to reply.",
+      "context": "user: move to team not working. Help please\nAI: Sorry to hear that you're having trouble with the \"move to team\" feature. To resolve this issue, make sure the team you want to move the emails to is added as an admin to the shared inbox. If you're still experiencing difficulties, please provide more spec\nuser: I need to remove members from this account ASAP leonardo@ellc.ca and its related domain names are no longer active. So that cant be used\nAI: To remove members from your account, go to the workspace settings and navigate to the \"Members\" section. From there, you can remove the members you no longer want to have access to the account. Please note that removing members will revoke their access and\nuser: my emails are not syncing\nI apologize for the inconvenience. To troubleshoot the email syncing issue, could you please provide me with more details such as the email provider you're using and the device you're accessing your emails on?",
+      "AIresponse": "I apologize for the inconvenience. To troubleshoot the email syncing issue, could you please provide me with more details such as the email provider you're using and the device you're accessing your emails on?",
+      "score": 4
+    },
+    {
+      "context": "AI: https://api.intheloop.io/api/v1/user\nAI: https://api.intheloop.io/api/v1/search/list\nWait for user to reply.",
+      "AIresponse": "Wait for user to reply.",
+      "score": 1
+    },
+    {
+      "context": "AI: ej a se da slucajno prek integracije kako dobit ID userja, ki uporablja integration?\nuser: Da, sej naceloma lhko tut z shortlived tokenom\nAI: Aja ok vidm ja lohka dobim prek user endpointa tnx\nWait for user to reply.",
+      "AIresponse": "Wait for user to reply.",
+      "score": 1
+    },
+    {
+      "context": "AI: Zmenjeno\nuser: Mogo\u010de uporabno, ke vem da te Angular matra... https://medium.com/technology-hits/coding-angular-and-react-together-3016423a1bab\nAI: Zanimivo, bom pogledu\nAI: Zdj sm itak vec al mn konc z angular programiranjem za neki casa\nuser: Kako si?\nI'm doing well, thank you! How about you?",
+      "AIresponse": "I'm doing well, thank you! How about you?",
+      "score": 1
+    },
+    {
+      "context": "AI: Realno dela z temi modules k si poslou k sm zdj sele extractu k je trajal 100 let\nAI: tega res nism prcakovou haha hvala ti \ud83d\udc4c\nuser: Perfecto! Np \ud83d\udc4d\nThanks once again! Sure, let's break it down step by step.",
+      "AIresponse": "Thanks once again! Sure, let's break it down step by step.",
+      "score": 1
+    },
+    {
+      "context": "AI: https://api.intheloop.io/api/v1/user\nAI: https://api.intheloop.io/api/v1/search/list\nWait for user to reply.",
       "AIresponse": "Wait for user to reply.",
       "score": 1
     }

@@ -15,6 +15,8 @@ from langchain.evaluation import load_evaluator, EmbeddingDistance
 import promptCreator
 from langchain.vectorstores.faiss import FAISS
 import userFeedbackHandler
+import databaseHandler
+import json
 
 class AIhelper:
 
@@ -26,13 +28,18 @@ class AIhelper:
 
         os.environ['OPENAI_API_KEY'] = openAI_APIKEY
 
+        with open('whitelist.json', 'r') as file:
+            self.whitelist = json.load(file)
+
         underlying_embeddings = OpenAIEmbeddings()
-        fs = LocalFileStore("./cache_loopbot_conversations/")
+        self.user_data = {}
+
+        #LOOPBOT CONVERSATIONS EMBEDDING
+        self.fs = LocalFileStore("./cache/")
         json_path='./jsons/split.json'
         
-        #EMBEDDING PROCESS
         cached_embedder = CacheBackedEmbeddings.from_bytes_store(
-            underlying_embeddings, fs, namespace=underlying_embeddings.model
+            underlying_embeddings, self.fs, namespace=underlying_embeddings.model
         )
 
         loader_ = loader.JSONLoader(file_path=json_path)
@@ -41,32 +48,21 @@ class AIhelper:
 
         print("Finished embbeding loopbot data")
 
+        userIDS = databaseHandler.get_unique_user_ids()
+        for userID in userIDS:
+            self.user_data[userID] = {}
+            json_data = databaseHandler.get_user_json_data(userID)
+            
+            for json_type in json_data:
+                cached_embedder_good = CacheBackedEmbeddings.from_bytes_store(
+                    underlying_embeddings, self.fs, namespace=userID + "-" + json_type
+                )
 
-        #GOOD RESPONSES EMBEDDING 
-        fs = LocalFileStore("./cache_good_responses/")
-        json_path='./jsons/good_responses.json'
-        cached_embedder_good = CacheBackedEmbeddings.from_bytes_store(
-            underlying_embeddings, fs, namespace=underlying_embeddings.model
-        )
+                loader_ = loader.JSONLoader(file_path="")
+                documents = loader_.loadResponses(json_data[json_type])
+                self.user_data[userID][json_type] = {"docs": FAISS.from_documents(documents, cached_embedder_good), "json": json_data[json_type]}
 
-        loader_ = loader.JSONLoader(file_path=json_path)
-        documents = loader_.loadResponses()
-        self.db_good_responses = FAISS.from_documents(documents, cached_embedder_good)
-
-        print("Finished embbeding good responses data")
-
-        # BAD RESPONSES EMBEDDING 
-        fs = LocalFileStore("./cache_bad_responses/")
-        json_path='./jsons/bad_responses.json'
-        cached_embedder_bad = CacheBackedEmbeddings.from_bytes_store(
-            underlying_embeddings, fs, namespace=underlying_embeddings.model
-        )
-
-        loader_ = loader.JSONLoader(file_path=json_path)
-        documents = loader_.loadResponses()
-        self.db_bad_responses = FAISS.from_documents(documents, cached_embedder_bad)
-
-        print("Finished embbeding good responses data")
+        print(self.user_data)
 
         self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=2)
 
@@ -87,8 +83,28 @@ class AIhelper:
         print("relavant chat finding duration:", start_time2-start_time1)
         return relavant_chats
     
-    def findResponses(self, recipient_userID):
-        context = directchatHistory.getAllComments(5, recipient_userID)
+    def checkUserData(self, userID):
+        if userID not in self.user_data:
+            self.user_data[userID] = {}
+            databaseHandler.add_user_json_data(userID, "good_responses")
+            databaseHandler.add_user_json_data(userID, "bad_responses")
+
+            json_data = databaseHandler.get_user_json_data(userID)
+            
+            underlying_embeddings = OpenAIEmbeddings()
+
+            for json_type in json_data:
+                cached_embedder_good = CacheBackedEmbeddings.from_bytes_store(
+                    underlying_embeddings, self.fs, namespace=userID + "-" + json_type
+                )
+
+                loader_ = loader.JSONLoader(file_path="")
+                documents = loader_.loadResponses(json_data[json_type])
+                self.user_data[userID][json_type] = {"docs": FAISS.from_documents(documents, cached_embedder_good), "json": json_data[json_type]}
+
+
+    def findResponses(self, sender_userID, recipient_userID, authkey):
+        context = directchatHistory.getAllComments(5, recipient_userID, authkey)
         contextLastTopic = directchatHistory.getLastTopic(context)
 
         if len(contextLastTopic) > 0:
@@ -98,8 +114,10 @@ class AIhelper:
         
         context = directchatHistory.memoryPostProcess(context)
 
-        goodResponses = self.db_good_responses.similarity_search_with_score(context, k=3)
-        badResponses = self.db_bad_responses.similarity_search_with_score(context, k=3)
+        self.checkUserData(sender_userID)
+
+        goodResponses = self.user_data[sender_userID]["good_responses"]["docs"].similarity_search_with_score(context, k=3)
+        badResponses = self.user_data[sender_userID]["bad_responses"]["docs"].similarity_search_with_score(context, k=3)
 
         responsesGood = []
         print("good:")
@@ -134,24 +152,30 @@ class AIhelper:
             
         return responsesGood, responsesBad
 
-    def handleGoodResponse(self, recipient_userID, AIresponse):
-        self.feedbackHandler.handleGoodResponse(recipient_userID, AIresponse, self.db_good_responses, self.db_bad_responses)
+    def handleGoodResponse(self, sender_userID, recipient_userID, AIresponse):
+        authKey = self.whitelist[sender_userID]
+        self.checkUserData(sender_userID)
+        self.feedbackHandler.handleGoodResponse(sender_userID, recipient_userID, AIresponse, self.user_data[sender_userID]["good_responses"], self.user_data[sender_userID]["bad_responses"], authKey)
         return (AIresponse + " -> handeled as positive")
     
-    def handleBadResponse(self, recipient_userID, AIresponse):
-        self.feedbackHandler.handleBadResponse(recipient_userID, AIresponse, self.db_good_responses, self.db_bad_responses)
+    def handleBadResponse(self, sender_userID, recipient_userID, AIresponse):
+        authKey = self.whitelist[sender_userID]
+        self.checkUserData(sender_userID)
+        self.feedbackHandler.handleBadResponse(sender_userID, recipient_userID, AIresponse, self.user_data[sender_userID]["good_responses"], self.user_data[sender_userID]["bad_responses"], authKey)
         return (AIresponse + "  -> handeled as negative")
 
     def returnAnswer(self, recipient_userID, sender_userID, badResponsesPrevious):
         start_time1 = time.time()
         
+        authKey = self.whitelist[sender_userID]
+
         conversationBuffer = ConversationBufferMemory()
         
         regular_user = True
-        if sender_userID == "user_1552217":
+        if sender_userID == "user_1552217" or sender_userID == "user_24564769":
             regular_user = False
 
-        comments = directchatHistory.getAllComments(10, recipient_userID)
+        comments = directchatHistory.getAllComments(10, recipient_userID, authKey)
 
         for message in comments:
             sender = message['sender']
@@ -200,10 +224,12 @@ class AIhelper:
         else:
             relavantChats_noscore = ""
 
-        goodResponses, badResponses = self.findResponses(recipient_userID)
+        goodResponses, badResponses = self.findResponses(sender_userID, recipient_userID, authKey)
         
         chat_prompt = promptCreator.createPrompt(goodResponses, badResponses, badResponsesPrevious, user_input, not regular_user)
         
+        print("chat history ", conversationBuffer)
+
         end_time1 = time.time()
         start_time2 = time.time()
         chain = LLMChain(

@@ -48,3 +48,6 @@ packages/react-devtools-shell/dist
 packages/react-devtools-timeline/dist
 !good_responses.json
 !bad_responses.json
+cache/
+whitelist.json
+database.db

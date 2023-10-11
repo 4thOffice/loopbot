@@ -18,10 +18,7 @@ Answer should be formal and short."""
 prompt_regular_user = """Lets think step by step.
 
 You are talking to a user.
-I want you to reply to a user based on the following information:
-    
 {relavant_messages}
-
 """
 
 def createPrompt(goodResponses, badResponses, badResponsesPrevious, user_input, loopbotMode):
@@ -51,7 +48,7 @@ DO NOT use the following replies. They are examples of BAD replies. Think from a
 
 Answer to this message from user: """ + user_input + """
 
-Reply to the user last messages best as you can based on chat history and examples of bad replies you have been provided. Also take information from relavant conversations You have been provided. Only provide a reply to user's last message. Provide a message I can copy and paste - no explaination or chat history and unneccessary content. Give a reply that is different from bad reply examples"""
+Reply to the human last messages best as you can based on chat history and examples of bad replies you have been provided. Also take information from relavant conversations You have been provided. Only provide a reply to human's last message. Provide a message I can copy and paste - no explaination or chat history and unneccessary content. Give a reply that is different from bad reply examples. Reply should be in the same language as user's message."""
         
         # Create a human message template
         human_message_template = HumanMessagePromptTemplate.from_template(prompt)

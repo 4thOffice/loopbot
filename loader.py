@@ -50,22 +50,20 @@ class JSONLoader(BaseLoader):
                     docs.append(Document(page_content=message, metadata=metadata))
         return docs
     
-    def loadResponses(self) -> List[Document]:
+    def loadResponses(self, jsondata) -> List[Document]:
         """Load and return documents from the JSON file."""
 
         docs=[]
-        # Load JSON file
-        with open(self.file_path) as file:
-            data = json.load(file)
+        data = jsondata
 
-            # Iterate through responses
-            for response in data["responses"]:
-                AIresponse = response["AIresponse"]
-                context = response["context"]
-                score = response["score"]
+        # Iterate through responses
+        for response in data["responses"]:
+            AIresponse = response["AIresponse"]
+            context = response["context"]
+            score = response["score"]
 
-                metadata = dict(AIresponse=AIresponse, score=score)
-                
-                docs.append(Document(page_content=context, metadata=metadata))
+            metadata = dict(AIresponse=AIresponse, score=score)
+            
+            docs.append(Document(page_content=context, metadata=metadata))
 
         return docs

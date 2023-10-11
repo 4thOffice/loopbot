@@ -19,7 +19,6 @@ def get_answer():
     recipient_userID = request.args.get('recipient_userID', type=str)
     badResponses = json.loads(request.args.get('badResponses', type=str))
     responseID = json.loads(request.args.get('responseID', type=str))
-
     reply, memory = AIhelper_.returnAnswer(recipient_userID, sender_userID, badResponses)
     print("reply:\n", reply)
 
@@ -29,18 +28,20 @@ def get_answer():
 @app.route('/handle_good_response', methods=['PUT'])
 def handle_good_response():
     recipient_userID = request.args.get('recipient_userID', type=str)
+    sender_userID = request.args.get('sender_userID', type=str)
     AIresponse = request.args.get('AIresponse', type=str)
 
-    ret = AIhelper_.handleGoodResponse(recipient_userID, AIresponse)
+    ret = AIhelper_.handleGoodResponse(sender_userID, recipient_userID, AIresponse)
 
     return jsonify(ret)
 
 @app.route('/handle_bad_response', methods=['PUT'])
 def handle_bad_response():
     recipient_userID = request.args.get('recipient_userID', type=str)
+    sender_userID = request.args.get('sender_userID', type=str)
     AIresponse = request.args.get('AIresponse', type=str)
 
-    ret = AIhelper_.handleBadResponse(recipient_userID, AIresponse)
+    ret = AIhelper_.handleBadResponse(sender_userID, recipient_userID, AIresponse)
 
     return jsonify(ret)
 

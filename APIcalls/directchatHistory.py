@@ -7,7 +7,7 @@ import sys
 import json
 from dateutil import parser
 
-authkey = keys.authKey
+#authkey = keys.authKey
 
 #hardcoded messages to ignore -> system messages
 messagestoExclude= ["Wohoo! Your account was successfully upgraded to a pro plan. We can't wait to see what Loop will do for you and your team.",
@@ -57,7 +57,7 @@ def checkIfSystemMessage(commentToCheck):
 
 
 #get last historySize comments of a conversation with userID
-def getAllComments(historySize, userID):
+def getAllComments(historySize, userID, authkey):
     endpoint_url = 'https://api.intheloop.io/api/v1/search/list'
 
     headers = {
