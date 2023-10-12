@@ -19,7 +19,8 @@ def get_answer():
     recipient_userID = request.args.get('recipient_userID', type=str)
     badResponses = json.loads(request.args.get('badResponses', type=str))
     responseID = json.loads(request.args.get('responseID', type=str))
-    reply, memory = AIhelper_.returnAnswer(recipient_userID, sender_userID, badResponses)
+    explicit_question = json.loads(request.args.get('explicit_question', type=str))
+    reply, memory = AIhelper_.returnAnswer(recipient_userID, sender_userID, badResponses, explicit_question)
     print("reply:\n", reply)
 
     answer = {"reply": reply, "context": memory, "responseID": responseID}
