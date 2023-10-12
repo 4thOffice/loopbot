@@ -5,12 +5,12 @@ from langchain.chains import LLMChain
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 import loader
-from langchain.memory import ConversationBufferMemory
 from langchain.storage import LocalFileStore
 from langchain.embeddings import OpenAIEmbeddings, CacheBackedEmbeddings
 import sys
 sys.path.append('./APIcalls')
 import APIcalls.directchatHistory as directchatHistory
+import APIcalls.emailHistory as emailHistory
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 import promptCreator
 from langchain.vectorstores.faiss import FAISS
@@ -31,7 +31,7 @@ class AIhelperEmail:
         with open('whitelist.json', 'r') as file:
             self.whitelist = json.load(file)
 
-        underlying_embeddings = OpenAIEmbeddings()
+        """underlying_embeddings = OpenAIEmbeddings()
         self.user_data = {}
 
         #LOOPBOT CONVERSATIONS EMBEDDING
@@ -46,7 +46,7 @@ class AIhelperEmail:
         documents = loader_.load()
         self.db_loopbot_data = FAISS.from_documents(documents, cached_embedder)
 
-        print("Finished embbeding loopbot data")
+        print("Finished embbeding loopbot data")"""
 
     #print relavant information about a query
     def printRelavantChats(relavant_chats):
@@ -114,43 +114,27 @@ class AIhelperEmail:
             
         return responsesGood, responsesBad
 
-    def returnAnswer(self, recipient_userID, sender_userID, badResponsesPrevious, explicit_question):
+    def returnAnswer(self, sender_userID, sender_name, cardID, contactID, badResponsesPrevious, explicit_question):
         start_time1 = time.time()
-        
         authKey = self.whitelist[sender_userID]
-
-        conversationBuffer = ConversationBufferMemory()
         
         regular_user = True
-        if sender_userID == "user_1552217" or sender_userID == "user_24564769":
+        #if sender_userID == "user_1552217" or sender_userID == "user_24564769":
+        if sender_userID == "user_1552217":
             regular_user = False
 
-        comments = directchatHistory.getAllComments(10, recipient_userID, authKey)
-
-        for message in comments:
-            sender = message['sender']
-            content = message['content']
-            if sender == "my response":
-                conversationBuffer.chat_memory.add_ai_message(content)
-            else:
-                conversationBuffer.chat_memory.add_user_message(content)
-
-        if len(comments) == 0 and len(explicit_question) == 0:
-            return "Hello!", ""
+        impersonated_userID, impersonated_username = emailHistory.getContactUserID(contactID, sender_userID, sender_name, authKey)
+        comments = emailHistory.getEmailHistory(cardID, impersonated_userID, impersonated_username, authKey)
         
-        memory = directchatHistory.memoryPostProcess(comments)
+        memory_anonymous = emailHistory.memoryPostProcess(comments, impersonated_username)
+        memory = emailHistory.memoryPostProcess(comments)
         
-        if comments[-1]["sender"] == "their message" or len(explicit_question) > 0:
-            user_input = comments[-1]["content"]
-        else:
+        print(memory)
+        if comments[-1]["sender"] == impersonated_username and len(explicit_question) == 0:
             return "Wait for user to reply.", ""
         
-        if len(explicit_question) > 0:
-            conversationBuffer.chat_memory.add_user_message(explicit_question)
-            user_input = explicit_question
-        
         #PRVA 2 RELAVANT CHATA STA OD USER INOUT IN ZADNJI JE OD USERINPUT + HISTORY
-        if not regular_user:
+        """if not regular_user:
             relavantChatsQuery = self.findRelavantChats(user_input)
             relavantChatsHistory = self.findRelavantChats(memory)
 
@@ -176,13 +160,12 @@ class AIhelperEmail:
                 #relavantChats_noscore += relavantChat[0].page_content
         
         else:
-            relavantChats_noscore = ""
+            relavantChats_noscore = """""
 
-        goodResponses, badResponses = self.findResponses(sender_userID, recipient_userID, authKey)
+        relavantChats_noscore = ""
         
-        chat_prompt = promptCreator.createPrompt(goodResponses, badResponses, badResponsesPrevious, user_input, not regular_user)
-        
-        print("chat history ", conversationBuffer)
+        #lastEmail = comments[-1]["content"]
+        chat_prompt = promptCreator.createPromptEmail([], [], [], not regular_user, impersonated_username, memory)
 
         end_time1 = time.time()
         start_time2 = time.time()
@@ -190,7 +173,6 @@ class AIhelperEmail:
         llm=ChatOpenAI(temperature="1.0", model_name='gpt-3.5-turbo-16k'),
         #llm=ChatOpenAI(temperature="1.0", model_name='gpt-4'),
         prompt=chat_prompt,
-        memory=conversationBuffer,
         verbose=True
         )
         reply = chain.run({"relavant_messages": str(relavantChats_noscore)})
@@ -203,8 +185,7 @@ class AIhelperEmail:
         elapsed_time = end_time2 - start_time2
         print(f"Time taken to execute CHATGPT API call: {elapsed_time:.6f} seconds")
         reply = reply.replace("\n", "\\n")
-        return reply, memory
+        return reply, memory_anonymous
     
-
-#lb = AIhelper(keys.openAI_APIKEY)
-#print(lb.returnAnswer("is there vpn?", lb.getPrompt(), "user_13"))
+#lb = AIhelperEmail(keys.openAI_APIKEY)
+#print(lb.returnAnswer("user_24534935", "niko sneberger", "ACsz9LnMu4tbKY0eclbTFX0UfIg0T", "CCr7jNfk92eIEmEGrRRfw_cbfVw0T", [], "")[0])
