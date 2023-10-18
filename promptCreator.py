@@ -53,7 +53,7 @@ DO NOT use the following replies. They are examples of BAD replies. Think from a
 
         prompt = prompt + """
 
-Answer to this message from user: """ + user_input + """
+Do this to your previous reply: """ + user_input + """
 
 Reply to the human last messages best as you can based on chat history and examples of bad replies you have been provided. Also take information from relavant conversations You have been provided. Only provide a reply to human's last message. Provide a message I can copy and paste - no explaination or chat history and unneccessary content. Give a reply that is different from bad reply examples. Reply should be in the same language as user's message."""
         
@@ -91,8 +91,8 @@ Use the following reply options as starting point: \n"""
 DO NOT use the following replies. They are examples of BAD replies. Think from a different perspective and come up with something content-wise totally different from these: \n"""
             for index, response in enumerate(badResponses + badResponsesPrevious, start=1):
                 system_prompt.content += f"- {response}\n"
-
-        prompt = prompt + """\n\nProvide me with an email I can send as a reply to the recipient(s) last email. Use the same language. Do not include subject."""
+        
+        prompt = prompt + """\n\nProvide me with an email I can send as a reply to the recipient(s) last email. Use the same language. Do not include subject. Use my name in signature."""
         
         # Create a human message template
         human_message_template = HumanMessagePromptTemplate.from_template(prompt)

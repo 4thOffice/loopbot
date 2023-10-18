@@ -67,3 +67,20 @@ class JSONLoader(BaseLoader):
             docs.append(Document(page_content=context, metadata=metadata))
 
         return docs
+    
+    def loadFAQ(self, jsondata) -> List[Document]:
+        """Load and return documents from the JSON file."""
+
+        docs=[]
+        data = jsondata
+
+        # Iterate through responses
+        for response in data["responses"]:
+            issue = response["issue"]
+            answer = response["answer"]
+
+            metadata = dict(answer=answer)
+            
+            docs.append(Document(page_content=issue, metadata=metadata))
+
+        return docs

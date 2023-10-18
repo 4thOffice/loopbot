@@ -14,15 +14,14 @@ import APIcalls.emailHistory as emailHistory
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 import promptCreator
 from langchain.vectorstores.faiss import FAISS
-import userFeedbackHandler
-import databaseHandler
+import userFeedbackHandlerEmail
 import json
 
 class AIhelperEmail:
 
     feedbackHandler = None
 
-    def __init__(self, openAI_APIKEY):
+    def __init__(self, openAI_APIKEY, userDataHandler):
         global loader
         self.openAI_APIKEY = openAI_APIKEY
 
@@ -31,10 +30,9 @@ class AIhelperEmail:
         with open('whitelist.json', 'r') as file:
             self.whitelist = json.load(file)
 
-        """underlying_embeddings = OpenAIEmbeddings()
         self.user_data = {}
 
-        #LOOPBOT CONVERSATIONS EMBEDDING
+        """#LOOPBOT CONVERSATIONS EMBEDDING
         self.fs = LocalFileStore("./cache/")
         json_path='./jsons/split.json'
         
@@ -48,6 +46,22 @@ class AIhelperEmail:
 
         print("Finished embbeding loopbot data")"""
 
+        self.userDataHandler_ = userDataHandler
+
+        self.feedbackHandler = userFeedbackHandlerEmail.UserFeedbackHandlerEmail(feedbackBuffer=2)
+
+    def handleGoodResponse(self, sender_userID, sender_name, contactID, cardID, AIresponse):
+        authKey = self.whitelist[sender_userID]
+        self.userDataHandler_.checkUserData(sender_userID)
+        self.feedbackHandler.handleGoodResponse(sender_userID, sender_name, contactID, cardID, AIresponse, self.userDataHandler_.user_data[sender_userID]["good_responses_email"], self.userDataHandler_.user_data[sender_userID]["bad_responses_email"], authKey)
+        return (AIresponse + " -> handeled as positive")
+    
+    def handleBadResponse(self, sender_userID, sender_name, contactID, cardID, AIresponse):
+        authKey = self.whitelist[sender_userID]
+        self.userDataHandler_.checkUserData(sender_userID)
+        self.feedbackHandler.handleBadResponse(sender_userID, sender_name, contactID, cardID, AIresponse, self.userDataHandler_.user_data[sender_userID]["good_responses_email"], self.userDataHandler_.user_data[sender_userID]["bad_responses_email"], authKey)
+        return (AIresponse + "  -> handeled as negative")
+    
     #print relavant information about a query
     def printRelavantChats(relavant_chats):
         for i, comment in enumerate(relavant_chats):
@@ -78,8 +92,8 @@ class AIhelperEmail:
 
         self.checkUserData(sender_userID)
 
-        goodResponses = self.user_data[sender_userID]["good_responses"]["docs"].similarity_search_with_score(context, k=3)
-        badResponses = self.user_data[sender_userID]["bad_responses"]["docs"].similarity_search_with_score(context, k=3)
+        goodResponses = self.userDataHandler_.user_data[sender_userID]["good_responses"]["docs"].similarity_search_with_score(context, k=3)
+        badResponses = self.userDataHandler_.user_data[sender_userID]["bad_responses"]["docs"].similarity_search_with_score(context, k=3)
 
         responsesGood = []
         print("good:")
@@ -170,8 +184,8 @@ class AIhelperEmail:
         end_time1 = time.time()
         start_time2 = time.time()
         chain = LLMChain(
-        llm=ChatOpenAI(temperature="1.0", model_name='gpt-3.5-turbo-16k'),
-        #llm=ChatOpenAI(temperature="1.0", model_name='gpt-4'),
+        #llm=ChatOpenAI(temperature="1.0", model_name='gpt-3.5-turbo-16k'),
+        llm=ChatOpenAI(temperature="1.0", model_name='gpt-4'),
         prompt=chat_prompt,
         verbose=True
         )

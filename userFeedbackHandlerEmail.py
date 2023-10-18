@@ -1,6 +1,6 @@
 import sys
 sys.path.append('./APIcalls')
-import APIcalls.directchatHistory as directchatHistory
+import APIcalls.emailHistory as emailHistory
 from langchain.docstore.document import Document
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 from langchain.docstore.document import Document
@@ -8,7 +8,7 @@ import jsonOperations
 import json
 import databaseHandler
 
-class UserFeedbackHandler:
+class UserFeedbackHandlerEmail:
 
     def __init__(self, feedbackBuffer):
         with open("./jsons/good_responses.json", 'r') as file:
@@ -19,20 +19,20 @@ class UserFeedbackHandler:
         self.feedbackBuffer = feedbackBuffer
 
 
-    def handleGoodResponse(self, sender_userID, recipient_userID, AIresponse, db_good_responses, db_bad_responses, authKey):
-        context = directchatHistory.getAllComments(5, recipient_userID, authKey)
-        contextLastTopic = directchatHistory.getLastTopic(context)
+    def handleGoodResponse(self, sender_userID, sender_name, contactID, cardID, AIresponse, db_good_responses, db_bad_responses, authKey):
 
-        if len(contextLastTopic) > 0:
-            context = contextLastTopic
-            
-        context = directchatHistory.memoryPostProcess(context)
+        impersonated_userID, impersonated_username = emailHistory.getContactUserID(contactID, sender_userID, sender_name, authKey)
+        comments = emailHistory.getEmailHistory(cardID, impersonated_userID, impersonated_username, authKey)
+        comments = comments[-5:]
+        memory_anonymous = emailHistory.memoryPostProcess(comments, impersonated_username)
+        context = memory_anonymous
         context += "\n" + AIresponse
 
         good_responses = db_good_responses["docs"].similarity_search_with_score(context, k=1)
         
         #check if similar good responses already exist
         if good_responses[0][1] > 0.027:
+            print("add new")
             new_document = Document(page_content=context, metadata=dict(AIresponse=AIresponse, score=1))
             db_good_responses["docs"].add_documents([new_document])
             db_good_responses["json"] = jsonOperations.append_json({"context": context, "AIresponse": AIresponse, "score": 1}, db_good_responses["json"])
@@ -56,6 +56,7 @@ class UserFeedbackHandler:
                         new_document = Document(page_content=contextTemp, metadata=dict(AIresponse=AIresponseTemp, score=scoreTemp+1))
                         db_good_responses["docs"].add_documents([new_document])
                         db_good_responses["json"] = jsonOperations.update_json(db_good_responses["json"], contextTemp, AIresponseTemp, scoreTemp+1)
+                        print("update existing good")
 
             if(len(db_bad_responses["docs"].docstore._dict) > 0):
                 # SUBSTRACT SCORE IN BAD RESPONSES
@@ -86,7 +87,8 @@ class UserFeedbackHandler:
                             new_document = Document(page_content=contextTemp, metadata=dict(AIresponse=AIresponseTemp, score=scoreTemp-1))
                             db_bad_responses["docs"].add_documents([new_document])
                             db_bad_responses["json"] = jsonOperations.update_json(db_bad_responses["json"], contextTemp, AIresponseTemp, scoreTemp-1)
-                            
+                            print("update existing bad")
+
         if self.feedbackCounter > self.feedbackBuffer:
             self.write_jsons(sender_userID, db_bad_responses["json"], db_good_responses["json"])
             self.feedbackCounter = 0
@@ -95,16 +97,17 @@ class UserFeedbackHandler:
         
         return (AIresponse + " -> handeled as positive")
         
-    def handleBadResponse(self, sender_userID, recipient_userID, AIresponse, db_good_responses, db_bad_responses, authKey):
-        context = directchatHistory.getAllComments(5, recipient_userID, authKey)
-        contextLastTopic = directchatHistory.getLastTopic(context)
-
-        if len(contextLastTopic) > 0:
-            context = contextLastTopic
-            
-        context = directchatHistory.memoryPostProcess(context)
+    def handleBadResponse(self, sender_userID, sender_name, contactID, cardID, AIresponse, db_good_responses, db_bad_responses, authKey):
+        impersonated_userID, impersonated_username = emailHistory.getContactUserID(contactID, sender_userID, sender_name, authKey)
+        comments = emailHistory.getEmailHistory(cardID, impersonated_userID, impersonated_username, authKey)
+        comments = comments[-5:]
+        memory_anonymous = emailHistory.memoryPostProcess(comments, impersonated_username)
+        context = memory_anonymous
         context += "\n" + AIresponse
 
+        print("anonymous memory: ", memory_anonymous)
+
+        """
         bad_responses = db_bad_responses["docs"].similarity_search_with_score(context, k=1)
         
         print("distance:", bad_responses[0][1])
@@ -167,31 +170,13 @@ class UserFeedbackHandler:
             self.write_jsons(sender_userID, db_bad_responses["json"], db_good_responses["json"])
             self.feedbackCounter = 0
         else:
-            self.feedbackCounter += 1
+            self.feedbackCounter += 1"""
         
         return (AIresponse + "  -> handeled as negative")
-
-    def handleUpdateFaq(self, sender_userID, AIresponse, db_faq, classified_issue, type_):
-        print("Handling classified issue: ", classified_issue)
-        similar_faq_entry = db_faq["docs"].similarity_search_with_score(classified_issue, k=1)
-    
-        print("most similar faq entry: ", similar_faq_entry)
-        
-        if type_ == "add":
-            #check if similar faq entry already exists
-            if similar_faq_entry[0][1] > 0.1:
-                new_document = Document(page_content=classified_issue, metadata=dict(AIresponse=AIresponse))
-                db_faq["docs"].add_documents([new_document])
-                db_faq["json"] = jsonOperations.append_json({"issue": classified_issue, "answer": AIresponse}, db_faq["json"])
-        
-        elif type_ == "remove":
-            print("removing..")
-            
-        databaseHandler.insert_json_data(sender_userID, "faq", db_faq["json"])
 
     def write_jsons(self, user_id, bad_responses_json, good_responses_json):
         print("SHOULD WRITE")
         #jsonOperations.write_json(self.bad_responses_json, "./jsons/bad_responses.json")
-        databaseHandler.insert_json_data(user_id, "bad_responses", bad_responses_json)
+        databaseHandler.insert_json_data(user_id, "bad_responses_email", bad_responses_json)
         #jsonOperations.write_json(self.good_responses_json, "./jsons/good_responses.json")
-        databaseHandler.insert_json_data(user_id, "good_responses", good_responses_json)
+        databaseHandler.insert_json_data(user_id, "good_responses_email", good_responses_json)

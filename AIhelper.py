@@ -15,14 +15,13 @@ from langchain.evaluation import load_evaluator, EmbeddingDistance
 import promptCreator
 from langchain.vectorstores.faiss import FAISS
 import userFeedbackHandler
-import databaseHandler
 import json
 
 class AIhelper:
 
     feedbackHandler = None
 
-    def __init__(self, openAI_APIKEY):
+    def __init__(self, openAI_APIKEY, userDataHandler):
         global loader
         self.openAI_APIKEY = openAI_APIKEY
 
@@ -32,7 +31,6 @@ class AIhelper:
             self.whitelist = json.load(file)
 
         underlying_embeddings = OpenAIEmbeddings()
-        self.user_data = {}
 
         #LOOPBOT CONVERSATIONS EMBEDDING
         self.fs = LocalFileStore("./cache/")
@@ -48,22 +46,7 @@ class AIhelper:
 
         print("Finished embbeding loopbot data")
 
-        userIDS = databaseHandler.get_unique_user_ids()
-        for userID in userIDS:
-            self.user_data[userID] = {}
-            json_data = databaseHandler.get_user_json_data(userID)
-            
-            for json_type in json_data:
-                cached_embedder_good = CacheBackedEmbeddings.from_bytes_store(
-                    underlying_embeddings, self.fs, namespace=userID + "-" + json_type
-                )
-
-                loader_ = loader.JSONLoader(file_path="")
-                documents = loader_.loadResponses(json_data[json_type])
-                self.user_data[userID][json_type] = {"docs": FAISS.from_documents(documents, cached_embedder_good), "json": json_data[json_type]}
-
-        print(self.user_data)
-
+        self.userDataHandler_ = userDataHandler
         self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=2)
 
     #print relavant information about a query
@@ -82,26 +65,14 @@ class AIhelper:
         start_time2 = time.time()
         print("relavant chat finding duration:", start_time2-start_time1)
         return relavant_chats
-    
-    def checkUserData(self, userID):
-        if userID not in self.user_data:
-            self.user_data[userID] = {}
-            databaseHandler.add_user_json_data(userID, "good_responses")
-            databaseHandler.add_user_json_data(userID, "bad_responses")
 
-            json_data = databaseHandler.get_user_json_data(userID)
-            
-            underlying_embeddings = OpenAIEmbeddings()
+    def findAnswerFAQ(self, sender_userID, classified_issue):
+        similar_faq_entry = self.userDataHandler_.user_data[sender_userID]["faq"]["docs"].similarity_search_with_score(classified_issue, k=1)
+        print("similar faq entry: ", similar_faq_entry)
+        if similar_faq_entry[0][1] < 0.3:
+            return similar_faq_entry[0][0].metadata["answer"]
 
-            for json_type in json_data:
-                cached_embedder_good = CacheBackedEmbeddings.from_bytes_store(
-                    underlying_embeddings, self.fs, namespace=userID + "-" + json_type
-                )
-
-                loader_ = loader.JSONLoader(file_path="")
-                documents = loader_.loadResponses(json_data[json_type])
-                self.user_data[userID][json_type] = {"docs": FAISS.from_documents(documents, cached_embedder_good), "json": json_data[json_type]}
-
+        print("similar_faq_entry ", similar_faq_entry)
 
     def findResponses(self, sender_userID, recipient_userID, authkey):
         context = directchatHistory.getAllComments(5, recipient_userID, authkey)
@@ -114,17 +85,20 @@ class AIhelper:
         
         context = directchatHistory.memoryPostProcess(context)
 
-        self.checkUserData(sender_userID)
+        self.userDataHandler_.checkUserData(sender_userID)
 
-        goodResponses = self.user_data[sender_userID]["good_responses"]["docs"].similarity_search_with_score(context, k=3)
-        badResponses = self.user_data[sender_userID]["bad_responses"]["docs"].similarity_search_with_score(context, k=3)
+        goodResponses = self.userDataHandler_.user_data[sender_userID]["good_responses"]["docs"].similarity_search_with_score(context, k=3)
+        badResponses = self.userDataHandler_.user_data[sender_userID]["bad_responses"]["docs"].similarity_search_with_score(context, k=3)
+
+
+        print(goodResponses)
 
         responsesGood = []
         print("good:")
         for response in goodResponses:
             print("score", response[1])
             print("data", response[0])
-            if response[1] <= 0.13:
+            if response[1] <= 0.21:
                 print("lastMsg1: ", lastMsg1)
                 lastMsg2 = response[0].page_content.split("\n")[-1]
                 lastMsg2 = lastMsg1.replace("AI:", "")
@@ -139,7 +113,7 @@ class AIhelper:
 
                 print("distance: ", distance["score"])
 
-                if distance["score"] < 0.2:
+                if distance["score"] < 0.21:
                     responsesGood.append(response[0].metadata["AIresponse"])
 
         responsesBad = []
@@ -147,36 +121,46 @@ class AIhelper:
         for response in badResponses:
             print("score", response[1])
             print("data", response[0])
-            if response[1] <= 0.07:
+            if response[1] <= 0.15:
                 responsesBad.append(response[0].metadata["AIresponse"])
             
         return responsesGood, responsesBad
 
     def handleGoodResponse(self, sender_userID, recipient_userID, AIresponse):
         authKey = self.whitelist[sender_userID]
-        self.checkUserData(sender_userID)
-        self.feedbackHandler.handleGoodResponse(sender_userID, recipient_userID, AIresponse, self.user_data[sender_userID]["good_responses"], self.user_data[sender_userID]["bad_responses"], authKey)
+        self.userDataHandler_.checkUserData(sender_userID)
+        self.feedbackHandler.handleGoodResponse(sender_userID, recipient_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["good_responses"], self.userDataHandler_.user_data[sender_userID]["bad_responses"], authKey)
         return (AIresponse + " -> handeled as positive")
     
     def handleBadResponse(self, sender_userID, recipient_userID, AIresponse):
         authKey = self.whitelist[sender_userID]
-        self.checkUserData(sender_userID)
-        self.feedbackHandler.handleBadResponse(sender_userID, recipient_userID, AIresponse, self.user_data[sender_userID]["good_responses"], self.user_data[sender_userID]["bad_responses"], authKey)
+        self.userDataHandler_.checkUserData(sender_userID)
+        self.feedbackHandler.handleBadResponse(sender_userID, recipient_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["good_responses"], self.userDataHandler_.user_data[sender_userID]["bad_responses"], authKey)
         return (AIresponse + "  -> handeled as negative")
 
-    def returnAnswer(self, recipient_userID, sender_userID, badResponsesPrevious, explicit_question):
+    def updateFAQ(self, sender_userID, recipient_userID, AIresponse, classified_issue, type_):
+        self.userDataHandler_.checkUserData(sender_userID)
+        self.feedbackHandler.handleUpdateFaq(sender_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["faq"], classified_issue, type_)
+        return (AIresponse + "  -> updated FAQ")
+    
+    def getAuthkey(self, sender_userID):
+        return self.whitelist[sender_userID]
+
+    def returnAnswer(self, recipient_userID, sender_userID, classified_issue, badResponsesPrevious):
         start_time1 = time.time()
-        
-        authKey = self.whitelist[sender_userID]
 
         conversationBuffer = ConversationBufferMemory()
         
+        authKey = self.getAuthkey(sender_userID)
+
+        recipient_userID = directchatHistory.getRecipientUserIdFromCardId(sender_userID, recipient_userID, authKey)
+
         regular_user = True
         if sender_userID == "user_1552217" or sender_userID == "user_24564769":
             regular_user = False
 
         comments = directchatHistory.getAllComments(10, recipient_userID, authKey)
-
+        print(comments)
         for message in comments:
             sender = message['sender']
             content = message['content']
@@ -185,22 +169,23 @@ class AIhelper:
             else:
                 conversationBuffer.chat_memory.add_user_message(content)
 
-        if len(comments) == 0 and len(explicit_question) == 0:
+        if len(comments) == 0:
             return "Hello!", ""
         
         memory = directchatHistory.memoryPostProcess(comments)
         
-        if comments[-1]["sender"] == "their message" or len(explicit_question) > 0:
+        concreteAnswer = self.findAnswerFAQ(sender_userID, classified_issue)
+
+        if concreteAnswer and concreteAnswer != "":
+            return concreteAnswer, memory
+        
+        if comments[-1]["sender"] == "their message":
             user_input = comments[-1]["content"]
         else:
             return "Wait for user to reply.", ""
-        
-        if len(explicit_question) > 0:
-            conversationBuffer.chat_memory.add_user_message(explicit_question)
-            user_input = explicit_question
-        
+
         #PRVA 2 RELAVANT CHATA STA OD USER INOUT IN ZADNJI JE OD USERINPUT + HISTORY
-        if not regular_user:
+        if not regular_user:    
             relavantChatsQuery = self.findRelavantChats(user_input)
             relavantChatsHistory = self.findRelavantChats(memory)
 
@@ -224,7 +209,6 @@ class AIhelper:
                 relavantChats_noscore += f"\nConversation {index}:\n"
                 relavantChats_noscore += relavantChat[0].metadata["context"]
                 #relavantChats_noscore += relavantChat[0].page_content
-        
         else:
             relavantChats_noscore = ""
 

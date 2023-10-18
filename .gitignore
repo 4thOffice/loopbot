@@ -51,3 +51,4 @@ packages/react-devtools-timeline/dist
 cache/
 whitelist.json
 database.db
+gaols.txt

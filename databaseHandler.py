@@ -12,6 +12,17 @@ json_content_template = """{
 }
 """
 
+faq_content_template = """{
+  "responses": [
+    {
+      "issue": "",
+      "answer": ""
+    }
+  ]
+}
+"""
+
+
 conn = sqlite3.connect('database.db', check_same_thread=False)
 cursor = conn.cursor()
 
@@ -31,7 +42,11 @@ def add_user_json_data(user_id, json_type):
     else:
         # If the row does not exist, insert a new row and print None
         print('No data found for user_id:', user_id, 'and json_type:', json_type)
-        json_template = json.loads(json_content_template)
+        if json_type == "faq":
+            json_template = json.loads(faq_content_template)
+        else:
+            json_template = json.loads(json_content_template)
+            
         insert_json_data(user_id, json_type, json_template)
 
 # Insert JSON data for the user

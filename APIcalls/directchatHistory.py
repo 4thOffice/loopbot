@@ -107,6 +107,9 @@ def getLastTopic(comments):
     timeDifferenceThreshold = 72 #in hours
     commentsInTopic = []
 
+    if len(comments) <= 0:
+        return []
+
     i = len(comments)-1
     while i >= 1:
         comment = comments[i]
@@ -156,6 +159,39 @@ def memoryPostProcessForStorage(comments):
 
     result = '\n'.join(formatted_messages)
     return result
+
+def getRecipientUserIdFromCardId(sender_userID, recipient_userID, authkey):
+    
+    if not "CC_" in recipient_userID:
+        return recipient_userID
+    
+    endpoint_url = 'https://api.intheloop.io/api/v1/card/'+ recipient_userID
+
+    headers = {
+        'accept': 'application/json',
+        'Authorization': authkey,
+        'Content-Type': 'application/json'
+    }
+
+    data = {
+        "offsetComments": 0,
+        "sizeComments": 0,
+        "offsetCopiedComments": 0,
+        "sizeCopiedComments": 0
+    }
+
+    response = requests.get(endpoint_url, headers=headers, json=data)
+    print("response recipient ", response)
+    if response.status_code == 200:
+        share_list_resources = response.json().get("shareList", {}).get("resources", [])
+        for resource in share_list_resources:
+            user_id = resource.get("id")
+            if user_id != sender_userID:
+                return user_id
+
+    else:
+        print(f"Error: {response.status_code} - {response.text}")
+
 
 #allComments = getAllComments(50, "user_1552217")
 #print(allComments)
