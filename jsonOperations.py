@@ -17,6 +17,14 @@ def update_json(data, contextToSearch, AIresponse, score):
 
     return data
 
+def update_faq_json(data, issueToSearch, answer):
+    for response in data['responses']:
+        if response['issue'] == issueToSearch:
+            print("FOUND")
+            response['answer'] = answer
+
+    return data
+
 def delete_from_json(data, contextToSearch):
     target_context = contextToSearch
 

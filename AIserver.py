@@ -72,12 +72,17 @@ def handle_bad_response():
 
 @app.route('/update_faq', methods=['PUT'])
 def update_faq():
-    recipient_userID = request.args.get('recipient_userID', type=str)
     sender_userID = request.args.get('sender_userID', type=str)
     AIresponse = request.args.get('AIresponse', type=str)
     classified_issue = request.args.get('classified_issue', type=str)
-    type_ = request.args.get('type', type=str)
-    ret = AIhelper_.updateFAQ(sender_userID, recipient_userID, AIresponse, classified_issue, type_)
+    FAQ_conversation_stage = request.args.get('FAQ_conversation_stage', type=int)
+    user_input = request.args.get('user_input', type=str)
+
+    print("FAQ_conversation_stage ", FAQ_conversation_stage)
+    print("user_input ", user_input)
+    print("AIresponse ", AIresponse)
+    
+    ret = AIhelper_.updateFAQ(sender_userID, AIresponse, classified_issue, FAQ_conversation_stage, user_input)
 
     return jsonify(ret)
 
@@ -113,7 +118,7 @@ def rephrase():
     prompt = request.args.get('prompt', type=str)
     prompt_mode = request.args.get('prompt_mode', type=str)
     ResponseRecipientID = json.loads(request.args.get('ResponseRecipientID', type=str))
-
+    
     if prompt_mode == "custom":
         rephrased_message = AIrephraser_.change_message(message, prompt)
     elif prompt_mode == "preset":

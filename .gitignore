@@ -52,3 +52,4 @@ cache/
 whitelist.json
 database.db
 gaols.txt
+database.db-journal

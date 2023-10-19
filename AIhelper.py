@@ -16,6 +16,7 @@ import promptCreator
 from langchain.vectorstores.faiss import FAISS
 import userFeedbackHandler
 import json
+from AIclassificator import AIclassificator
 
 class AIhelper:
 
@@ -48,6 +49,7 @@ class AIhelper:
 
         self.userDataHandler_ = userDataHandler
         self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=2)
+        self.AIclassificator_ = AIclassificator(openAI_APIKEY)
 
     #print relavant information about a query
     def printRelavantChats(relavant_chats):
@@ -84,8 +86,6 @@ class AIhelper:
         lastMsg1 = context[-1]["content"]
         
         context = directchatHistory.memoryPostProcess(context)
-
-        self.userDataHandler_.checkUserData(sender_userID)
 
         goodResponses = self.userDataHandler_.user_data[sender_userID]["good_responses"]["docs"].similarity_search_with_score(context, k=3)
         badResponses = self.userDataHandler_.user_data[sender_userID]["bad_responses"]["docs"].similarity_search_with_score(context, k=3)
@@ -138,10 +138,25 @@ class AIhelper:
         self.feedbackHandler.handleBadResponse(sender_userID, recipient_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["good_responses"], self.userDataHandler_.user_data[sender_userID]["bad_responses"], authKey)
         return (AIresponse + "  -> handeled as negative")
 
-    def updateFAQ(self, sender_userID, recipient_userID, AIresponse, classified_issue, type_):
+    def updateFAQ(self, sender_userID, AIresponse, classified_issue, FAQ_conversation_stage, user_input):
         self.userDataHandler_.checkUserData(sender_userID)
-        self.feedbackHandler.handleUpdateFaq(sender_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["faq"], classified_issue, type_)
-        return (AIresponse + "  -> updated FAQ")
+        if FAQ_conversation_stage == 0:
+            existingFAQEntry = self.feedbackHandler.checkIfExistsInFAQ(self.userDataHandler_.user_data[sender_userID]["faq"], classified_issue)
+            if existingFAQEntry != "":
+                return ({"reply": ("FAQ entry already exists:\n\n" + existingFAQEntry + "\n\nWould you like to replace it or keep it?"), "FAQconversationStage": 1})
+            else:
+                self.feedbackHandler.addToFAQ(sender_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["faq"], classified_issue)
+                return ({"reply": ("FAQ entry added."), "FAQconversationStage": 0})
+            
+        elif FAQ_conversation_stage == 1:
+            userIntent = self.AIclassificator_.getUserIntent(user_input, "entry_faq")
+            if userIntent == "replace_entry":
+                self.feedbackHandler.addToFAQ(sender_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["faq"], classified_issue)
+                return ({"reply": "FAQ entry has been replaced.", "FAQconversationStage": 0}) 
+            elif userIntent == "keep_entry":
+                return ({"reply": "Alright. The already existing FAQ entry will be used.", "FAQconversationStage": 0}) 
+            elif userIntent == "other_intent":
+                return ({"reply": "I did not understand that.\nCancelling FAQ update procedure.", "FAQconversationStage": 0}) 
     
     def getAuthkey(self, sender_userID):
         return self.whitelist[sender_userID]
@@ -174,6 +189,8 @@ class AIhelper:
         
         memory = directchatHistory.memoryPostProcess(comments)
         
+        self.userDataHandler_.checkUserData(sender_userID)
+
         concreteAnswer = self.findAnswerFAQ(sender_userID, classified_issue)
 
         if concreteAnswer and concreteAnswer != "":
