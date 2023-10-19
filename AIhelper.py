@@ -17,6 +17,7 @@ from langchain.vectorstores.faiss import FAISS
 import userFeedbackHandler
 import json
 from AIclassificator import AIclassificator
+import databaseHandler
 
 class AIhelper:
 
@@ -146,7 +147,7 @@ class AIhelper:
                 return ({"reply": ("FAQ entry already exists:\n\n" + existingFAQEntry + "\n\nWould you like to replace it or keep it?"), "FAQconversationStage": 1})
             else:
                 self.feedbackHandler.addToFAQ(sender_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["faq"], classified_issue)
-                return ({"reply": ("FAQ entry added."), "FAQconversationStage": 0})
+                return ({"reply": "FAQ entry added.", "FAQconversationStage": 0})
             
         elif FAQ_conversation_stage == 1:
             userIntent = self.AIclassificator_.getUserIntent(user_input, "entry_faq")
@@ -158,6 +159,35 @@ class AIhelper:
             elif userIntent == "other_intent":
                 return ({"reply": "I did not understand that.\nCancelling FAQ update procedure.", "FAQconversationStage": 0}) 
     
+    def showFAQ(self, sender_userID, FAQShowStage, user_input):
+        self.userDataHandler_.checkUserData(sender_userID)
+        if FAQShowStage == 0:
+            json_data = databaseHandler.get_user_json_data(sender_userID)
+            FAQ = json_data["faq"]
+
+            issues = "\n".join(f"- {response['issue']}" for response in FAQ["responses"] if response["issue"])
+            return ({"reply": ("Here are all answered issues:\n\n" + issues + "\n\nSay if you want an answer for any of these issues."), "FAQShowStage": 1}) 
+        elif FAQShowStage == 1:
+            userIntent = self.AIclassificator_.getUserIntent(user_input, "get_answer_faq")
+            similar_faq_entry = self.userDataHandler_.user_data[sender_userID]["faq"]["docs"].similarity_search_with_score(user_input, k=1)
+            json_data = databaseHandler.get_user_json_data(sender_userID)
+            FAQ = json_data["faq"]
+            
+            if similar_faq_entry[0][1] < 0.3:
+                answer = next((response["answer"] for response in FAQ["responses"] if response["issue"] == similar_faq_entry[0][0].page_content), None)
+                return ({"reply": ("Here is the answer:\n\n" + answer), "FAQShowStage": 0}) 
+            
+            if userIntent == "get_answer_faq":
+                issues = [response["issue"] for response in FAQ["responses"] if response["issue"]]
+
+                for issue in issues:
+                    if issue.lower() in user_input.lower():
+                        answer = next((response["answer"] for response in FAQ["responses"] if response["issue"].lower() == issue.lower()), None)
+                        return ({"reply": ("Here is the answer:\n\n" + answer), "FAQShowStage": 0}) 
+
+            elif userIntent == "other_intent":
+                return ({"reply": "I did not understand that.\nCancelling FAQ show procedure.", "FAQconversationStage": 0}) 
+        
     def getAuthkey(self, sender_userID):
         return self.whitelist[sender_userID]
 

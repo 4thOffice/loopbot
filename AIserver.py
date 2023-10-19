@@ -86,6 +86,16 @@ def update_faq():
 
     return jsonify(ret)
 
+@app.route('/show_faq', methods=['PUT'])
+def show_faq():
+    sender_userID = request.args.get('sender_userID', type=str)
+    FAQShowStage = request.args.get('FAQShowStage', type=int)
+    user_input = request.args.get('user_input', type=str)
+    
+    ret = AIhelper_.showFAQ(sender_userID, FAQShowStage, user_input)
+
+    return jsonify(ret)
+
 
 
 @app.route('/handle_good_response_email', methods=['PUT'])
@@ -140,6 +150,16 @@ def classify():
     classified_issue = AIclassificator_.classify(processedLastTopic)
 
     return jsonify({"classified_issue": classified_issue})
+
+@app.route('/check_intent', methods=['GET'])
+def check_intent():
+    text = request.args.get('text', type=str)
+    state = request.args.get('state', type=str)
+    
+    intent = AIclassificator_.check_intent(text, state)
+    print("intent: ", intent["intent"])
+    return jsonify(intent)
+
 
 @app.route('/get_user_info', methods=['GET'])
 def get_user_info():

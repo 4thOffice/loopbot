@@ -40,11 +40,52 @@ class AIclassificator:
         [{"LOWER": "keep"}],
     ]
 
+    addResponseFAQ = [
+        [{"LOWER": "add"}, {"LOWER": "response"}, {"LOWER": "to"}, {"LOWER": "faq"}, {"LOWER": "entry"}],
+        [{"LOWER": "add"}, {"LOWER": "to"}, {"LOWER": "faq"}],
+        [{"LOWER": "append"}, {"LOWER": "to"}, {"LOWER": "faq"}],
+        [{"LOWER": "append"}, {"LOWER": "response"}, {"LOWER": "to"}, {"LOWER": "faq"}, {"LOWER": "entry"}],
+        [{"LOWER": "insert"}, {"LOWER": "response"}, {"LOWER": "into"}, {"LOWER": "faq"}, {"LOWER": "entry"}],
+        [{"LOWER": "update"}, {"LOWER": "faq"}, {"LOWER": "entry"}, {"LOWER": "with"}, {"LOWER": "response"}],
+        [{"LOWER": "write"}, {"LOWER": "answer"}, {"LOWER": "for"}, {"LOWER": "faq"}, {"LOWER": "entry"}],
+        [{"LOWER": "new"}, {"LOWER": "response"}, {"LOWER": "for"}, {"LOWER": "faq"}, {"LOWER": "entry"}],
+    ]
+
+    showAnswerForIssue = [
+        [{"LOWER": "show"}],
+        [{"LOWER": "show:"}],
+        [{"LOWER": "give"}, {"LOWER": "me"}, {"LOWER": "answer"}],
+        [{"LOWER": "provide"}, {"LOWER": "answer"}, {"LOWER": "for"}],
+    ]
+    
+
     def __init__(self, openAI_APIKEY):
         self.openAI_APIKEY = openAI_APIKEY
         os.environ['OPENAI_API_KEY'] = openAI_APIKEY
         self.nlp = spacy.load("en_core_web_sm")
+    
+    def check_intent(self, text, state):
+        if state == "conversation":
+            intent = self.getUserIntent(text, "add_to_faq")
+            print("intent 1 ", intent)
+            if intent == "add_to_faq":
+                return {"intent": intent}
         
+            intent = self.getUserIntent(text, "show_faq")
+            print("intent 2 ", intent)
+            if intent == "show_faq":
+                return {"intent": intent}
+        
+            return {"intent": "other_intent"}
+        
+        elif state == "entry_faq":
+            intent = self.getUserIntent(text, "add_to_faq")
+            if intent == "add_to_faq":
+                return {"intent": intent}
+
+            return {"intent": "other_intent"}
+        return {"intent": "other_intent"}
+    
     def classify(self, context):
 
         if len(context) <= 0:
@@ -82,13 +123,26 @@ Classify the text below (output should be only a problem name and be very specif
             patterns = self.faq_patterns
 
             for pattern in patterns:
-                print(pattern)
                 matcher.add("FAQ_PATTERN", [pattern])
 
             matches = matcher(doc)
             
             if any(matches):
                 return "show_faq"
+            return "other_intent"
+        
+        elif usecase == "add_to_faq":
+            matcher = Matcher(self.nlp.vocab)
+            patterns = self.addResponseFAQ
+
+            for pattern in patterns:
+                print(pattern)
+                matcher.add("FAQ_PATTERN", [pattern])
+
+            matches = matcher(doc)
+            
+            if any(matches):
+                return "add_to_faq"
             return "other_intent"
         
 
@@ -112,6 +166,20 @@ Classify the text below (output should be only a problem name and be very specif
             if any(matches):
                 return "keep_entry"
 
+            return "other_intent"
+        
+        elif usecase == "get_answer_faq":
+            matcher = Matcher(self.nlp.vocab)
+            patterns = self.showAnswerForIssue
+
+            for pattern in patterns:
+                print(pattern)
+                matcher.add("GET_ANSWER_PATTERN", [pattern])
+
+            matches = matcher(doc)
+            
+            if any(matches):
+                return "get_answer_faq"
             return "other_intent"
 
 """
