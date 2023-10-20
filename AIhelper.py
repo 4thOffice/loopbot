@@ -52,6 +52,16 @@ class AIhelper:
         self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=2)
         self.AIclassificator_ = AIclassificator(openAI_APIKEY)
 
+    def checkForNewComments(self, sender_userID, recipient_userID, oldComments):
+        authKey = self.getAuthkey(sender_userID)
+        comments = directchatHistory.getAllComments(10, recipient_userID, authKey)
+
+        #check if there are any new comments
+        if comments == oldComments:
+            return False, oldComments
+        else:
+            return True, comments
+
     #print relavant information about a query
     def printRelavantChats(relavant_chats):
         for i, comment in enumerate(relavant_chats):
@@ -173,20 +183,25 @@ class AIhelper:
             json_data = databaseHandler.get_user_json_data(sender_userID)
             FAQ = json_data["faq"]
             
+            print("similar ", similar_faq_entry[0][1])
             if similar_faq_entry[0][1] < 0.3:
                 answer = next((response["answer"] for response in FAQ["responses"] if response["issue"] == similar_faq_entry[0][0].page_content), None)
-                return ({"reply": ("Here is the answer:\n\n" + answer), "FAQShowStage": 0}) 
             
-            if userIntent == "get_answer_faq":
-                issues = [response["issue"] for response in FAQ["responses"] if response["issue"]]
+                if userIntent == "get_answer_faq":
+                    issues = [response["issue"] for response in FAQ["responses"] if response["issue"]]
+                    
+                    return ({"reply": ("Here is the answer:\n\n" + answer), "FAQShowStage": 0}) 
+                
+                elif userIntent == "delete_entry_faq":
+                    issues = [response["issue"] for response in FAQ["responses"] if response["issue"]]
 
-                for issue in issues:
-                    if issue.lower() in user_input.lower():
-                        answer = next((response["answer"] for response in FAQ["responses"] if response["issue"].lower() == issue.lower()), None)
-                        return ({"reply": ("Here is the answer:\n\n" + answer), "FAQShowStage": 0}) 
-
+                    answer = next((response["answer"] for response in FAQ["responses"] if response["issue"].lower() == similar_faq_entry[0][0].page_content), None)
+                    return ({"reply": "FAQ entry deleted.", "FAQShowStage": 0}) 
+                else:
+                    return ({"reply": "I did not understand that.\nCancelling FAQ show procedure.", "FAQShowStage": 0})
+                  
             elif userIntent == "other_intent":
-                return ({"reply": "I did not understand that.\nCancelling FAQ show procedure.", "FAQconversationStage": 0}) 
+                return ({"reply": "I did not understand that.\nCancelling FAQ show procedure.", "FAQShowStage": 0}) 
         
     def getAuthkey(self, sender_userID):
         return self.whitelist[sender_userID]
@@ -205,6 +220,7 @@ class AIhelper:
             regular_user = False
 
         comments = directchatHistory.getAllComments(10, recipient_userID, authKey)
+        
         print(comments)
         for message in comments:
             sender = message['sender']
@@ -215,21 +231,21 @@ class AIhelper:
                 conversationBuffer.chat_memory.add_user_message(content)
 
         if len(comments) == 0:
-            return "Hello!", ""
-        
-        memory = directchatHistory.memoryPostProcess(comments)
+            return "Hello!"
         
         self.userDataHandler_.checkUserData(sender_userID)
 
         concreteAnswer = self.findAnswerFAQ(sender_userID, classified_issue)
 
         if concreteAnswer and concreteAnswer != "":
-            return concreteAnswer, memory
+            return concreteAnswer
         
         if comments[-1]["sender"] == "their message":
             user_input = comments[-1]["content"]
         else:
-            return "Wait for user to reply.", ""
+            return "Wait for user to reply."
+
+        memory = directchatHistory.memoryPostProcess(comments)
 
         #PRVA 2 RELAVANT CHATA STA OD USER INOUT IN ZADNJI JE OD USERINPUT + HISTORY
         if not regular_user:    
@@ -284,7 +300,7 @@ class AIhelper:
         elapsed_time = end_time2 - start_time2
         print(f"Time taken to execute CHATGPT API call: {elapsed_time:.6f} seconds")
         reply = reply.replace("\n", "\\n")
-        return reply, memory
+        return reply
     
 
 #lb = AIhelper(keys.openAI_APIKEY)
