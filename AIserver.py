@@ -44,11 +44,39 @@ def get_answer():
     badResponses = json.loads(request.args.get('badResponses', type=str))
     responseID = json.loads(request.args.get('responseID', type=str))
     ResponseRecipientID = json.loads(request.args.get('ResponseRecipientID', type=str))
-    reply, memory = AIhelper_.returnAnswer(recipient_userID, sender_userID, classified_issue, badResponses)
-    print("reply:\n", reply)
+    reply = AIhelper_.returnAnswer(recipient_userID, sender_userID, classified_issue, badResponses)
 
-    answer = {"reply": reply, "context": memory, "responseID": responseID, "ResponseRecipientID": ResponseRecipientID}
+    print("reply:\n", reply)
+    answer = {"reply": reply, "responseID": responseID, "ResponseRecipientID": ResponseRecipientID}
+    
     return jsonify(answer)
+
+@app.route('/check_for_new_comments', methods=['GET'])
+def check_for_new_comments():
+    sender_userID = request.args.get('sender_userID', type=str)
+    recipient_userID = request.args.get('recipient_userID', type=str)
+    oldComments = json.loads(request.args.get('oldComments', type=str))
+
+    print("oldComments", oldComments)
+
+    isNewData, newComments = AIhelper_.checkForNewComments(sender_userID, recipient_userID, oldComments)
+    
+    print("newComments", newComments)
+    answer = {"isNewData": isNewData, "oldComments": newComments}
+    
+    return jsonify(answer)
+
+@app.route('/add_file_to_faq', methods=['POST'])
+def add_file_to_faq():
+    uploaded_file = request.files['file']
+    sender_userID = request.form['sender_userID']
+
+    if uploaded_file:
+        file_content = uploaded_file.read().decode('utf-8')
+        userDataHandler_.addToUserDocument(sender_userID, file_content, uploaded_file.filename)
+        return jsonify({"reply": "Document added to knowledge base."})
+    else:
+        return jsonify({"reply": "There was an error uploading document."})
 
 @app.route('/handle_good_response', methods=['PUT'])
 def handle_good_response():

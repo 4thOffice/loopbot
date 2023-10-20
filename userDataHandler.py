@@ -1,8 +1,12 @@
+import json
 import databaseHandler
 import loader
 from langchain.vectorstores.faiss import FAISS
 from langchain.embeddings import OpenAIEmbeddings, CacheBackedEmbeddings
 from langchain.storage import LocalFileStore
+from langchain.document_loaders import TextLoader
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 class UserDataHandler:
     def __init__(self):
@@ -15,18 +19,32 @@ class UserDataHandler:
             self.user_data[userID] = {}
             json_data = databaseHandler.get_user_json_data(userID)
             
-            for json_type in json_data:
+            for file_name in json_data:
                 cached_user_embedder = CacheBackedEmbeddings.from_bytes_store(
-                    underlying_embeddings, self.fs, namespace=userID + "-" + json_type
+                    underlying_embeddings, self.fs, namespace=userID + "-" + file_name
                 )
-                
-                loader_ = loader.JSONLoader(file_path="")
-                if json_type == "faq":
-                    documents = loader_.loadFAQ(json_data[json_type])
+                if("CUSTOM_" not in file_name):
+                    
+                    loader_ = loader.JSONLoader(file_path="")
+                    if file_name == "faq":
+                        documents = loader_.loadFAQ(json_data[file_name])
+                    else:
+                        documents = loader_.loadResponses(json_data[file_name])
+                    self.user_data[userID][file_name] = {"docs": FAISS.from_documents(documents, cached_user_embedder), "json": json_data[file_name]}
                 else:
-                    documents = loader_.loadResponses(json_data[json_type])
-                self.user_data[userID][json_type] = {"docs": FAISS.from_documents(documents, cached_user_embedder), "json": json_data[json_type]}
+                    text_splitter = RecursiveCharacterTextSplitter(
+                        # Set a really small chunk size, just to show.
+                        chunk_size = 300,
+                        chunk_overlap  = 50,
+                        length_function = len,
+                        add_start_index = True,
+                    )
+                    documents = text_splitter.create_documents([json_data[file_name]])
 
+                    if "other" in self.user_data[userID]:
+                        self.user_data[userID]["other"]["docs"].add_documents(documents)
+                    else:
+                        self.user_data[userID]["other"] = {"docs": FAISS.from_documents(documents, cached_user_embedder)}
 
         print(self.user_data)
 
@@ -43,14 +61,56 @@ class UserDataHandler:
             
             underlying_embeddings = OpenAIEmbeddings()
 
-            for json_type in json_data:
+            for file_name in json_data:
                 cached_embedder_good = CacheBackedEmbeddings.from_bytes_store(
-                    underlying_embeddings, self.fs, namespace=userID + "-" + json_type
+                        underlying_embeddings, self.fs, namespace=userID + "-" + file_name
                 )
+                if(file_name != "other"):
+                    loader_ = loader.JSONLoader(file_path="")
+                    if file_name == "faq":
+                        documents = loader_.loadFAQ(json_data[file_name])
+                    else:
+                        documents = loader_.loadResponses(json_data[file_name])
+                    
+                    self.user_data[userID][file_name] = {"docs": FAISS.from_documents(documents, cached_embedder_good), "json": json_data[file_name]}
 
-                loader_ = loader.JSONLoader(file_path="")
-                if json_type == "faq":
-                    documents = loader_.loadFAQ(json_data[json_type])
                 else:
-                    documents = loader_.loadResponses(json_data[json_type])
-                self.user_data[userID][json_type] = {"docs": FAISS.from_documents(documents, cached_embedder_good), "json": json_data[json_type]}
+                    text_splitter = RecursiveCharacterTextSplitter(
+                        # Set a really small chunk size, just to show.
+                        chunk_size = 300,
+                        chunk_overlap  = 50,
+                        length_function = len,
+                        add_start_index = True,
+                    )
+                    documents = text_splitter.create_documents([json_data[file_name]])
+
+                    if "other" in self.user_data[userID]:
+                        self.user_data[userID]["other"]["docs"].add_documents(documents)
+                    else:
+                        self.user_data[userID]["other"] = {"docs": FAISS.from_documents(documents, cached_embedder_good)}
+
+
+
+    def addToUserDocument(self, userID, document_content, document_name):
+        underlying_embeddings = OpenAIEmbeddings()
+        cached_embedder_good = CacheBackedEmbeddings.from_bytes_store(
+                underlying_embeddings, self.fs, namespace=userID + "-" + document_name
+        )
+
+        databaseHandler.insert_json_data(userID, ("CUSTOM_" + document_name), document_content)
+
+        text_splitter = RecursiveCharacterTextSplitter(
+            # Set a really small chunk size, just to show.
+            chunk_size = 300,
+            chunk_overlap  = 50,
+            length_function = len,
+            add_start_index = True,
+        )
+        
+        documents = text_splitter.create_documents([document_content])
+        if "other" in self.user_data[userID]:
+            self.user_data[userID]["other"]["docs"].add_documents(documents)
+        else:
+            self.user_data[userID]["other"] = {"docs": FAISS.from_documents(documents, cached_embedder_good)}
+        
+        print("all docs ", self.user_data[userID]["other"]["docs"])

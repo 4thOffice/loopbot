@@ -13,7 +13,10 @@ import keys
 class AIclassificator:
 
     faq_patterns = [
-        [{"LOWER": "faq"}],
+        [{"LOWER": "show"}, {"LOWER": "faq"}],
+        [{"LOWER": "show"}, {"LOWER": "me"}, {"LOWER": "faq"}],
+        [{"LOWER": "give"}, {"LOWER": "faq"}],
+        [{"LOWER": "print"}, {"LOWER": "faq"}],
         [{"LOWER": "frequently"}, {"LOWER": "asked"}, {"LOWER": "questions"}],
         [{"LOWER": "how"}, {"LOWER": "do"}, {"LOWER": "i"}, {"LOWER": "find"}, {"LOWER": "faq"}]
     ]
@@ -43,6 +46,7 @@ class AIclassificator:
     addResponseFAQ = [
         [{"LOWER": "add"}, {"LOWER": "response"}, {"LOWER": "to"}, {"LOWER": "faq"}, {"LOWER": "entry"}],
         [{"LOWER": "add"}, {"LOWER": "to"}, {"LOWER": "faq"}],
+        [{"LOWER": "add"}, {"LOWER": "faq"}],
         [{"LOWER": "append"}, {"LOWER": "to"}, {"LOWER": "faq"}],
         [{"LOWER": "append"}, {"LOWER": "response"}, {"LOWER": "to"}, {"LOWER": "faq"}, {"LOWER": "entry"}],
         [{"LOWER": "insert"}, {"LOWER": "response"}, {"LOWER": "into"}, {"LOWER": "faq"}, {"LOWER": "entry"}],
@@ -57,6 +61,30 @@ class AIclassificator:
         [{"LOWER": "give"}, {"LOWER": "me"}, {"LOWER": "answer"}],
         [{"LOWER": "provide"}, {"LOWER": "answer"}, {"LOWER": "for"}],
     ]
+
+    addFileToKnowledgeBase = [
+        [{"LOWER": "add"}],
+        [{"LOWER": "use"}],
+        [{"LOWER": "knowledgebase"}],
+        [{"LOWER": "add"}, {"LOWER": "to"}, {"LOWER": "knowledgebase"}],
+        [{"LOWER": "add"}, {"LOWER": "to"}],
+        [{"LOWER": "remember"}],
+    ]
+
+    deleteEntryFAQ = [
+        [{"LOWER": "delete"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}],
+        [{"LOWER": "remove"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}],
+        [{"LOWER": "delete"}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}, {"LOWER": "from"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}],
+        [{"LOWER": "remove"}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}, {"LOWER": "from"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}],
+        [{"LOWER": "discard"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}],
+        [{"LOWER": "discard"}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}, {"LOWER": "from"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}],
+        [{"LOWER": "forget"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}],
+        [{"LOWER": "forget"}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}, {"LOWER": "from"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}],
+        [{"LOWER": "erase"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}],
+        [{"LOWER": "erase"}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}, {"LOWER": "from"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}],
+        [{"LOWER": "delete"}],
+        [{"LOWER": "remove"}]
+    ]
     
 
     def __init__(self, openAI_APIKEY):
@@ -67,15 +95,12 @@ class AIclassificator:
     def check_intent(self, text, state):
         if state == "conversation":
             intent = self.getUserIntent(text, "add_to_faq")
-            print("intent 1 ", intent)
             if intent == "add_to_faq":
                 return {"intent": intent}
         
             intent = self.getUserIntent(text, "show_faq")
-            print("intent 2 ", intent)
             if intent == "show_faq":
                 return {"intent": intent}
-        
             return {"intent": "other_intent"}
         
         elif state == "entry_faq":
@@ -84,7 +109,25 @@ class AIclassificator:
                 return {"intent": intent}
 
             return {"intent": "other_intent"}
+        
+        elif state == "faq_answer_command":
+            intent = self.getUserIntent(text, "get_answer_faq")
+            if intent == "get_answer_faq":
+                return {"intent": intent}
+        
+            intent = self.getUserIntent(text, "delete_entry_faq")
+            if intent == "delete_entry_faq":
+                return {"intent": intent}
+            return {"intent": "other_intent"}
+        
+        elif state == "add_file_to_knowledgebase":
+            intent = self.getUserIntent(text, "add_file_to_knowledgebase")
+            if intent == "add_file_to_knowledgebase":
+                return {"intent": intent}
+            return {"intent": "other_intent"}
+        
         return {"intent": "other_intent"}
+
     
     def classify(self, context):
 
@@ -180,6 +223,34 @@ Classify the text below (output should be only a problem name and be very specif
             
             if any(matches):
                 return "get_answer_faq"
+            return "other_intent"
+        
+        elif usecase == "delete_entry_faq":
+            matcher = Matcher(self.nlp.vocab)
+            patterns = self.deleteEntryFAQ
+
+            for pattern in patterns:
+                print(pattern)
+                matcher.add("DELETE_ENTRY_PATTERN", [pattern])
+
+            matches = matcher(doc)
+            
+            if any(matches):
+                return "delete_entry_faq"
+            return "other_intent"
+        
+        elif usecase == "add_file_to_knowledgebase":
+            matcher = Matcher(self.nlp.vocab)
+            patterns = self.addFileToKnowledgeBase
+
+            for pattern in patterns:
+                print(pattern)
+                matcher.add("ADD_FILE_PATTERN", [pattern])
+
+            matches = matcher(doc)
+            
+            if any(matches):
+                return "add_file_to_knowledgebase"
             return "other_intent"
 
 """
