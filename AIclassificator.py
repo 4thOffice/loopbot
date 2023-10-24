@@ -17,6 +17,10 @@ class AIclassificator:
         [{"LOWER": "show"}, {"LOWER": "me"}, {"LOWER": "faq"}],
         [{"LOWER": "give"}, {"LOWER": "faq"}],
         [{"LOWER": "print"}, {"LOWER": "faq"}],
+        [{"LOWER": "show"}, {"LOWER": "faq"}],
+        [{"LOWER": "show"}, {"LOWER": "me"}, {"LOWER": "faq"}],
+        [{"LOWER": "give"}, {"LOWER": "faq"}],
+        [{"LOWER": "print"}, {"LOWER": "faq"}],
         [{"LOWER": "frequently"}, {"LOWER": "asked"}, {"LOWER": "questions"}],
         [{"LOWER": "how"}, {"LOWER": "do"}, {"LOWER": "i"}, {"LOWER": "find"}, {"LOWER": "faq"}]
     ]
@@ -127,6 +131,7 @@ class AIclassificator:
             return {"intent": "other_intent"}
         
         return {"intent": "other_intent"}
+
 
     
     def classify(self, context):

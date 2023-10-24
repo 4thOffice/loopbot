@@ -46,6 +46,8 @@ def get_answer():
     ResponseRecipientID = json.loads(request.args.get('ResponseRecipientID', type=str))
     reply = AIhelper_.returnAnswer(recipient_userID, sender_userID, classified_issue, badResponses)
 
+    reply = AIhelper_.returnAnswer(recipient_userID, sender_userID, classified_issue, badResponses)
+
     print("reply:\n", reply)
     answer = {"reply": reply, "responseID": responseID, "ResponseRecipientID": ResponseRecipientID}
     
