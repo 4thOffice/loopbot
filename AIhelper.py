@@ -46,7 +46,7 @@ class AIhelper:
         documents = loader_.load()
         self.db_loopbot_data = FAISS.from_documents(documents, cached_embedder)
 
-        print("Finished embbeding loopbot data")
+        #print("Finished embbeding loopbot data")
 
         self.userDataHandler_ = userDataHandler
         self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=2)
@@ -56,26 +56,33 @@ class AIhelper:
         authKey = self.getAuthkey(sender_userID)
         comments = directchatHistory.getAllComments(10, recipient_userID, authKey)
 
-        if comments == oldComments:
-            return False, comments
-        else:
-            return True, comments
+        if len(comments) <= 0:
+            return False, [], []
+        
+        new_sender_comments = [comment for comment in comments if comment['sender'] == 'my response' and comment['creationTime'] not in [cmt['creationTime'] for cmt in oldComments]]
 
-    #print relavant information about a query
+        if comments == oldComments:
+            return False, comments, new_sender_comments
+        else:
+            if comments[-1]["sender"] == "my response":
+                return False, comments, new_sender_comments
+            return True, comments, new_sender_comments
+
+    ##print relavant information about a query
     def printRelavantChats(relavant_chats):
         for i, comment in enumerate(relavant_chats):
-            print("Conversation context:", i, "score:", comment[1])
+            #print("Conversation context:", i, "score:", comment[1])
 
             context = comment[0].metadata["context"].split("    ")
-            for txt in context:
-                print(txt)
+            #for txt in context:
+                #print(txt)
 
     #find relavant information abotu a query
     def findRelavantChats(self, input):
         start_time1 = time.time()
         relavant_chats = self.db_loopbot_data.similarity_search_with_score(input, k=3)
         start_time2 = time.time()
-        print("relavant chat finding duration:", start_time2-start_time1)
+        #print("relavant chat finding duration:", start_time2-start_time1)
         return relavant_chats
     
     def findRelavantInfoInCustomFiles(self, sender_userID, input):
@@ -83,19 +90,19 @@ class AIhelper:
         if "other" in self.userDataHandler_.user_data[sender_userID]:
             relavant_chats = self.userDataHandler_.user_data[sender_userID]["other"]["docs"].similarity_search_with_score(input, k=2)
             start_time2 = time.time()
-            print("relavant chat finding duration:", start_time2-start_time1)
+            #print("relavant chat finding duration:", start_time2-start_time1)
             return relavant_chats
-        return None
+        return []
         
     def findAnswerFAQ(self, sender_userID, classified_issue):
         similar_faq_entry = self.userDataHandler_.user_data[sender_userID]["faq"]["docs"].similarity_search_with_score(classified_issue, k=1)
-        print("similar faq entry: ", similar_faq_entry)
+        #print("similar faq entry: ", similar_faq_entry)
         if similar_faq_entry[0][1] < 0.3:
             return similar_faq_entry[0][0].metadata["answer"]
 
-        print("similar_faq_entry ", similar_faq_entry)
+        #print("similar_faq_entry ", similar_faq_entry)
 
-    def findResponses(self, sender_userID, recipient_userID, authkey):
+    def findResponses(self, sender_userID, recipient_userID, user_input, authkey):
         context = directchatHistory.getAllComments(5, recipient_userID, authkey)
         contextLastTopic = directchatHistory.getLastTopic(context)
 
@@ -106,50 +113,67 @@ class AIhelper:
         
         context = directchatHistory.memoryPostProcess(context)
 
-        goodResponses = self.userDataHandler_.user_data[sender_userID]["good_responses"]["docs"].similarity_search_with_score(context, k=3)
+        goodResponses = self.userDataHandler_.user_data[sender_userID]["good_responses"]["docs"].similarity_search_with_score(context, k=4)
         badResponses = self.userDataHandler_.user_data[sender_userID]["bad_responses"]["docs"].similarity_search_with_score(context, k=3)
 
 
-        print(goodResponses)
+        #print(goodResponses)
 
         responsesGood = []
-        print("good:")
+        #print("good:")
         for response in goodResponses:
-            print("score", response[1])
-            print("data", response[0])
-            if response[1] <= 0.21:
-                print("lastMsg1: ", lastMsg1)
+            #print("score", response[1])
+            #print("data", response[0])
+            if response[1] <= 0.45:
+                #print("lastMsg1: ", lastMsg1)
                 lastMsg2 = response[0].page_content.split("\n")[-1]
                 lastMsg2 = lastMsg1.replace("AI:", "")
                 lastMsg2 = lastMsg1.replace("user:", "")
 
-                print("lastMsg2: ", lastMsg2)
+                #print("lastMsg2: ", lastMsg2)
  
                 evaluator = load_evaluator("pairwise_embedding_distance", distance_metric=EmbeddingDistance.EUCLIDEAN)
                 distance = evaluator.evaluate_string_pairs(
                     prediction=lastMsg1, prediction_b=lastMsg2
                 )
 
-                print("distance: ", distance["score"])
+                ##print("distance: ", distance["score"])
 
                 if distance["score"] < 0.21:
-                    responsesGood.append(response[0].metadata["AIresponse"])
+                    #responsesGood.append(response[0].metadata["AIresponse"])
+                    responsesGood.append(response[0].page_content)
+                #responsesGood.append(response[0].metadata["AIresponse"])
 
         responsesBad = []
-        print("bad:")
+        #print("bad:")
         for response in badResponses:
-            print("score", response[1])
-            print("data", response[0])
+            #print("score", response[1])
+            #print("data", response[0])
             if response[1] <= 0.15:
                 responsesBad.append(response[0].metadata["AIresponse"])
             
         return responsesGood, responsesBad
 
     def handleGoodResponse(self, sender_userID, recipient_userID, AIresponse):
+
+        
+        handled_as_good = False
+
+        """for comment in comments:
+            if comment["sender"] == "my response":
+                evaluator = load_evaluator("pairwise_embedding_distance", distance_metric=EmbeddingDistance.EUCLIDEAN)
+                result = evaluator.evaluate_string_pairs(
+                    prediction=comment["content"], prediction_b=AIresponse
+                )
+                #print("comparison score ", result['score'])
+                if result['score'] < 0.2:
+                    #print("close enough")
+                    self.handleGoodResponse(sender_userID, recipient_userID, comment["content"])
+                    handled_as_good = True"""
+        
         authKey = self.whitelist[sender_userID]
         self.userDataHandler_.checkUserData(sender_userID)
-        self.feedbackHandler.handleGoodResponse(sender_userID, recipient_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["good_responses"], self.userDataHandler_.user_data[sender_userID]["bad_responses"], authKey)
-        return (AIresponse + " -> handeled as positive")
+        return self.feedbackHandler.handleGoodResponse(sender_userID, recipient_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["good_responses"], self.userDataHandler_.user_data[sender_userID]["bad_responses"], authKey)
     
     def handleBadResponse(self, sender_userID, recipient_userID, AIresponse):
         authKey = self.whitelist[sender_userID]
@@ -191,7 +215,7 @@ class AIhelper:
             json_data = databaseHandler.get_user_json_data(sender_userID)
             FAQ = json_data["faq"]
             
-            print("similar ", similar_faq_entry[0][1])
+            #print("similar ", similar_faq_entry[0][1])
             if similar_faq_entry[0][1] < 0.3:
                 answer = next((response["answer"] for response in FAQ["responses"] if response["issue"] == similar_faq_entry[0][0].page_content), None)
             
@@ -224,12 +248,12 @@ class AIhelper:
         recipient_userID = directchatHistory.getRecipientUserIdFromCardId(sender_userID, recipient_userID, authKey)
 
         regular_user = True
-        if sender_userID == "user_1552217" or sender_userID == "user_24564769":
+        if sender_userID == "user_1552217" or sender_userID == "user_24564769" or sender_userID == "user_24534935":
             regular_user = False
 
         comments = directchatHistory.getAllComments(10, recipient_userID, authKey)
         
-        print(comments)
+        #print(comments)
         for message in comments:
             sender = message['sender']
             content = message['content']
@@ -254,21 +278,22 @@ class AIhelper:
             return "Wait for user to reply."
 
         memory = directchatHistory.memoryPostProcess(comments)
-
-        print("SIMILAR CUSTOM INFO USER_iNPUT: ", self.findRelavantInfoInCustomFiles(sender_userID, user_input))
-        print("SIMILAR CUSTOM INFO MEMORY: ", self.findRelavantInfoInCustomFiles(sender_userID, memory))
         
         relavantInfoInFilesQuery = self.findRelavantInfoInCustomFiles(sender_userID, user_input)
         relavantInfoInFilesHistory = self.findRelavantInfoInCustomFiles(sender_userID, user_input)
+
+        #print("SIMILAR CUSTOM INFO USER_iNPUT: ", relavantInfoInFilesQuery)
+        #print("SIMILAR CUSTOM INFO MEMORY: ", relavantInfoInFilesHistory)
+
         relavantInfo = []
         for info in relavantInfoInFilesQuery:
-            print(info)
+            #print(info)
             if len(relavantInfo) >= 0:
                 break
             if info[1] < 0.2:
                 relavantInfo.append(info)
         for info in relavantInfoInFilesHistory:
-            print(info)
+            #print(info)
             if len(relavantInfo) >= 3:
                 break
             relavantInfo.append(info)
@@ -278,7 +303,7 @@ class AIhelper:
             relavantInfo_noscore += f"\nInformation source {index}:\n"
             relavantInfo_noscore += info[0].page_content
 
-        print("SIMILAR CUSTOM INFO: ", relavantInfo)
+        #print("SIMILAR CUSTOM INFO: ", relavantInfo)
         #PRVA 2 RELAVANT CHATA STA OD USER INOUT IN ZADNJI JE OD USERINPUT + HISTORY
         if not regular_user:    
             relavantChatsQuery = self.findRelavantChats(user_input)
@@ -287,16 +312,18 @@ class AIhelper:
             #Take 2 top results for query similarity search (if similarity not over threshold) and 1 for whole history similarity search
             relavantChats = []
             for comment in relavantChatsQuery:
-                print(comment)
+                #print(comment)
                 if len(relavantChats) >= 1:
                     break
                 if comment[1] < 0.4:
                     relavantChats.append(comment)
             for comment in relavantChatsHistory:
-                print(comment)
+                #print(comment)
                 if len(relavantChats) >= 3:
                     break
                 relavantChats.append(comment)
+
+            #print("relavant chats: ", relavantChats)
 
             #relavantChats_noscore = [relavantChat[0].metadata["context"] for relavantChat in relavantChats]
             relavantChats_noscore = ""
@@ -307,11 +334,11 @@ class AIhelper:
         else:
             relavantChats_noscore = ""
 
-        goodResponses, badResponses = self.findResponses(sender_userID, recipient_userID, authKey)
+        goodResponses, badResponses = self.findResponses(sender_userID, recipient_userID, user_input, authKey)
         
         chat_prompt = promptCreator.createPrompt(goodResponses, badResponses, badResponsesPrevious, relavantInfo_noscore, user_input, not regular_user)
         
-        print("chat history ", conversationBuffer)
+        #print("chat history ", conversationBuffer)
 
         end_time1 = time.time()
         start_time2 = time.time()
@@ -327,13 +354,13 @@ class AIhelper:
         end_time2 = time.time()
 
         elapsed_time = end_time1 - start_time1
-        print(f"Time taken to execute preprocess steps: {elapsed_time:.6f} seconds")
+        #print(f"Time taken to execute preprocess steps: {elapsed_time:.6f} seconds")
 
         elapsed_time = end_time2 - start_time2
-        print(f"Time taken to execute CHATGPT API call: {elapsed_time:.6f} seconds")
+        #print(f"Time taken to execute CHATGPT API call: {elapsed_time:.6f} seconds")
         reply = reply.replace("\n", "\\n")
         return reply
     
 
 #lb = AIhelper(keys.openAI_APIKEY)
-#print(lb.returnAnswer("is there vpn?", lb.getPrompt(), "user_13"))
+##print(lb.returnAnswer("is there vpn?", lb.getPrompt(), "user_13"))

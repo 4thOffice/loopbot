@@ -46,8 +46,6 @@ def get_answer():
     ResponseRecipientID = json.loads(request.args.get('ResponseRecipientID', type=str))
     reply = AIhelper_.returnAnswer(recipient_userID, sender_userID, classified_issue, badResponses)
 
-    reply = AIhelper_.returnAnswer(recipient_userID, sender_userID, classified_issue, badResponses)
-
     print("reply:\n", reply)
     answer = {"reply": reply, "responseID": responseID, "ResponseRecipientID": ResponseRecipientID}
     
@@ -61,10 +59,10 @@ def check_for_new_comments():
 
     print("oldComments", oldComments)
 
-    isNewData, newComments = AIhelper_.checkForNewComments(sender_userID, recipient_userID, oldComments)
+    isNewData, newComments, new_sender_comments = AIhelper_.checkForNewComments(sender_userID, recipient_userID, oldComments)
     
     print("newComments", newComments)
-    answer = {"isNewData": isNewData, "oldComments": newComments}
+    answer = {"isNewData": isNewData, "oldComments": newComments, "new_sender_comments": new_sender_comments}
     
     return jsonify(answer)
 
@@ -84,7 +82,7 @@ def add_file_to_faq():
 def handle_good_response():
     recipient_userID = request.args.get('recipient_userID', type=str)
     sender_userID = request.args.get('sender_userID', type=str)
-    AIresponse = request.args.get('AIresponse', type=str)
+    AIresponse = json.loads(request.args.get('AIresponse', type=str))
 
     ret = AIhelper_.handleGoodResponse(sender_userID, recipient_userID, AIresponse)
 
@@ -171,13 +169,19 @@ def rephrase():
 def classify():
     sender_userID = request.args.get('sender_userID', type=str)
     recipient_userID = request.args.get('recipient_userID', type=str)
+    only_last_issue = request.args.get('only_last_issue', type=str)
 
     authKey = AIhelper_.getAuthkey(sender_userID)
-    comments = directchatHistory.getAllComments(20, recipient_userID, authKey)
-    lastTopic = directchatHistory.getLastTopic(comments)
-    processedLastTopic = directchatHistory.memoryPostProcess(lastTopic)
 
-    classified_issue = AIclassificator_.classify(processedLastTopic)
+    if only_last_issue.lower() == 'true':
+        comments = directchatHistory.getAllComments(20, recipient_userID, authKey)
+        lastTopic = directchatHistory.getLastTopic(comments)
+        processedLastTopic = directchatHistory.memoryPostProcess(lastTopic)
+        classified_issue = AIclassificator_.classify(processedLastTopic, "./jsons/classified_issues.json")
+    else:
+        comments = directchatHistory.getAllComments(40, recipient_userID, authKey)
+        processedLastTopic = directchatHistory.memoryPostProcess(comments)
+        classified_issue = AIclassificator_.getLastTopicsClassifications(processedLastTopic, "./jsons/classified_issues.json")
 
     return jsonify({"classified_issue": classified_issue})
 

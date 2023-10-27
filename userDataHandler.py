@@ -93,6 +93,7 @@ class UserDataHandler:
 
     def addToUserDocument(self, userID, document_content, document_name):
         underlying_embeddings = OpenAIEmbeddings()
+        document_name = document_name.replace(" ", "")
         cached_embedder_good = CacheBackedEmbeddings.from_bytes_store(
                 underlying_embeddings, self.fs, namespace=userID + "-" + document_name
         )
@@ -108,9 +109,14 @@ class UserDataHandler:
         )
         
         documents = text_splitter.create_documents([document_content])
+        print("other" in self.user_data[userID])
         if "other" in self.user_data[userID]:
+            print("text 2", self.user_data[userID]["other"])
             self.user_data[userID]["other"]["docs"].add_documents(documents)
+            print("text 3", self.user_data[userID]["other"])
         else:
+            print("text 4", self.user_data[userID])
             self.user_data[userID]["other"] = {"docs": FAISS.from_documents(documents, cached_embedder_good)}
+            print("text 5", self.user_data[userID]["other"])
         
         print("all docs ", self.user_data[userID]["other"]["docs"])

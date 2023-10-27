@@ -20,19 +20,30 @@ class UserFeedbackHandler:
 
 
     def handleGoodResponse(self, sender_userID, recipient_userID, AIresponse, db_good_responses, db_bad_responses, authKey):
-        context = directchatHistory.getAllComments(5, recipient_userID, authKey)
+        context = directchatHistory.getAllComments(10, recipient_userID, authKey)
         contextLastTopic = directchatHistory.getLastTopic(context)
+        for index, comment in enumerate(contextLastTopic):
+            if comment == AIresponse:
+                contextLastTopic = contextLastTopic[max(0, index - 5):index]
 
         if len(contextLastTopic) > 0:
             context = contextLastTopic
-            
+        else:
+            return (AIresponse["content"] + " -> NOT handeled as positive")
+        
+        print("AIresponse: ", AIresponse)
+        AIresponse = AIresponse["content"]
+
         context = directchatHistory.memoryPostProcess(context)
         context += "\n" + AIresponse
 
+        print(context)
+
         good_responses = db_good_responses["docs"].similarity_search_with_score(context, k=1)
         
+        print("good responses score ", good_responses[0][1])
         #check if similar good responses already exist
-        if good_responses[0][1] > 0.027:
+        if good_responses[0][1] > 0.05:
             new_document = Document(page_content=context, metadata=dict(AIresponse=AIresponse, score=1))
             db_good_responses["docs"].add_documents([new_document])
             db_good_responses["json"] = jsonOperations.append_json({"context": context, "AIresponse": AIresponse, "score": 1}, db_good_responses["json"])
@@ -86,12 +97,13 @@ class UserFeedbackHandler:
                             new_document = Document(page_content=contextTemp, metadata=dict(AIresponse=AIresponseTemp, score=scoreTemp-1))
                             db_bad_responses["docs"].add_documents([new_document])
                             db_bad_responses["json"] = jsonOperations.update_json(db_bad_responses["json"], contextTemp, AIresponseTemp, scoreTemp-1)
-                            
-        if self.feedbackCounter > self.feedbackBuffer:
+        
+        self.write_jsons(sender_userID, db_bad_responses["json"], db_good_responses["json"])             
+        """if self.feedbackCounter > self.feedbackBuffer:
             self.write_jsons(sender_userID, db_bad_responses["json"], db_good_responses["json"])
             self.feedbackCounter = 0
         else:
-            self.feedbackCounter += 1
+            self.feedbackCounter += 1"""
         
         return (AIresponse + " -> handeled as positive")
         
@@ -106,10 +118,39 @@ class UserFeedbackHandler:
         context += "\n" + AIresponse
 
         bad_responses = db_bad_responses["docs"].similarity_search_with_score(context, k=1)
-        
-        print("distance:", bad_responses[0][1])
 
         #check if similar good responses already exist
+        if len(db_good_responses["docs"].docstore._dict) > 0:
+            # SUBSTRACT SCORE IN GOOD RESPONSES
+            closestDoc = db_good_responses["docs"].similarity_search_with_score(context, k=1, search_type="similarity")
+            print("closest good response to delete: ", closestDoc[0][1])
+            if closestDoc[0][1] <= 0.25:   
+                print("closest: ", closestDoc[0][0].page_content) 
+                for key, doc in db_good_responses["docs"].docstore._dict.copy().items():
+                    print("iteration: ", doc.page_content) 
+                    if closestDoc[0][0].page_content == doc.page_content:
+                        #print("doc to update", doc, key)
+                        contextTemp = doc.page_content
+                        AIresponseTemp = doc.metadata["AIresponse"]
+                        scoreTemp = doc.metadata["score"]
+                        
+                        print("scoreTemp:", scoreTemp)
+
+                        if scoreTemp <= 0:
+                            db_good_responses["json"] = jsonOperations.delete_from_json(db_good_responses["json"], contextTemp)
+                            continue
+
+                        key_list=list(db_good_responses["docs"].index_to_docstore_id.keys())
+                        val_list=list(db_good_responses["docs"].index_to_docstore_id.values())
+                        ind=val_list.index(key)
+
+                        db_good_responses["docs"].delete([db_good_responses["docs"].index_to_docstore_id[key_list[ind]]])
+                        new_document = Document(page_content=contextTemp, metadata=dict(AIresponse=AIresponseTemp, score=scoreTemp-1))
+                        db_good_responses["docs"].add_documents([new_document])
+                        db_good_responses["json"] = jsonOperations.update_json(db_good_responses["json"], contextTemp, AIresponseTemp, scoreTemp-1)
+            self.write_jsons(sender_userID, db_bad_responses["json"], db_good_responses["json"])
+
+        """
         if bad_responses[0][1] > 0.04:
             new_document = Document(page_content=context, metadata=dict(AIresponse=AIresponse, score=1))
             db_bad_responses["docs"].add_documents([new_document])
@@ -162,12 +203,13 @@ class UserFeedbackHandler:
                             new_document = Document(page_content=contextTemp, metadata=dict(AIresponse=AIresponseTemp, score=scoreTemp-1))
                             db_good_responses["docs"].add_documents([new_document])
                             db_good_responses["json"] = jsonOperations.update_json(db_good_responses["json"], contextTemp, AIresponseTemp, scoreTemp-1)
-        
-        if self.feedbackCounter > self.feedbackBuffer:
+        """
+        """self.write_jsons(sender_userID, db_bad_responses["json"], db_good_responses["json"])"""
+        """if self.feedbackCounter > self.feedbackBuffer:
             self.write_jsons(sender_userID, db_bad_responses["json"], db_good_responses["json"])
             self.feedbackCounter = 0
         else:
-            self.feedbackCounter += 1
+            self.feedbackCounter += 1"""
         
         return (AIresponse + "  -> handeled as negative")
 
