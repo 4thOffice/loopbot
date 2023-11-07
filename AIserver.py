@@ -9,6 +9,7 @@ import requests
 import AIregular
 import userDataHandler
 import AIclassificator
+import troubleshootHandler
 import sys
 sys.path.append('./APIcalls')
 import APIcalls.directchatHistory as directchatHistory
@@ -16,6 +17,7 @@ import APIcalls.directchatHistory as directchatHistory
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 AIhelper_ = None
+troubleshootHandler_ = None
 AIhelperEmail_ = None
 AIrephraser_ = None
 AIregular_ = None
@@ -194,6 +196,16 @@ def check_intent():
     print("intent: ", intent["intent"])
     return jsonify(intent)
 
+@app.route('/end_conversation', methods=['PUT'])
+def end_conversation():
+    sender_userID = request.args.get('sender_userID', type=str)
+    recipient_userID = request.args.get('recipient_userID', type=str)
+    
+    reply = troubleshootHandler_.endConversation(sender_userID, recipient_userID)
+    #print("intent: ", intent["intent"])
+
+    return jsonify({"reply": reply})
+
 
 @app.route('/get_user_info', methods=['GET'])
 def get_user_info():
@@ -237,6 +249,7 @@ if __name__ == '__main__':
     AIrephraser_ = AIrephraser.AIrephraser(keys.openAI_APIKEY)
     AIregular_ = AIregular.AIregular(keys.openAI_APIKEY)
     AIclassificator_ = AIclassificator.AIclassificator(keys.openAI_APIKEY)
+    troubleshootHandler_ = troubleshootHandler.TroubleshootHandler(keys.openAI_APIKEY)
     app.run(host='0.0.0.0', port=5000, debug=True)
 
     #while(1):

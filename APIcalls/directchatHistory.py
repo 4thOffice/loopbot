@@ -98,13 +98,17 @@ def getAllComments(historySize, userID, authkey):
             comments.append(comment)
             
         comments.reverse()
+
+        if len(comments) <= 0:
+            return []
+    
         return comments
     else:
         print(f"Error: {response.status_code} - {response.text}")
 
 #get comments of the last topic in a comment set
-def getLastTopic(comments):
-    timeDifferenceThreshold = 72 #in hours
+def getLastTopic(comments, secondLast=False):
+    timeDifferenceThreshold = 24 #in hours
     commentsInTopic = []
 
     if len(comments) <= 0:
@@ -115,11 +119,16 @@ def getLastTopic(comments):
         comment = comments[i]
         commentPrior = comments[i-1]
         if getTimeDifference(comment["creationTime"], commentPrior["creationTime"]) > timeDifferenceThreshold:
-            commentsInTopic.append(comment)
-            break
+            if secondLast == False:
+                commentsInTopic.append(comment)
+                break
+            else:
+                commentsInTopic = []
+                secondLast = False
         commentsInTopic.append(comment)
         i -= 1
     
+    #print(commentsInTopic)
     if len(comments) == 1:
         commentsInTopic.append(comments[0])
     elif comments[1] in commentsInTopic and getTimeDifference(comments[0]["creationTime"], comments[1]["creationTime"]) < timeDifferenceThreshold:
@@ -127,10 +136,10 @@ def getLastTopic(comments):
 
     commentsInTopic.reverse()
 
-    print("comments in topic: ", commentsInTopic)
+    #print("comments in topic: ", commentsInTopic)
     return commentsInTopic
 
-def memoryPostProcess(comments):
+def memoryPostProcess(comments, role1="AI", role2="user"):
     formatted_messages = []
 
     for message in comments:
@@ -138,11 +147,12 @@ def memoryPostProcess(comments):
         content = message['content']
         
         if sender == 'my response':
-            formatted_messages.append(f'AI: {content}')
+            formatted_messages.append(f'{role1}: {content}')
         elif sender == 'their message':
-            formatted_messages.append(f'user: {content}')
+            formatted_messages.append(f'{role2}: {content}')
 
     result = '\n'.join(formatted_messages)
+    print("post processed topic: ", result)
     return result
 
 def memoryPostProcessForStorage(comments):

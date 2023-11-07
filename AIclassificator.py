@@ -89,6 +89,11 @@ class AIclassificator:
         [{"LOWER": "remember"}],
     ]
 
+    endConversation = [
+        [{"LOWER": "end"}, {"LOWER": "conversation"}],
+        [{"LOWER": "conversation"}, {"LOWER": "end"}],
+    ]
+
     deleteEntryFAQ = [
         [{"LOWER": "delete"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}],
         [{"LOWER": "remove"}, {"LOWER": {"IN": ["faq", "issue", "answer"]}}, {"LOWER": {"IN": ["entry", "issue", "answer"]}}],
@@ -122,6 +127,10 @@ class AIclassificator:
             
             intent = self.getUserIntent(text, "show_topics")
             if intent == "show_topics":
+                return {"intent": intent}
+        
+            intent = self.getUserIntent(text, "end_conversation")
+            if intent == "end_conversation":
                 return {"intent": intent}
             
             return {"intent": "other_intent"}
@@ -320,6 +329,20 @@ Which problems is user to which our AI support agent is chatting with experienci
             
             if any(matches):
                 return "add_file_to_knowledgebase"
+            return "other_intent"
+        
+        elif usecase == "end_conversation":
+            matcher = Matcher(self.nlp.vocab)
+            patterns = self.endConversation
+
+            for pattern in patterns:
+                print(pattern)
+                matcher.add("END_CONVERSATION_PATTERN", [pattern])
+
+            matches = matcher(doc)
+            
+            if any(matches):
+                return "end_conversation"
             return "other_intent"
         
         elif usecase == "show_topics":

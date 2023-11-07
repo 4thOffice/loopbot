@@ -105,6 +105,9 @@ class AIhelper:
     def findResponses(self, sender_userID, recipient_userID, user_input, authkey):
         context = directchatHistory.getAllComments(5, recipient_userID, authkey)
         contextLastTopic = directchatHistory.getLastTopic(context)
+        #contextLastTopic1 = directchatHistory.getLastTopic(context, secondLast=True)
+        print("last topic:", contextLastTopic)
+        #print("second last topic:", contextLastTopic1)
 
         if len(contextLastTopic) > 0:
             context = contextLastTopic
@@ -313,12 +316,14 @@ class AIhelper:
             relavantChats = []
             for comment in relavantChatsQuery:
                 #print(comment)
+                print("conversation score: ", comment[1], comment[0].page_content)
                 if len(relavantChats) >= 1:
                     break
-                if comment[1] < 0.4:
+                if comment[1] < 10:
                     relavantChats.append(comment)
             for comment in relavantChatsHistory:
                 #print(comment)
+                print("conversation score: ", comment[1], comment[0].page_content)
                 if len(relavantChats) >= 3:
                     break
                 relavantChats.append(comment)
@@ -329,8 +334,8 @@ class AIhelper:
             relavantChats_noscore = ""
             for index, relavantChat in enumerate(relavantChats):
                 relavantChats_noscore += f"\nConversation {index}:\n"
-                relavantChats_noscore += relavantChat[0].metadata["context"]
-                #relavantChats_noscore += relavantChat[0].page_content
+                #relavantChats_noscore += relavantChat[0].metadata["context"]
+                relavantChats_noscore += relavantChat[0].page_content
         else:
             relavantChats_noscore = ""
 
@@ -349,6 +354,8 @@ class AIhelper:
         memory=conversationBuffer,
         verbose=True
         )
+
+        print("final relavant chats:", relavantChats_noscore)
         reply = chain.run({"relavant_messages": str(relavantChats_noscore)})
 
         end_time2 = time.time()

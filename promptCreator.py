@@ -39,7 +39,7 @@ def createPrompt(goodResponses, badResponses, badResponsesPrevious, relavantInfo
 
 Here are some old conversations with other users that may be relavant: \n"""
             for index, response in enumerate(goodResponses, start=1):
-                system_prompt.content += f"Conversation {index}:\n {response}\n"
+                prompt += f"Conversation {index}:\n {response}\n"
 
         if len(relavantInfo) > 0:
              prompt += ("\nThe following information sources might be of help as well:\n" + relavantInfo + "\n\n")

@@ -33,6 +33,7 @@ class JSONLoader(BaseLoader):
             for conversationIndex, conversation in enumerate(data):
                 conversationData = data[conversation]
                 
+                context = ""
                 for msgIndex, msg in enumerate(conversationData):
                     ID = msg['id']
                     sender = msg['sender']
@@ -40,14 +41,14 @@ class JSONLoader(BaseLoader):
                     message = msg['message']
                     sequenceNumber = msgIndex
                     conversationID = conversation
-                    context = ""
+                    #context = ""
 
-                    for otherMsg in conversationData:
-                        context += otherMsg["sender"] + ": " + otherMsg["message"] + """    """
+                    #for otherMsg in conversationData:
+                    context += msg["sender"] + ": " + msg["message"] + "\n"
 
-                    metadata = dict(sender=sender, conversationID=conversationID, context=context)
-                    
-                    docs.append(Document(page_content=message, metadata=metadata))
+                #metadata = dict(sender=sender, conversationID=conversationID, context=context)
+                
+                docs.append(Document(page_content=context, metadata=dict()))
         return docs
     
     def loadResponses(self, jsondata) -> List[Document]:
