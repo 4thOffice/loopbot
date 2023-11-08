@@ -174,7 +174,7 @@ class AIclassificator:
 Which problem is customer to which our support agent is chatting with experiencing?"""
 
         if len(classList) > 0:
-            prompt_change_message += "You can choose from these issue options:\n" + "\n".join(classList) + "\n"
+            prompt_change_message += "\nYou can choose from these issue options:\n" + "\n".join(classList) + "\n"
 
         prompt_change_message += """Classify the text below (output should be only a problem name and be very specific):\n"""
 

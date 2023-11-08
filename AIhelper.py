@@ -23,7 +23,7 @@ class AIhelper:
 
     feedbackHandler = None
 
-    def __init__(self, openAI_APIKEY, userDataHandler):
+    def __init__(self, openAI_APIKEY, userDataHandler, troubleshootHandler):
         global loader
         self.openAI_APIKEY = openAI_APIKEY
 
@@ -48,6 +48,7 @@ class AIhelper:
 
         #print("Finished embbeding loopbot data")
 
+        self.troubleshootHandler_ = troubleshootHandler
         self.userDataHandler_ = userDataHandler
         self.feedbackHandler = userFeedbackHandler.UserFeedbackHandler(feedbackBuffer=2)
         self.AIclassificator_ = AIclassificator(openAI_APIKEY)
@@ -280,8 +281,10 @@ class AIhelper:
         else:
             return "Wait for user to reply."
 
-        memory = directchatHistory.memoryPostProcess(comments)
-        
+        comments = directchatHistory.getAllComments(20, recipient_userID, authKey)
+        comments = directchatHistory.getLastTopic(comments)
+        return self.troubleshootHandler_.getTroubleshootSuggestion(sender_userID, comments)
+
         relavantInfoInFilesQuery = self.findRelavantInfoInCustomFiles(sender_userID, user_input)
         relavantInfoInFilesHistory = self.findRelavantInfoInCustomFiles(sender_userID, user_input)
 

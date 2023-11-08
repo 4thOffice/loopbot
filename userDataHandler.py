@@ -45,7 +45,6 @@ class UserDataHandler:
                         self.user_data[userID]["other"]["docs"].add_documents(documents)
                     else:
                         self.user_data[userID]["other"] = {"docs": FAISS.from_documents(documents, cached_user_embedder)}
-
         print(self.user_data)
 
     def checkUserData(self, userID):

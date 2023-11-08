@@ -200,8 +200,9 @@ def check_intent():
 def end_conversation():
     sender_userID = request.args.get('sender_userID', type=str)
     recipient_userID = request.args.get('recipient_userID', type=str)
+    classified_issue = request.args.get('classified_issue', type=str)
     
-    reply = troubleshootHandler_.endConversation(sender_userID, recipient_userID)
+    reply = troubleshootHandler_.endConversation(sender_userID, recipient_userID, classified_issue)
     #print("intent: ", intent["intent"])
 
     return jsonify({"reply": reply})
@@ -244,12 +245,12 @@ def get_answer_regular():
 
 if __name__ == '__main__':
     userDataHandler_ = userDataHandler.UserDataHandler()
-    AIhelper_ = AIhelper.AIhelper(keys.openAI_APIKEY, userDataHandler_)
+    troubleshootHandler_ = troubleshootHandler.TroubleshootHandler(keys.openAI_APIKEY)
+    AIhelper_ = AIhelper.AIhelper(keys.openAI_APIKEY, userDataHandler_, troubleshootHandler_)
     AIhelperEmail_ = AIhelperEmail.AIhelperEmail(keys.openAI_APIKEY, userDataHandler_)
     AIrephraser_ = AIrephraser.AIrephraser(keys.openAI_APIKEY)
     AIregular_ = AIregular.AIregular(keys.openAI_APIKEY)
     AIclassificator_ = AIclassificator.AIclassificator(keys.openAI_APIKEY)
-    troubleshootHandler_ = troubleshootHandler.TroubleshootHandler(keys.openAI_APIKEY)
     app.run(host='0.0.0.0', port=5000, debug=True)
 
     #while(1):
