@@ -30,18 +30,18 @@ def serialize_node(node):
     serialized_node = {
         "name": node.name,
         "type": node.type,  # Add the "type" field to the serialized data
-        "answers": {key: serialize_node(value) for key, value in node.answers.items()}
+        "childrenNodes": [serialize_node(child) for child in node.childrenNodes]
     }
     return serialized_node
 
 def deserialize_node(json_data, parent=None):
     name = json_data["name"]
     node_type = json_data.get("type")  # Extract the "type" field from JSON data
-    node = Node(name, parent=parent, answers={}, type=node_type)
-    if "answers" in json_data:
-        answers = json_data["answers"]
-        for key, child_data in answers.items():
-            node.answers[key] = deserialize_node(child_data, parent=node)
+    node = Node(name, parent=parent, childrenNodes=[], type=node_type)
+    if "childrenNodes" in json_data:
+        childrenNodes = json_data["childrenNodes"]
+        for child_data in childrenNodes:
+            node.childrenNodes.append(deserialize_node(child_data, parent=node))
     return node
 
 # Retrieve JSON data for a user and data_name

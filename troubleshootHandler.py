@@ -16,10 +16,9 @@ import openai
 from anytree import Node, RenderTree
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 import time
+import re
 
 class TroubleshootHandler:
-
-    root = Node("Can you please provide more information about the issue you are facing?", answers={}, type="Question")
 
     def __init__(self, openAI_APIKEY):
         self.openAI_APIKEY = openAI_APIKEY
@@ -27,41 +26,62 @@ class TroubleshootHandler:
         with open('whitelist.json', 'r') as file:
             self.whitelist = json.load(file)
 
+    def extractFirstCustomerMsg(self, comments):
+        firstMessage = ""
+        firstCustomerMsgFound = False
+        for comment in comments:
+            if comment['sender'] == "their message":
+                firstMessage += " " + comment["content"]
+                firstCustomerMsgFound = True
+            elif firstCustomerMsgFound:
+                break
+
+        return firstMessage
+
     def timeoutOpenAICall(self, user_msg, system_msg):
+        timeout_seconds = 5
         start_time = time.time()
-        response = None
-        
-        while time.time() - start_time < 5:
-            try:
-                # Make the API call
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": system_msg},
-                        {"role": "user", "content": user_msg}
-                    ]
-                )
-                break  # If successful, exit the loop
-            except Exception as e:
-                print(f"Error occurred: {e}")
-                time.sleep(1)  # Wait for 1 second before retrying
-        if response is not None:
-            return response
-        else:
-            print("OpenAI API call timed out.")
+
+        while True:
+            # Your API call
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg}
+                ]
+            )
+
+            # Check if the response contains an answer
+            if "choices" in response and response["choices"]:
+                return response
+
+            # If the elapsed time exceeds the timeout, break out of the loop
+            if time.time() - start_time > timeout_seconds:
+                print("Timeout: No response within 5 seconds")
+                break
+
+            # If no answer yet, wait for a short duration before retrying
+            time.sleep(3)
 
     def isSameQuestionGPT(self, question1, question2, context, same=False):
-        prompt = "I will provide you a question 1 and question 2."
-
         if same:
+            prompt = "You will be deciding whether 2 questions you will be given are the same. Output should ONLY be yes/no"
             system_msg = "You will be deciding whether 2 questions you will be given are the same. Output should ONLY be yes/no"
+            #system_msg = "You will be deciding whether 2 questions you will be given are the same. Output should ONLY be yes/no"
         else:
+            prompt = "You will be deciding whether 2 questions you will be given are generally similar. They have to ask for generally similar thing, they can be posed differently. Output should ONLY be yes/no"
             system_msg = "You will be deciding whether 2 questions you will be given are generally similar. They have to ask for generally similar thing, they can be posed differently. Output should ONLY be yes/no"
+            #system_msg = "You will be deciding whether 2 questions you will be given are generally similar. They have to ask for generally similar thing, they can be posed differently. Output should ONLY be yes/no"
+
+
+        prompt += "\n\nI will provide you a question 1 and question 2."
 
         prompt += "\n\nQuestion 1: " + question1
         prompt += "\nQuestion 2: " + question2 + "\n\n"
         prompt += "Context conversation:\n" + context
 
+        #print(prompt)
         response = self.timeoutOpenAICall(prompt, system_msg)
         #response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
         #                                        messages=[{"role": "system", "content": system_msg},
@@ -84,10 +104,11 @@ class TroubleshootHandler:
         return False
     
     def isSameAnswerGPT(self, answer1, answer2, question, context):
-        prompt = "I will provide you answer 1 and answer 2. Figure out if the jist of both answers is similar. If it is similar, print 'yes' or else print 'no'."
+        prompt = "You will be deciding whether 2 answers you will be given are GENERALLY similar - they dont have to be exactly the same. Output should ONLY be yes/no"
+        prompt += "\n\nI will provide you answer 1 and answer 2. Figure out if the fundamental meaning of both answers is similar. If it is similar, print 'yes' or else print 'no'."
         #Follow these steps in order to decide if answers are similar enough: From the answer, extract only the most important information. Figure out if these informations are somewhat similar to each other. If they are say 'yes' if not say 'no'"
 
-        system_msg = "You will be deciding whether 2 answers you will be given are GENERALLY similar - they dont have to be exactly the same. Output should ONLY be yes/no"
+        #system_msg = "You will be deciding whether 2 answers you will be given are GENERALLY similar - they dont have to be exactly the same. Output should ONLY be yes/no"
 
         prompt += "\n\nQuestion: " + question
         prompt += "\nAnswer 1: " + answer1
@@ -95,7 +116,7 @@ class TroubleshootHandler:
         prompt += "Context conversation:\n" + context
 
         #print(prompt)
-        response = self.timeoutOpenAICall(prompt, system_msg)
+        response = self.timeoutOpenAICall(prompt, "")
         #response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
         #                                        messages=[{"role": "system", "content": system_msg},
         #                                        {"role": "user", "content": prompt}])
@@ -115,6 +136,30 @@ class TroubleshootHandler:
         print("-------------------------------")
         return False
 
+    def getAnswerOptionGPT(self, question, answerOptions, userAnswer):
+        prompt = "lets think step by step.\n\nI have a decision tree for my support chat which helps support agents figure out the issue with questions and answers. Each node is a question and each connection from this node is an answer option."
+        prompt = "\n\nI will provide you a question that customer has been asked and answer options along with answer that customer actually gave to this specific question. I want you to compare answer customer gave to all answer options."
+        prompt += "\n\nQuestion: " + question
+        prompt += "\nAnswer customer gave: " + userAnswer + "\n"
+        prompt += "\n".join(f"Answer option {index + 1}: {answer}" for index, answer in enumerate(answerOptions))
+        prompt += "\n\nPrint out answer option that is most similar to answer that customer provided. If none of answer options are similar enough, print out a new answer option for this answer.\n\nOutput should be exactly in format (without '{}'') with NO other text:\n\n{Answer option}"
+        #print(prompt)
+        response = self.timeoutOpenAICall(prompt, "")
+        #response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
+        #                                        messages=[{"role": "system", "content": system_msg},
+        #                                        {"role": "user", "content": prompt}])
+        answer = response["choices"][0]["message"]["content"]
+        answer = answer.lower()
+        print("-------------------------------")
+        print("question: ", question)
+        print("Customer answer: ", userAnswer)
+        print("\n".join(f"Answer option {index + 1}: {answer}" for index, answer in enumerate(answerOptions)))
+        time.sleep(1)
+
+        print("RETURNED OPTION: " + re.search(r'{(.*?)}', answer).group(1))
+        print("-------------------------------")
+        return re.search(r'{(.*?)}', answer).group(1)
+
     def isSameQuestion(self, question1, question2):
         evaluator = load_evaluator("pairwise_embedding_distance", distance_metric=EmbeddingDistance.EUCLIDEAN)
         distance = evaluator.evaluate_string_pairs(
@@ -132,11 +177,12 @@ class TroubleshootHandler:
         return distance["score"]
 
     def getTroubleshootSuggestion(self, sender_userID, comments):
+        firstMessage = self.extractFirstCustomerMsg(comments)
         comments = directchatHistory.memoryPostProcess(comments, role1="Support agent", role2="Customer")
         decision_tree_root = databaseHandler.get_decision_tree(sender_userID, "support")
         if decision_tree_root is None:
             print("decision tree is none")
-            decision_tree_root = Node("Can you please provide more information about the issue you are facing?", answers={}, type="question")
+            decision_tree_root = Node("What is the problem?", children=[], type="question")
 
         questions = self.extractAgentQuestions(comments)
         answers = self.extractCustomerAnswers(comments, questions)
@@ -144,84 +190,74 @@ class TroubleshootHandler:
         QnA = []
         for index, question in enumerate(questions):
             QnA.append({"question": question, "answer": answers[index]})
+
+        QnA.insert(0, {"question": "What is the problem?", "answer": firstMessage})
+
         print(QnA)
         formatted_qna = ""
         for pair in QnA:
             formatted_qna += f"Question: {pair['question']}\nAnswer: {pair['answer']}\n\n"
 
-        self.print_decision_tree(decision_tree_root)
+        self.print_decision_tree(decision_tree_root, indent=0)
         return self.getSuggestedQuestion(decision_tree_root, QnA, comments)
-        #return "\n".join(questions)
-        return formatted_qna
 
     def getSuggestedQuestion(self, currentNode, QnA, context):
-        if len(QnA) <= 0 or currentNode.type == "issueClassification":
+        if currentNode.type == "issueClassification":
             return currentNode.name
+        
+        if len(QnA) <= 0 and currentNode.type == "answer":
+            return currentNode.children[0].name
 
         print("---------------TROUBLESHOOT PATH-------------------")
         print("cc: ", currentNode.name)
+        print("cc: ", QnA)
 
-        foundQuestion = False
-        for index, qnaSet in enumerate(QnA):
-            if self.isSameQuestionGPT(qnaSet["question"], currentNode.name, context, same=True):
-                foundQuestion = True
-                temp = QnA[index]
-                QnA[index] = QnA[0]
-                QnA[0] = temp
-                break
-                
-        if foundQuestion:
-            for answerOption in currentNode.answers:
-                #answerOption = answerOption.split("[:]")[0]
-                if self.isSameAnswerGPT(answerOption, QnA[0]["answer"], QnA[0]["question"], context):
-                    return self.getSuggestedQuestion(currentNode.answers[answerOption], QnA[1:], context)
-            return "I don't know how to troubleshoot further.\n-> unknown answer <-"        
-        return currentNode.name + "\n-> unknown question <-"
+        if currentNode.type == "question" or currentNode.type == "root":
+            for index, option in enumerate(currentNode.children):
+                if self.isSameAnswerGPT(QnA[0]["answer"], option.name, QnA[0]["question"], context):
+                    return self.getSuggestedQuestion(currentNode.children[index], QnA[1:], context)
+            return "I dont know how to troubleshoot further\n-> Unknown answer <-"
+        elif currentNode.type == "answer":
+            for index, option in enumerate(currentNode.children):
+                if self.isSameQuestionGPT(QnA[0]["question"], option.name, context):
+                    return self.getSuggestedQuestion(currentNode.children[index], QnA, context)   
+            return currentNode.children[0].name     
         
-    def addToTree(self, QnA, parentNode, currentNode, previousAnswer, context, classifiedIssue, skipQuestionCompare=False):
+    def addToTree(self, QnA, parentNode, currentNode, context, classifiedIssue):
+        print(QnA)
+
         if len(QnA) <= 0 or currentNode.type == "issueClassification":
             #print("parent node: ", parentNode)
             return parentNode
 
-        question = QnA[0]["question"]
-        answer = QnA[0]["answer"]
-        #QnA = QnA[1:]
-
-        if self.isSameQuestionGPT(question, currentNode.name, context):
-            QnA = QnA[1:]
-            print("same question")
-            for answerOption in currentNode.answers:
-                if self.isSameAnswerGPT(answer, answerOption, question, context):
-                    print("has such answer")
-                    return self.addToTree(QnA, parentNode, currentNode.answers[answerOption], answer, context, classifiedIssue)
-                
-            print("doesnt have such answer")
-            if len(QnA) > 0:
-                currentNode.answers[answer] = Node(QnA[0]["question"], parent=currentNode, answers={}, type="question")
-                return self.addToTree(QnA, parentNode, currentNode.answers[answer], answer, context, classifiedIssue)
-            else:
-                currentNode.answers[answer] = Node(classifiedIssue, parent=currentNode, answers={}, type="issueClassification")
-                return self.addToTree(QnA, parentNode, currentNode.answers[answer], answer, context, classifiedIssue)
+        for index, option in enumerate(currentNode.childrenNodes):
+            optionName = option.name
+            if currentNode.type == "question" or currentNode.type == "root":
+                if self.isSameAnswerGPT(QnA[0]["answer"], optionName, QnA[0]["question"], context):
+                    print("Moving forward - answer")
+                    return self.addToTree(QnA[1:], parentNode, currentNode.childrenNodes[index], context, classifiedIssue)
+            elif currentNode.type == "answer":
+                if self.isSameQuestionGPT(QnA[0]["question"], optionName, context, same=True):
+                    print("Moving forward - question")
+                    return self.addToTree(QnA, parentNode, currentNode.childrenNodes[index], context, classifiedIssue)
             
-        else:
-            print("different question")
-            if currentNode.parent != None:
-                #QnA = QnA[1:]
-                print("previous answer: ", previousAnswer)
-                currentNode.parent.answers[(previousAnswer + "[-]" + question)] = Node(question, parent=currentNode.parent, answers={}, type="question")
-                return self.addToTree(QnA, parentNode, currentNode.parent.answers[(previousAnswer + "[-]" + question)], previousAnswer, context, classifiedIssue, skipQuestionCompare=True)
+        if currentNode.type == "question" or currentNode.type == "root":
+            print(QnA[0]["answer"])
+            currentNode.childrenNodes.append(Node(QnA[0]["answer"], parent=currentNode, childrenNodes=[], type="answer"))
+            print("Adding children - answer")
+            return self.addToTree(QnA, parentNode, currentNode.childrenNodes[-1], context, classifiedIssue)
+        elif currentNode.type == "answer":
+            if len(QnA) > 1:
+                if len(currentNode.childrenNodes) <= 0:
+                    QnA = QnA[1:]
+                currentNode.childrenNodes.append(Node(QnA[0]["question"], parent=currentNode, childrenNodes=[], type="question"))
+                print("Adding children - question")
+                return self.addToTree(QnA, parentNode, currentNode.childrenNodes[-1], context, classifiedIssue)
             else:
-                found = False
-                for answerOption in currentNode.answers:
-                    print("comparing: ", QnA[0]["question"], answerOption[5:])
-                    if self.isSameQuestionGPT(QnA[0]["question"], answerOption[5:], context) and not skipQuestionCompare:
-                        found = True
-                        return self.addToTree(QnA, parentNode, currentNode.answers[answerOption], answer, context, classifiedIssue)
-                if not found:
-                    currentNode.answers[("none[-]" + QnA[0]["question"])] = Node(question, parent=currentNode, answers={}, type="question")
-                    return self.addToTree(QnA, parentNode, currentNode.answers[("none[-]" + QnA[0]["question"])], answer, context, classifiedIssue) 
+                currentNode.childrenNodes.append(Node(classifiedIssue, parent=currentNode, childrenNodes=[], type="issueClassification"))
+                print("Adding children - issueclassification")
+                return self.addToTree(QnA, parentNode, currentNode.childrenNodes[-1], context, classifiedIssue)
 
-    
     # Function to get keys from values
     def get_keys_from_value(self, dictionary, search_value):
         keys_list = []
@@ -231,13 +267,17 @@ class TroubleshootHandler:
         return keys_list
     
     def print_decision_tree(self, node, indent=0):
+        if node.type == "root":
+            print('  ' * indent + node.name)
         if node.type == "question":
             print('  ' * indent + "Question: " + node.name)
-        else:
+        elif node.type == "issueClassification":
             print('  ' * indent + "Classified issue: " + node.name)
-        for answer in node.answers:
-            print('  ' * (indent + 1) + "Answer: " + answer)
-            self.print_decision_tree(node.answers[answer], indent + 2)
+        elif node.type == "answer":
+            print('  ' * indent + "Answer: " + node.name)
+        for child in node.children:
+            #print('  ' * (indent + 1) + "Answer: " + child)
+            self.print_decision_tree(child, indent + 2)
 
     def getAuthkey(self, sender_userID):
         return self.whitelist[sender_userID]
@@ -315,7 +355,7 @@ class TroubleshootHandler:
         prompt = "I will give you a list of questions:\n\n"
         
         prompt += "\n".join(f"{index + 1}. {question}" for index, question in enumerate(questions))
-        prompt = prompt + "\n\nAnswer ALL questions you are given, even if they are repeated. Give me customer answer (in first person) to ALL of these questions above based on this conversation. basically give me replies that customer gave to these questions.:"
+        prompt = prompt + "\n\nAnswer ALL questions you are given, even if they are repeated. Give me customer answer (in first person) to ALL of these questions above based on this conversation. basically give me replies that customer gave to these questions. (answers/replies come AFTER the question has been asked and not before):"
         prompt = prompt + "\n\n" + comments
 
         prompt += "\n\n" + "Lets think step by step.\nYou will be providing answers to questions. Output format should be:\n1. {answer to question 1}\n2. {answer to question 2}...\n\nOutput should only have answers. Number of answers should be the same as number of questions I give you."
@@ -339,10 +379,8 @@ class TroubleshootHandler:
     def endConversation(self, sender_userID, recipient_userID, classifiedIssue):
         authKey = self.getAuthkey(sender_userID)
         decision_tree_root = databaseHandler.get_decision_tree(sender_userID, "support")
-        
         if decision_tree_root is None:
-            print("decision tree is none")
-            decision_tree_root = Node("Can you please provide more information about the issue you are facing?", answers={}, type="question")
+            decision_tree_root = Node("What is the problem?", parent=None, childrenNodes=[], type="root")
 
         lastComment = databaseHandler.get_user_last_comment(sender_userID, recipient_userID)
         print(recipient_userID)
@@ -382,72 +420,31 @@ class TroubleshootHandler:
         QnA = []
         for index, question in enumerate(extractedQuestions):
             QnA.append({"question": question, "answer": extractedAnswers[index]})
+        
+        firstMessage = self.extractFirstCustomerMsg(comments)
+        QnA.insert(0, {"question": "What is the problem?", "answer": firstMessage})
+
+        """QnA = []
+        QnA.append({"question": "Empty", "answer": "I do not see my emails. I am a new customer."})
+        #QnA.append({"question": "Can you please provide more information about the problem you are facing?", "answer": "I do not see my emails. I am a new customer."})
+        QnA.append({"question": "Can you send a screenshot of the issue?", "answer": "Here it is. [screenshot]"})
+        QnA.append({"question": "Have you connected your personal inbox?", "answer": "I have not."})
+        QnA.append({"question": "Are you seeing a spinner or any loading indicator?", "answer": "Yes i see it."})
+        QnA.append({"question": "Do you see your emails them after waiting a few minutes?", "answer": "Ah yes, I can see them now."})
+        comments = directchatHistory.memoryPostProcess(comments, role1="Support agent", role2="Customer")
+        newTree = self.addToTree(QnA, decision_tree_root, decision_tree_root, comments, classifiedIssue="Person inbox not connected")
+        print("newtree 1:")
+        self.print_decision_tree(newTree)
         """
-        QnA = []
-        QnA.append({"question": "Can you please provide more information about the problem you are facing?", "answer": "I do not see my emails. I am a new customer."})
-        QnA.append({"question": "Can you send a screenshot of the issue?", "answer": "Here it is. [screenshot]"})
-        QnA.append({"question": "Have you connected your personal inbox?", "answer": "I have not."})
-        QnA.append({"question": "Are you seeing a spinner or any loading indicator?", "answer": "Yes i see it."})
-        QnA.append({"question": "Do you see your emails them after waiting a few minutes?", "answer": "Ah yes, I can see them now."})
-        
-        newTree = self.addToTree(QnA, self.root, self.root, QnA[0]["answer"])
-        self.print_decision_tree(newTree)
-
-        QnA = []
-        QnA.append({"question": "Is there any emails showing in your personal inbox?", "answer": "No."})
-        QnA.append({"question": "Can you send a screenshot of the issue?", "answer": "Here it is. [screenshot]"})
-        QnA.append({"question": "Have you connected your personal inbox?", "answer": "I have not."})
-        QnA.append({"question": "Are you seeing a spinner or any loading indicator?", "answer": "Yes i see it."})
-        QnA.append({"question": "Do you see your emails them after waiting a few minutes?", "answer": "Ah yes, I can see them now."})
-        
-        newTree = self.addToTree(QnA, self.root, self.root, QnA[0]["answer"])
-        self.print_decision_tree(newTree)
-
-        QnA = []
-        QnA.append({"question": "Is there any emails showing in your personal inbox?", "answer": "No."})
-        QnA.append({"question": "Can you send a screenshot of the issue?", "answer": "Here it is. [screenshot]"})
-        QnA.append({"question": "When did you connect your personal inbox or other inboxes you have imn your account? Also tell me how did you do that? Tell me specific steps.", "answer": "about 3 hours ago."})
-        QnA.append({"question": "Are you seeing a spinner or any loading indicator?", "answer": "Yes i see it."})
-        QnA.append({"question": "Do you see your emails them after waiting a few minutes?", "answer": "Ah yes, I can see them now."})
-
-        newTree = self.addToTree(QnA, self.root, self.root, QnA[0]["answer"])
-        self.print_decision_tree(newTree)
-
-        QnA = []
-        QnA.append({"question": "Is there any emails showing in your personal inbox?", "answer": "No."})
-        QnA.append({"question": "Can you send a screenshot of the issue?", "answer": "Here it is. [screenshot]"})
-        QnA.append({"question": "Have you connected your personal inbox?", "answer": "about 3 hours ago."})
-        QnA.append({"question": "Are you seeing a spinner or any loading indicator?", "answer": "No there is no spinner or loading indicator."})
-        QnA.append({"question": "Does it show up after a few moments", "answer": "Ah yes, I can see it now."})
-        
-        newTree = self.addToTree(QnA, self.root, self.root, QnA[0]["answer"])
-        self.print_decision_tree(newTree)"""
-        #print("tree printed: ")
-        #self.print_tree(newTree)
-        #self.getSuggestedQuestion(newTree, "")
-        #print(newTree)
 
         comments = directchatHistory.memoryPostProcess(comments, role1="Support agent", role2="Customer")
-        newTree = self.addToTree(QnA, decision_tree_root, decision_tree_root, QnA[0]["answer"], comments, classifiedIssue=classifiedIssue)
+        newTree = self.addToTree(QnA, decision_tree_root, decision_tree_root, comments, classifiedIssue=classifiedIssue)
         self.print_decision_tree(newTree)
-
-        """# Serialize the root node
-        serialized_root = self.serialize_node(newTree)
-
-        # Convert the serialized data to JSON
-        json_data = json.dumps(serialized_root, indent=2)
-        print(json_data)
-
-        # Deserialize JSON data back to a Node object
-        parsed_data = json.loads(json_data)
-        deserialized_root = self.deserialize_node(parsed_data)
-        print(deserialized_root)
-        self.print_decision_tree(deserialized_root)"""
+        #print(RenderTree(newTree))
 
         databaseHandler.insert_decision_tree(sender_userID, newTree, "support")
 
         return '\n'.join(extractedQuestions)
-        #return "Done"
     
 #ts = TroubleshootHandler(keys.openAI_APIKEY)
 #ts.endConversation("user_24564769", "user_24661115")

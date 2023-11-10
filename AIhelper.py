@@ -10,11 +10,12 @@ from langchain.storage import LocalFileStore
 from langchain.embeddings import OpenAIEmbeddings, CacheBackedEmbeddings
 import sys
 sys.path.append('./APIcalls')
+sys.path.append('./FeedbackHandlers')
 import APIcalls.directchatHistory as directchatHistory
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 import promptCreator
 from langchain.vectorstores.faiss import FAISS
-import userFeedbackHandler
+import FeedbackHandlers.userFeedbackHandler as userFeedbackHandler
 import json
 from AIclassificator import AIclassificator
 import databaseHandler
@@ -159,22 +160,6 @@ class AIhelper:
         return responsesGood, responsesBad
 
     def handleGoodResponse(self, sender_userID, recipient_userID, AIresponse):
-
-        
-        handled_as_good = False
-
-        """for comment in comments:
-            if comment["sender"] == "my response":
-                evaluator = load_evaluator("pairwise_embedding_distance", distance_metric=EmbeddingDistance.EUCLIDEAN)
-                result = evaluator.evaluate_string_pairs(
-                    prediction=comment["content"], prediction_b=AIresponse
-                )
-                #print("comparison score ", result['score'])
-                if result['score'] < 0.2:
-                    #print("close enough")
-                    self.handleGoodResponse(sender_userID, recipient_userID, comment["content"])
-                    handled_as_good = True"""
-        
         authKey = self.whitelist[sender_userID]
         self.userDataHandler_.checkUserData(sender_userID)
         return self.feedbackHandler.handleGoodResponse(sender_userID, recipient_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["good_responses"], self.userDataHandler_.user_data[sender_userID]["bad_responses"], authKey)
@@ -283,6 +268,7 @@ class AIhelper:
 
         comments = directchatHistory.getAllComments(20, recipient_userID, authKey)
         comments = directchatHistory.getLastTopic(comments)
+        memory = directchatHistory.memoryPostProcess(comments)
         return self.troubleshootHandler_.getTroubleshootSuggestion(sender_userID, comments)
 
         relavantInfoInFilesQuery = self.findRelavantInfoInCustomFiles(sender_userID, user_input)
@@ -311,7 +297,7 @@ class AIhelper:
 
         #print("SIMILAR CUSTOM INFO: ", relavantInfo)
         #PRVA 2 RELAVANT CHATA STA OD USER INOUT IN ZADNJI JE OD USERINPUT + HISTORY
-        if not regular_user:    
+        if not regular_user:
             relavantChatsQuery = self.findRelavantChats(user_input)
             relavantChatsHistory = self.findRelavantChats(memory)
 

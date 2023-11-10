@@ -9,12 +9,13 @@ from langchain.storage import LocalFileStore
 from langchain.embeddings import OpenAIEmbeddings, CacheBackedEmbeddings
 import sys
 sys.path.append('./APIcalls')
+sys.path.append('./FeedbackHandlers')
 import APIcalls.directchatHistory as directchatHistory
 import APIcalls.emailHistory as emailHistory
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 import promptCreator
 from langchain.vectorstores.faiss import FAISS
-import userFeedbackHandlerEmail
+import FeedbackHandlers.userFeedbackHandlerEmail as userFeedbackHandlerEmail
 import json
 
 class AIhelperEmail:

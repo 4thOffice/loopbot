@@ -108,7 +108,7 @@ def getAllComments(historySize, userID, authkey):
 
 #get comments of the last topic in a comment set
 def getLastTopic(comments, secondLast=False):
-    timeDifferenceThreshold = 1 #in hours
+    timeDifferenceThreshold = 0.5 #in hours
     commentsInTopic = []
 
     if len(comments) <= 0:
