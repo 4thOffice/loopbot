@@ -1,4 +1,7 @@
 import json
+import sys
+sys.path.append('./Auxiliary')
+sys.path.append('./APIcalls')
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import AIhelperEmail
@@ -7,11 +10,9 @@ import AIhelper
 import AIrephraser
 import requests
 import AIregular
-import userDataHandler
+import Auxiliary.userDataHandler as userDataHandler
 import AIclassificator
 import troubleshootHandler
-import sys
-sys.path.append('./APIcalls')
 import APIcalls.directchatHistory as directchatHistory
 
 app = Flask(__name__)
@@ -99,34 +100,6 @@ def handle_bad_response():
     ret = AIhelper_.handleBadResponse(sender_userID, recipient_userID, AIresponse)
 
     return jsonify(ret)
-
-@app.route('/update_faq', methods=['PUT'])
-def update_faq():
-    sender_userID = request.args.get('sender_userID', type=str)
-    AIresponse = request.args.get('AIresponse', type=str)
-    classified_issue = request.args.get('classified_issue', type=str)
-    FAQ_conversation_stage = request.args.get('FAQ_conversation_stage', type=int)
-    user_input = request.args.get('user_input', type=str)
-
-    print("FAQ_conversation_stage ", FAQ_conversation_stage)
-    print("user_input ", user_input)
-    print("AIresponse ", AIresponse)
-    
-    ret = AIhelper_.updateFAQ(sender_userID, AIresponse, classified_issue, FAQ_conversation_stage, user_input)
-
-    return jsonify(ret)
-
-@app.route('/show_faq', methods=['PUT'])
-def show_faq():
-    sender_userID = request.args.get('sender_userID', type=str)
-    FAQShowStage = request.args.get('FAQShowStage', type=int)
-    user_input = request.args.get('user_input', type=str)
-    
-    ret = AIhelper_.showFAQ(sender_userID, FAQShowStage, user_input)
-
-    return jsonify(ret)
-
-
 
 @app.route('/handle_good_response_email', methods=['PUT'])
 def handle_good_response_email():

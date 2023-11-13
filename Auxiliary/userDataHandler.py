@@ -1,11 +1,10 @@
-import json
-import databaseHandler
-import loader
+import sys
+sys.path.append('./Auxiliary')
+import Auxiliary.databaseHandler as databaseHandler
+import Auxiliary.loader as loader
 from langchain.vectorstores.faiss import FAISS
 from langchain.embeddings import OpenAIEmbeddings, CacheBackedEmbeddings
 from langchain.storage import LocalFileStore
-from langchain.document_loaders import TextLoader
-from langchain.text_splitter import CharacterTextSplitter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 class UserDataHandler:
@@ -26,10 +25,7 @@ class UserDataHandler:
                 if("CUSTOM_" not in file_name):
                     
                     loader_ = loader.JSONLoader(file_path="")
-                    if file_name == "faq":
-                        documents = loader_.loadFAQ(json_data[file_name])
-                    else:
-                        documents = loader_.loadResponses(json_data[file_name])
+                    documents = loader_.loadResponses(json_data[file_name])
                     self.user_data[userID][file_name] = {"docs": FAISS.from_documents(documents, cached_user_embedder), "json": json_data[file_name]}
                 else:
                     text_splitter = RecursiveCharacterTextSplitter(
@@ -54,7 +50,6 @@ class UserDataHandler:
             databaseHandler.add_user_json_data(userID, "bad_responses")
             databaseHandler.add_user_json_data(userID, "good_responses_email")
             databaseHandler.add_user_json_data(userID, "bad_responses_email")
-            databaseHandler.add_user_json_data(userID, "faq")
 
             json_data = databaseHandler.get_user_json_data(userID)
             
@@ -66,10 +61,7 @@ class UserDataHandler:
                 )
                 if(file_name != "other"):
                     loader_ = loader.JSONLoader(file_path="")
-                    if file_name == "faq":
-                        documents = loader_.loadFAQ(json_data[file_name])
-                    else:
-                        documents = loader_.loadResponses(json_data[file_name])
+                    documents = loader_.loadResponses(json_data[file_name])
                     
                     self.user_data[userID][file_name] = {"docs": FAISS.from_documents(documents, cached_embedder_good), "json": json_data[file_name]}
 

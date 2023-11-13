@@ -1,19 +1,14 @@
+import sys
+sys.path.append('./Auxiliary')
 import json
 import os
-from langchain.schema import SystemMessage
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts.chat import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-)
-from langchain.chains import LLMChain
 import keys
-import databaseHandler
+import Auxiliary.databaseHandler as databaseHandler
 import sys
 sys.path.append('./APIcalls')
 import APIcalls.directchatHistory as directchatHistory
 import openai
-from anytree import Node, RenderTree
+from anytree import Node
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 import time
 import re
@@ -210,7 +205,7 @@ class TroubleshootHandler:
 
         print("---------------TROUBLESHOOT PATH-------------------")
         print("cc: ", currentNode.name)
-        print("cc: ", QnA)
+        print("QnA: ", QnA)
 
         if currentNode.type == "question" or currentNode.type == "root":
             for index, option in enumerate(currentNode.children):

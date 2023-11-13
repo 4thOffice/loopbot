@@ -1,24 +1,25 @@
+import sys
+sys.path.append('./APIcalls')
+sys.path.append('./FeedbackHandlers')
+sys.path.append('./Auxiliary')
 import os
 import time
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
-import loader
+import Auxiliary.loader as loader
 from langchain.memory import ConversationBufferMemory
 from langchain.storage import LocalFileStore
 from langchain.embeddings import OpenAIEmbeddings, CacheBackedEmbeddings
-import sys
-sys.path.append('./APIcalls')
-sys.path.append('./FeedbackHandlers')
 import APIcalls.directchatHistory as directchatHistory
 from langchain.evaluation import load_evaluator, EmbeddingDistance
-import promptCreator
+import Auxiliary.promptCreator as promptCreator
 from langchain.vectorstores.faiss import FAISS
 import FeedbackHandlers.userFeedbackHandler as userFeedbackHandler
 import json
 from AIclassificator import AIclassificator
-import databaseHandler
+import Auxiliary.databaseHandler as databaseHandler
 
 class AIhelper:
 
@@ -70,46 +71,22 @@ class AIhelper:
                 return False, comments, new_sender_comments
             return True, comments, new_sender_comments
 
-    ##print relavant information about a query
-    def printRelavantChats(relavant_chats):
-        for i, comment in enumerate(relavant_chats):
-            #print("Conversation context:", i, "score:", comment[1])
-
-            context = comment[0].metadata["context"].split("    ")
-            #for txt in context:
-                #print(txt)
-
     #find relavant information abotu a query
     def findRelavantChats(self, input):
-        start_time1 = time.time()
         relavant_chats = self.db_loopbot_data.similarity_search_with_score(input, k=3)
-        start_time2 = time.time()
-        #print("relavant chat finding duration:", start_time2-start_time1)
         return relavant_chats
     
     def findRelavantInfoInCustomFiles(self, sender_userID, input):
-        start_time1 = time.time()
         if "other" in self.userDataHandler_.user_data[sender_userID]:
             relavant_chats = self.userDataHandler_.user_data[sender_userID]["other"]["docs"].similarity_search_with_score(input, k=2)
-            start_time2 = time.time()
-            #print("relavant chat finding duration:", start_time2-start_time1)
             return relavant_chats
         return []
-        
-    def findAnswerFAQ(self, sender_userID, classified_issue):
-        similar_faq_entry = self.userDataHandler_.user_data[sender_userID]["faq"]["docs"].similarity_search_with_score(classified_issue, k=1)
-        #print("similar faq entry: ", similar_faq_entry)
-        if similar_faq_entry[0][1] < 0.3:
-            return similar_faq_entry[0][0].metadata["answer"]
-
-        #print("similar_faq_entry ", similar_faq_entry)
 
     def findResponses(self, sender_userID, recipient_userID, user_input, authkey):
         context = directchatHistory.getAllComments(5, recipient_userID, authkey)
         contextLastTopic = directchatHistory.getLastTopic(context)
         #contextLastTopic1 = directchatHistory.getLastTopic(context, secondLast=True)
         print("last topic:", contextLastTopic)
-        #print("second last topic:", contextLastTopic1)
 
         if len(contextLastTopic) > 0:
             context = contextLastTopic
@@ -121,39 +98,23 @@ class AIhelper:
         goodResponses = self.userDataHandler_.user_data[sender_userID]["good_responses"]["docs"].similarity_search_with_score(context, k=4)
         badResponses = self.userDataHandler_.user_data[sender_userID]["bad_responses"]["docs"].similarity_search_with_score(context, k=3)
 
-
-        #print(goodResponses)
-
         responsesGood = []
-        #print("good:")
         for response in goodResponses:
-            #print("score", response[1])
-            #print("data", response[0])
             if response[1] <= 0.45:
-                #print("lastMsg1: ", lastMsg1)
                 lastMsg2 = response[0].page_content.split("\n")[-1]
                 lastMsg2 = lastMsg1.replace("AI:", "")
                 lastMsg2 = lastMsg1.replace("user:", "")
-
-                #print("lastMsg2: ", lastMsg2)
  
                 evaluator = load_evaluator("pairwise_embedding_distance", distance_metric=EmbeddingDistance.EUCLIDEAN)
                 distance = evaluator.evaluate_string_pairs(
                     prediction=lastMsg1, prediction_b=lastMsg2
                 )
 
-                ##print("distance: ", distance["score"])
-
                 if distance["score"] < 0.21:
-                    #responsesGood.append(response[0].metadata["AIresponse"])
                     responsesGood.append(response[0].page_content)
-                #responsesGood.append(response[0].metadata["AIresponse"])
 
         responsesBad = []
-        #print("bad:")
         for response in badResponses:
-            #print("score", response[1])
-            #print("data", response[0])
             if response[1] <= 0.15:
                 responsesBad.append(response[0].metadata["AIresponse"])
             
@@ -169,60 +130,6 @@ class AIhelper:
         self.userDataHandler_.checkUserData(sender_userID)
         self.feedbackHandler.handleBadResponse(sender_userID, recipient_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["good_responses"], self.userDataHandler_.user_data[sender_userID]["bad_responses"], authKey)
         return (AIresponse + "  -> handeled as negative")
-
-    def updateFAQ(self, sender_userID, AIresponse, classified_issue, FAQ_conversation_stage, user_input):
-        self.userDataHandler_.checkUserData(sender_userID)
-        if FAQ_conversation_stage == 0:
-            existingFAQEntry = self.feedbackHandler.checkIfExistsInFAQ(self.userDataHandler_.user_data[sender_userID]["faq"], classified_issue)
-            if existingFAQEntry != "":
-                return ({"reply": ("FAQ entry already exists:\n\n" + existingFAQEntry + "\n\nWould you like to replace it or keep it?"), "FAQconversationStage": 1})
-            else:
-                self.feedbackHandler.addToFAQ(sender_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["faq"], classified_issue)
-                return ({"reply": "FAQ entry added.", "FAQconversationStage": 0})
-            
-        elif FAQ_conversation_stage == 1:
-            userIntent = self.AIclassificator_.getUserIntent(user_input, "entry_faq")
-            if userIntent == "replace_entry":
-                self.feedbackHandler.addToFAQ(sender_userID, AIresponse, self.userDataHandler_.user_data[sender_userID]["faq"], classified_issue)
-                return ({"reply": "FAQ entry has been replaced.", "FAQconversationStage": 0}) 
-            elif userIntent == "keep_entry":
-                return ({"reply": "Alright. The already existing FAQ entry will be used.", "FAQconversationStage": 0}) 
-            elif userIntent == "other_intent":
-                return ({"reply": "I did not understand that.\nCancelling FAQ update procedure.", "FAQconversationStage": 0}) 
-    
-    def showFAQ(self, sender_userID, FAQShowStage, user_input):
-        self.userDataHandler_.checkUserData(sender_userID)
-        if FAQShowStage == 0:
-            json_data = databaseHandler.get_user_json_data(sender_userID)
-            FAQ = json_data["faq"]
-
-            issues = "\n".join(f"- {response['issue']}" for response in FAQ["responses"] if response["issue"])
-            return ({"reply": ("Here are all answered issues:\n\n" + issues + "\n\nSay if you want an answer for any of these issues."), "FAQShowStage": 1}) 
-        elif FAQShowStage == 1:
-            userIntent = self.AIclassificator_.getUserIntent(user_input, "get_answer_faq")
-            similar_faq_entry = self.userDataHandler_.user_data[sender_userID]["faq"]["docs"].similarity_search_with_score(user_input, k=1)
-            json_data = databaseHandler.get_user_json_data(sender_userID)
-            FAQ = json_data["faq"]
-            
-            #print("similar ", similar_faq_entry[0][1])
-            if similar_faq_entry[0][1] < 0.3:
-                answer = next((response["answer"] for response in FAQ["responses"] if response["issue"] == similar_faq_entry[0][0].page_content), None)
-            
-                if userIntent == "get_answer_faq":
-                    issues = [response["issue"] for response in FAQ["responses"] if response["issue"]]
-                    
-                    return ({"reply": ("Here is the answer:\n\n" + answer), "FAQShowStage": 0}) 
-                
-                elif userIntent == "delete_entry_faq":
-                    issues = [response["issue"] for response in FAQ["responses"] if response["issue"]]
-
-                    answer = next((response["answer"] for response in FAQ["responses"] if response["issue"].lower() == similar_faq_entry[0][0].page_content), None)
-                    return ({"reply": "FAQ entry deleted.", "FAQShowStage": 0}) 
-                else:
-                    return ({"reply": "I did not understand that.\nCancelling FAQ show procedure.", "FAQShowStage": 0})
-                  
-            elif userIntent == "other_intent":
-                return ({"reply": "I did not understand that.\nCancelling FAQ show procedure.", "FAQShowStage": 0}) 
         
     def getAuthkey(self, sender_userID):
         return self.whitelist[sender_userID]
@@ -255,11 +162,6 @@ class AIhelper:
             return "Hello!"
         
         self.userDataHandler_.checkUserData(sender_userID)
-
-        concreteAnswer = self.findAnswerFAQ(sender_userID, classified_issue)
-
-        if concreteAnswer and concreteAnswer != "":
-            return concreteAnswer
         
         if comments[-1]["sender"] == "their message":
             user_input = comments[-1]["content"]
@@ -269,7 +171,7 @@ class AIhelper:
         comments = directchatHistory.getAllComments(20, recipient_userID, authKey)
         comments = directchatHistory.getLastTopic(comments)
         memory = directchatHistory.memoryPostProcess(comments)
-        return self.troubleshootHandler_.getTroubleshootSuggestion(sender_userID, comments)
+        #return self.troubleshootHandler_.getTroubleshootSuggestion(sender_userID, comments)
 
         relavantInfoInFilesQuery = self.findRelavantInfoInCustomFiles(sender_userID, user_input)
         relavantInfoInFilesHistory = self.findRelavantInfoInCustomFiles(sender_userID, user_input)

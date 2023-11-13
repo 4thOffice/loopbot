@@ -35,9 +35,7 @@ def createPrompt(goodResponses, badResponses, badResponsesPrevious, relavantInfo
         system_prompt = SystemMessage(content="You are a chatbot having a conversation with a human. You should decide whether to ask a troubleshoot question or provide a solution if you have enough data.\n")
 
         if len(goodResponses) > 0:
-            prompt += """
-
-Here are some old conversations with other users that may be relavant: \n"""
+            prompt += "\nHere are some old conversations with other users that may be relavant: \n"
             for index, response in enumerate(goodResponses, start=1):
                 prompt += f"Conversation {index}:\n {response}\n"
 
@@ -67,28 +65,22 @@ def createPromptEmail(goodResponses, badResponses, badResponsesPrevious, loopbot
         else:
             prompt = prompt_regular_user_email
 
-        prompt = prompt + """
-
-I will give you the following email conversation history:\n\n""" + emailMemory
+        prompt = prompt + "\nI will give you the following email conversation history:\n\n" + emailMemory
 
         system_prompt = SystemMessage(content="You are answering an email." + """ My name is: """ + username)
 
         if len(goodResponses) > 0:
-            system_prompt.content = system_prompt.content + """
-
-Here are some old conversations with other users that may be relavant: \n"""
+            system_prompt.content = system_prompt.content + "\nHere are some old conversations with other users that may be relavant: \n"
             for index, response in enumerate(goodResponses, start=1):
                 system_prompt.content += f"- {response}\n"
 
         if len(badResponses) > 0 or len(badResponsesPrevious) > 0:
 
-            system_prompt.content = system_prompt.content + """
-
-DO NOT use the following replies. They are examples of BAD replies. Think from a different perspective and come up with something content-wise totally different from these: \n"""
+            system_prompt.content = system_prompt.content + "\nDO NOT use the following replies. They are examples of BAD replies. Think from a different perspective and come up with something content-wise totally different from these: \n"
             for index, response in enumerate(badResponses + badResponsesPrevious, start=1):
                 system_prompt.content += f"- {response}\n"
         
-        prompt = prompt + """\n\nProvide me with an email I can send as a reply to the recipient(s) last email. Use the same language. Do not include subject. Use my name in signature."""
+        prompt = prompt + "\n\nProvide me with an email I can send as a reply to the recipient(s) last email. Use the same language. Do not include subject. Use my name in signature."
         
         # Create a human message template
         human_message_template = HumanMessagePromptTemplate.from_template(prompt)

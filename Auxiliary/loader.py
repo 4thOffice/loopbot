@@ -1,11 +1,10 @@
 """Loader that loads data from JSON."""
 import json
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from typing import List, Optional, Union
 
 from langchain.docstore.document import Document
 from langchain.document_loaders.base import BaseLoader
-from dateutil import parser
 
 import os
 import keys
@@ -19,6 +18,7 @@ class JSONLoader(BaseLoader):
         content_key: Optional[str] = None,
         ):
         self.file_path = Path(file_path).resolve()
+        self._content_key = content_key
         self._content_key = content_key
 
     def load(self) -> List[Document]:
@@ -66,22 +66,5 @@ class JSONLoader(BaseLoader):
             metadata = dict(AIresponse=AIresponse, score=score)
             
             docs.append(Document(page_content=context, metadata=metadata))
-
-        return docs
-    
-    def loadFAQ(self, jsondata) -> List[Document]:
-        """Load and return documents from the JSON file."""
-
-        docs=[]
-        data = jsondata
-
-        # Iterate through responses
-        for response in data["responses"]:
-            issue = response["issue"]
-            answer = response["answer"]
-
-            metadata = dict(answer=answer)
-            
-            docs.append(Document(page_content=issue, metadata=metadata))
 
         return docs

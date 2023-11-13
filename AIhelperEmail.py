@@ -1,25 +1,20 @@
+import sys
+sys.path.append('./Auxiliary')
+sys.path.append('./APIcalls')
+sys.path.append('./FeedbackHandlers')
 import os
 import time
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-import loader
-from langchain.storage import LocalFileStore
-from langchain.embeddings import OpenAIEmbeddings, CacheBackedEmbeddings
-import sys
-sys.path.append('./APIcalls')
-sys.path.append('./FeedbackHandlers')
+import Auxiliary.loader as loader
 import APIcalls.directchatHistory as directchatHistory
 import APIcalls.emailHistory as emailHistory
 from langchain.evaluation import load_evaluator, EmbeddingDistance
-import promptCreator
-from langchain.vectorstores.faiss import FAISS
+import Auxiliary.promptCreator as promptCreator
 import FeedbackHandlers.userFeedbackHandlerEmail as userFeedbackHandlerEmail
 import json
 
 class AIhelperEmail:
-
     feedbackHandler = None
 
     def __init__(self, openAI_APIKEY, userDataHandler):

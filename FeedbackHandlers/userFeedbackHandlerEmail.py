@@ -1,12 +1,12 @@
 import sys
 sys.path.append('./APIcalls')
+sys.path.append('./Auxiliary')
 import APIcalls.emailHistory as emailHistory
 from langchain.docstore.document import Document
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 from langchain.docstore.document import Document
-import jsonOperations
-import json
-import databaseHandler
+import Auxiliary.jsonOperations as jsonOperations
+import Auxiliary.databaseHandler as databaseHandler
 
 class UserFeedbackHandlerEmail:
 

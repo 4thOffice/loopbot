@@ -1,11 +1,12 @@
 import sys
 sys.path.append('./APIcalls')
+sys.path.append('./Auxiliary')
 import APIcalls.directchatHistory as directchatHistory
 from langchain.docstore.document import Document
 from langchain.evaluation import load_evaluator, EmbeddingDistance
 from langchain.docstore.document import Document
-import jsonOperations
-import databaseHandler
+import Auxiliary.jsonOperations as jsonOperations
+import Auxiliary.databaseHandler as databaseHandler
 
 class UserFeedbackHandler:
 
@@ -145,54 +146,6 @@ class UserFeedbackHandler:
                         db_good_responses["json"] = jsonOperations.update_json(db_good_responses["json"], contextTemp, AIresponseTemp, scoreTemp-1)
             self.write_jsons(sender_userID, db_bad_responses["json"], db_good_responses["json"])
         return (AIresponse + "  -> handeled as negative")
-
-    def checkIfExistsInFAQ(self, db_faq, classified_issue):
-        print("Handling classified issue: ", classified_issue)
-        similar_faq_entry = db_faq["docs"].similarity_search_with_score(classified_issue, k=1)
-    
-        print("most similar faq entry: ", similar_faq_entry)
-        
-        if similar_faq_entry[0][1] > 0.3:
-            return ""
-        else:
-            print(similar_faq_entry[0])
-            print("FAQ entry already exists: ", similar_faq_entry[0][0].metadata["answer"])
-            return similar_faq_entry[0][0].metadata["answer"]
-
-    def addToFAQ(self, sender_userID, AIresponse, db_faq, classified_issue):
-        print("Adding classified issue: ", classified_issue)
-        similar_faq_entry = db_faq["docs"].similarity_search_with_score(classified_issue, k=1)
-        print("similar_faq_entry", similar_faq_entry)
-
-        if similar_faq_entry[0][1] > 0.3:
-            print("adding new")
-            new_document = Document(page_content=classified_issue, metadata=dict(answer=AIresponse))
-            db_faq["docs"].add_documents([new_document])
-            db_faq["json"] = jsonOperations.append_json({"issue": classified_issue, "answer": AIresponse}, db_faq["json"])
-        else:
-            print("replacing 1")
-            if(len(db_faq["docs"].docstore._dict) > 0):
-                print("replacing 2")
-                #closestDoc = db_faq["docs"].search(db_faq, k=1, search_type="similarity")
-                for key, doc in db_faq["docs"].docstore._dict.copy().items():
-                    if similar_faq_entry[0][0].page_content == doc.page_content:
-                        print("replacing 3")
-                        #print("doc to update", doc, key)
-                        issue = doc.page_content
-                        answer = doc.metadata["answer"]
-
-                        key_list=list(db_faq["docs"].index_to_docstore_id.keys())
-                        val_list=list(db_faq["docs"].index_to_docstore_id.values())
-                        ind=val_list.index(key)
-                        ind=val_list.index(key)
-
-                        db_faq["docs"].delete([db_faq["docs"].index_to_docstore_id[key_list[ind]]])
-                        new_document = Document(page_content=issue, metadata=dict(answer=AIresponse))
-                        db_faq["docs"].add_documents([new_document])
-                        db_faq["json"] = jsonOperations.update_faq_json(db_faq["json"], issue, AIresponse)
-        
-        print("db_faq ", db_faq["json"])
-        databaseHandler.insert_json_data(sender_userID, "faq", db_faq["json"])
 
     def write_jsons(self, user_id, bad_responses_json, good_responses_json):
         print("SHOULD WRITE")
