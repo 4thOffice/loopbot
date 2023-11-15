@@ -171,7 +171,7 @@ class AIhelper:
         comments = directchatHistory.getAllComments(20, recipient_userID, authKey)
         comments = directchatHistory.getLastTopic(comments)
         memory = directchatHistory.memoryPostProcess(comments)
-        #return self.troubleshootHandler_.getTroubleshootSuggestion(sender_userID, comments)
+        return self.troubleshootHandler_.getTroubleshootSuggestion(sender_userID, comments)
 
         relavantInfoInFilesQuery = self.findRelavantInfoInCustomFiles(sender_userID, user_input)
         relavantInfoInFilesHistory = self.findRelavantInfoInCustomFiles(sender_userID, user_input)

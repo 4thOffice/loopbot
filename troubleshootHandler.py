@@ -137,7 +137,7 @@ class TroubleshootHandler:
         prompt += "\n\nQuestion: " + question
         prompt += "\nAnswer customer gave: " + userAnswer + "\n"
         prompt += "\n".join(f"Answer option {index + 1}: {answer}" for index, answer in enumerate(answerOptions))
-        prompt += "\n\nPrint out answer option that is most similar to answer that customer provided. If none of answer options are similar enough, print out a new answer option for this answer.\n\nOutput should be exactly in format (without '{}'') with NO other text:\n\n{Answer option}"
+        prompt += "\n\nPrint out answer option that is most similar to answer that customer provided. If none of answer options are similar enough, print out a new answer option text for this answer.\n\nOutput should be exactly in format with NO other text (include '{}' and I dont mean this {Answer option 1}):\n{Answer option text}"
         #print(prompt)
         response = self.timeoutOpenAICall(prompt, "")
         #response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
@@ -145,16 +145,21 @@ class TroubleshootHandler:
         #                                        {"role": "user", "content": prompt}])
         answer = response["choices"][0]["message"]["content"]
         answer = answer.lower()
+        match = re.search(r'{(.*?)}', answer)
         print("-------------------------------")
+        print(answer)
         print("question: ", question)
         print("Customer answer: ", userAnswer)
         print("\n".join(f"Answer option {index + 1}: {answer}" for index, answer in enumerate(answerOptions)))
         time.sleep(1)
 
-        print("RETURNED OPTION: " + re.search(r'{(.*?)}', answer).group(1))
+        print("RETURNED OPTION: " + match.group(1))
         print("-------------------------------")
-        return re.search(r'{(.*?)}', answer).group(1)
-
+        
+        if match:
+            return match.group(1)
+        return ""
+    
     def isSameQuestion(self, question1, question2):
         evaluator = load_evaluator("pairwise_embedding_distance", distance_metric=EmbeddingDistance.EUCLIDEAN)
         distance = evaluator.evaluate_string_pairs(
@@ -163,7 +168,13 @@ class TroubleshootHandler:
         
         return distance["score"]
 
+    def get_embedding(self, text, model="text-embedding-ada-002"):
+        client = openai()
+        text = text.replace("\n", " ")
+        return client.embeddings.create(input = [text], model=model)['data'][0]['embedding']
+    
     def isSameAnswer(self, answer1, answer2):
+
         evaluator = load_evaluator("pairwise_embedding_distance", distance_metric=EmbeddingDistance.EUCLIDEAN)
         distance = evaluator.evaluate_string_pairs(
             prediction=answer1, prediction_b=answer2
@@ -208,15 +219,25 @@ class TroubleshootHandler:
         print("QnA: ", QnA)
 
         if currentNode.type == "question" or currentNode.type == "root":
+            answers = [node.name for node in currentNode.childrenNodes]
+            answerOption = self.getAnswerOptionGPT(QnA[0]["question"], answers, QnA[0]["answer"])
+            for index, answer in enumerate(answers):
+                print(answer)
+                print(answerOption)
+                print(self.isSameAnswer(answer, answerOption))
+                if self.isSameAnswer(answer, answerOption) < 0.2:
+                    return self.getSuggestedQuestion(currentNode.childrenNodes[index], QnA[1:], context)
+            return "I dont know how to troubleshoot further\n-> Unknown answer <-"
+
             for index, option in enumerate(currentNode.children):
                 if self.isSameAnswerGPT(QnA[0]["answer"], option.name, QnA[0]["question"], context):
                     return self.getSuggestedQuestion(currentNode.children[index], QnA[1:], context)
             return "I dont know how to troubleshoot further\n-> Unknown answer <-"
         elif currentNode.type == "answer":
-            for index, option in enumerate(currentNode.children):
+            for index, option in enumerate(currentNode.childrenNodes):
                 if self.isSameQuestionGPT(QnA[0]["question"], option.name, context):
-                    return self.getSuggestedQuestion(currentNode.children[index], QnA, context)   
-            return currentNode.children[0].name     
+                    return self.getSuggestedQuestion(currentNode.childrenNodes[index], QnA, context)   
+            return currentNode.childrenNodes[0].name     
         
     def addToTree(self, QnA, parentNode, currentNode, context, classifiedIssue):
         print(QnA)
