@@ -11,6 +11,16 @@ import keys
 with open('../whitelist.json', 'r') as file:
     whitelist = json.load(file)
 
+def cut_string_at_keyword(input_string, keyword_list):
+    position = len(input_string)
+    for keyword in keyword_list:
+        index = input_string.find(keyword)
+        if index != -1 and index < position:
+            position = index
+    
+    cut_string = input_string[position:]
+    return cut_string
+
 def normalize_newlines(text, max_newlines=2):
     """Normalizes the number of newlines in text to have at most 'max_newlines' newlines in a row."""
     lines = text.splitlines()
@@ -52,7 +62,7 @@ def getCommentContent(commentID, authkey):
         return []
     
 #Get first email in email thread
-def getFirstCommentID(cardID, authkey):
+def getFirstCommentData(cardID, authkey):
     endpoint_url = 'https://api.intheloop.io/api/v1/comment/list'
 
     headers = {
@@ -71,7 +81,8 @@ def getFirstCommentID(cardID, authkey):
         ],
         "authorizeCardIdsBeforeSearch": False,
         "cardTypes": "",
-        "htmlFormat": "text/html"
+        "htmlFormat": "text/html",
+        "includeSignedLinks": True
     }
 
     response = requests.get(endpoint_url, headers=headers, params=data)
@@ -79,7 +90,13 @@ def getFirstCommentID(cardID, authkey):
         comments = response.json()
         for comment in comments["resources"]:
             if comment["$type"] == "CommentMail":
-                return comment["id"]
+                fileUrls = []
+                attachments = comment["attachments"]["resources"]
+                for attachment in attachments:
+                    signature = cut_string_at_keyword(comment["body"]["content"], ["LP", "lep pozdrav", "Lep pozdrav", "lp"])
+                    if attachment["id"] not in signature:
+                        fileUrls.append(attachment["urlLink"])
+                return {"id": comment["id"], "fileUrls": fileUrls}
     else:
         print(f"Error: {response.status_code} - {response.text}")
         return []
@@ -100,11 +117,3 @@ def classifyEmail(text):
     if "yes" in answer:
         return True
     return False
-
-authKey = whitelist["user_1552217"]
-commentID = getFirstCommentID("ACwNFHuE9qPEHJkuSU-vxrb77pg0T", authKey)
-print(commentID)
-emailText = getCommentContent(commentID, authKey)
-print(emailText)
-answer = classifyEmail(emailText)
-print(answer)
