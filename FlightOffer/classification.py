@@ -5,7 +5,9 @@ import sys
 import json
 import openai
 import requests
-sys.path.append("../")
+import os
+if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
+    sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import keys
 
 def cut_string_at_keyword(input_string, keyword_list):
