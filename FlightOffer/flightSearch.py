@@ -1,3 +1,4 @@
+import datetime
 import json
 import sys
 import openai
@@ -12,12 +13,16 @@ def extractSearchParameters(emailText, offerCount):
   "currencyCode": "EUR",
   "originLocationCode": "LJU",
   "destinationLocationCode": "PAR",
-  "departureDate": "2024-06-09",
-  "returnDate": "2024-06-15",
-  "adults": 2
+  "departureDate": "2023-12-09", //must be in format: YYYY-MM-DD
+  "returnDate": "2023-12-15", //must be in format: YYYY-MM-DD
+  "adults": 1,
+  "nonStop": "false", //options to choose from: ["true", "false"] set to true, ONLY if person requested for flight to go from the origin to the destination with no stop in between
+  "children": 0,
+  "infants": 0,
+  "travelClass": "ECONOMY" // options to choose from: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
 }\n\n
 """
-    user_msg += "You can change parameter values but you cant add new parameters. Remove all parameters that are empty or have value 0 or are not mentioned in email.\n\nEmail to extract details from:\n"
+    user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2023. Location codes must be 3-letter IATA codes. You can change parameter values but you cant add new parameters. Remove all parameters that are empty or have value 0 or are not mentioned in email.\n\nEmail to extract details from:\n"
     user_msg += emailText
     user_msg += "\n\nOutput should be ONLY json and NO other text!"
 
@@ -30,8 +35,28 @@ def extractSearchParameters(emailText, offerCount):
     )
 
     if response.choices:
+        #print(response.choices[0].message.content)
         flightOffers = json.loads(response.choices[0].message.content)
+
+        year_from_string = int(flightOffers["departureDate"][:4])
+        date_from_string = datetime.datetime.strptime(flightOffers["departureDate"], "%Y-%m-%d")
+        current_date = datetime.datetime.now()
+        if date_from_string < current_date:
+            flightOffers["departureDate"] = str(year_from_string+1) + flightOffers["departureDate"][4:]
+
+        year_from_string = int(flightOffers["returnDate"][:4])
+        date_from_string = datetime.datetime.strptime(flightOffers["returnDate"], "%Y-%m-%d")
+        current_date = datetime.datetime.now()
+        if date_from_string < current_date:
+            flightOffers["returnDate"] = str(year_from_string+1) + flightOffers["returnDate"][4:]
+
         flightOffers["max"] = offerCount
+        if "nonStop" in flightOffers and flightOffers["nonStop"] == "false":
+            flightOffers.pop("nonStop")
+        if "children" in flightOffers and flightOffers["children"] == 0:
+            flightOffers.pop("children")
+        if "infants" in flightOffers and flightOffers["infants"] == 0:
+            flightOffers.pop("infants")
         return flightOffers
     else:
         print("Unexpected or empty response received.")
@@ -80,6 +105,7 @@ def get_flight_offers(access_token, search_params):
     }
     try:
         response = requests.get(endpoint, headers=headers, params=search_params)
+        print(response.json())
         return response.json()
     except ResponseError as error:
         print(error)
@@ -92,6 +118,9 @@ def getFlightOffer(flightDetails):
     flightOffers = get_flight_offers(access_token, search_params)["data"]
     #print(flightOffers)
 
+    if len(flightOffers) <= 0:
+        return None
+    
     cheapestFlightOffers = []
 
     #check which offers qualify
@@ -102,6 +131,11 @@ def getFlightOffer(flightDetails):
     cheapestFlightOffers = sorted(cheapestFlightOffers, key=lambda x: float(x["price"]["grandTotal"]))[:min(len(cheapestFlightOffers)-1, 6)]
     price_offers = get_price_offer(access_token, cheapestFlightOffers)["data"]["flightOffers"]
     cheapestPriceOffers = sorted(price_offers, key=lambda x: float(x["price"]["grandTotal"]))
-    print(cheapestPriceOffers)
+    #print(cheapestPriceOffers)
+    
+    flights = []
+    for iterary in cheapestPriceOffers[0]["itineraries"]:
+        for segment in iterary["segments"]:
+            flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"]})
 
-    return {"price": cheapestPriceOffers[0]["price"]["grandTotal"], "itineraries": cheapestPriceOffers[0]["itineraries"]}
+    return {"price": {"grandTotal": cheapestPriceOffers[0]["price"]["grandTotal"], "billingCurrency": cheapestPriceOffers[0]["price"]["billingCurrency"]}, "flights": flights}

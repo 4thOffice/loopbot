@@ -7,9 +7,6 @@ import requests
 sys.path.append("../")
 import keys
 import apiDataHandler
-
-with open('../whitelist.json', 'r') as file:
-    whitelist = json.load(file)
     
 def askGPT(emailText, files, hasImages):
     client = OpenAI(api_key=keys.openAI_APIKEY)

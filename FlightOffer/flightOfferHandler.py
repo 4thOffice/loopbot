@@ -5,12 +5,14 @@ import classification
 import dataExtractor
 import magic
 import flightSearch
-
-with open('../whitelist.json', 'r') as file:
-    whitelist = json.load(file)
+import offerGenerator
 
 def getFlightOffer(cardID, authKey):
     commentData = classification.getFirstCommentData(cardID, authKey)
+    
+    if commentData["id"] is None:
+        return({"parsedOffer": ("Failed to gather email data."), "details": None})
+
     emailText = classification.getCommentContent(commentData["id"], authKey)
     answer = classification.classifyEmail(emailText)
     print(emailText)
@@ -39,13 +41,16 @@ def getFlightOffer(cardID, authKey):
             flightDetails = dataExtractor.askGPT(emailText, filesText, hasImages=False)
         
         details = flightSearch.getFlightOffer(flightDetails)
-
-        print("Not a tender enquiry" + str(details["price"]))
-        return("flight details gathered" + str(details["price"]))
+        generatedOffer = offerGenerator.generateOffer(emailText, details)
+        if details is None:
+            return({"parsedOffer": "No flights found", "details": None})
+        
+        print("flight details gathered")
+        return({"parsedOffer": generatedOffer, "details": details})
 
     else:
         print("Not a tender enquiry")
-        return("Not a tender enquiry")
+        return({"parsedOffer": "Not a tender enquiry", "details": None})
 
 #authKey = whitelist["user_1552217"]
-#getFlightOffer("DCwm6ekeYTewrKkymigycY4PBIA0T")
+#getFlightOffer("DCwm6ekeYTewrKkymigycY4PBIA0T", authKey)

@@ -2,6 +2,7 @@ import json
 import sys
 sys.path.append('./Auxiliary')
 sys.path.append('./APIcalls')
+sys.path.append('./FlightOffer')
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import AIhelperEmail
@@ -14,6 +15,7 @@ import Auxiliary.userDataHandler as userDataHandler
 import AIclassificator
 import troubleshootHandler
 import APIcalls.directchatHistory as directchatHistory
+import FlightOffer.flightOfferHandler as flightOfferHandler
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -215,6 +217,17 @@ def get_answer_regular():
     reply = AIregular_.returnAnswer(user_input)
 
     return jsonify(reply)
+
+@app.route('/get_flight_offer', methods=['GET'])
+def get_flight_offer():
+    sender_userID = request.args.get('sender_userID', type=str)
+    card_id = request.args.get('card_id', type=str)
+    responseID = json.loads(request.args.get('responseID', type=str))
+
+    authKey = AIhelper_.getAuthkey(sender_userID)
+    flightOffer = flightOfferHandler.getFlightOffer(card_id, authKey)
+    flightOffer["responseID"] = responseID
+    return jsonify(flightOffer)
 
 if __name__ == '__main__':
     userDataHandler_ = userDataHandler.UserDataHandler()

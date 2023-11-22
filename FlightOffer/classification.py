@@ -8,9 +8,6 @@ import requests
 sys.path.append("../")
 import keys
 
-with open('../whitelist.json', 'r') as file:
-    whitelist = json.load(file)
-
 def cut_string_at_keyword(input_string, keyword_list):
     position = len(input_string)
     for keyword in keyword_list:
@@ -99,7 +96,7 @@ def getFirstCommentData(cardID, authkey):
                 return {"id": comment["id"], "fileUrls": fileUrls}
     else:
         print(f"Error: {response.status_code} - {response.text}")
-        return []
+        return {"id": None, "fileUrls": []}
 
 def classifyEmail(text):
     openai.api_key = keys.openAI_APIKEY

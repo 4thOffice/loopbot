@@ -46,6 +46,13 @@ class AIclassificator:
         [{"LOWER": "end"}, {"LOWER": "conversation"}],
         [{"LOWER": "conversation"}, {"LOWER": "end"}],
     ]
+
+    getFlightOfferPattern = [
+        [{"LOWER": "prepare"}, {"LOWER": "offer"}],
+        [{"LOWER": "get"}, {"LOWER": "offer"}],
+        [{"LOWER": "make"}, {"LOWER": "offer"}],
+        [{"LOWER": "get"}, {"LOWER": "flight"}, {"LOWER": "offer"}],
+    ]
     
     def __init__(self, openAI_APIKEY):
         self.openAI_APIKEY = openAI_APIKEY
@@ -60,6 +67,10 @@ class AIclassificator:
         
             intent = self.getUserIntent(text, "end_conversation")
             if intent == "end_conversation":
+                return {"intent": intent}
+            
+            intent = self.getUserIntent(text, "get_flight_offer")
+            if intent == "get_flight_offer":
                 return {"intent": intent}
             
             return {"intent": "other_intent"}
@@ -189,6 +200,20 @@ Which problems is user to which our AI support agent is chatting with experienci
             
             if any(matches):
                 return "show_topics"
+            return "other_intent"
+        
+        elif usecase == "get_flight_offer":
+            matcher = Matcher(self.nlp.vocab)
+            patterns = self.getFlightOfferPattern
+
+            for pattern in patterns:
+                print(pattern)
+                matcher.add("GET_FLIGHT_OFFER_PATTERN", [pattern])
+
+            matches = matcher(doc)
+            
+            if any(matches):
+                return "get_flight_offer"
             return "other_intent"
 
     def getTopics(self, conversationsJson):
