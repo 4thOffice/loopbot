@@ -41,10 +41,11 @@ def find_closest_flight_offer(flight_offers, outbound_departure_time="", return_
 
     for index, offer in enumerate(flight_offers):
         print(index)
+        time_diff = 0
         if outbound_departure_time != "":
             departure_time = offer["itineraries"][0]["segments"][0]["departure"]["at"]
             departure_time = datetime.datetime.fromisoformat(departure_time).time()
-            time_diff = abs(outbound_departure_time.hour - departure_time.hour)
+            time_diff += abs(outbound_departure_time.hour - departure_time.hour)
 
         if return_departure_time != "":
             departure_time = offer["itineraries"][1]["segments"][0]["departure"]["at"]
@@ -90,11 +91,11 @@ def extractSearchParameters(emailText, offerCount):
     print(user_msg)
 
     new_obj = {"messages": [{"role": "user", "content": user_msg}, {"role": "assistant", "content": "test"}]}
-    #with open("./finetuning.json", 'r') as file:
-    #    existing_data = json.load(file)
-    #existing_data["samples"].append(new_obj)
-    #with open("./finetuning.json", 'w') as file:
-    #    json.dump(existing_data, file, indent=4)
+    with open("./FlightOffer/finetuning.json", 'r') as file:
+        existing_data = json.load(file)
+    existing_data["samples"].append(new_obj)
+    with open("./FlightOffer/finetuning.json", 'w') as file:
+        json.dump(existing_data, file, indent=4)
     
 
     max_attempts = 2  # Maximum number of attempts
@@ -113,11 +114,11 @@ def extractSearchParameters(emailText, offerCount):
             #print(response.choices[0].message.content)
             flight = json.loads(response.choices[0].message.content)
 
-            #with open("./finetuning.json", 'r') as file:
-            #    existing_data = json.load(file)
-            #existing_data["samples"][-1]["messages"][-1]["content"] = json.dumps(flight)
-            #with open("./finetuning.json", 'w') as file:
-            #    json.dump(existing_data, file, indent=4)
+            with open("./FlightOffer/finetuning.json", 'r') as file:
+                existing_data = json.load(file)
+            existing_data["samples"][-1]["messages"][-1]["content"] = json.dumps(flight)
+            with open("./FlightOffer/finetuning.json", 'w') as file:
+                json.dump(existing_data, file, indent=4)
             print("----------------------------")
             print(flight)
             print("----------------------------")
@@ -151,11 +152,11 @@ def extractSearchParameters(emailText, offerCount):
                 print("Exceeded maximum attempts. No response received.")
 
 amadeus = Client(
-    client_id=keys.client_id,
-    client_secret=keys.client_secret
+    client_id=keys.amadeus_client_id,
+    client_secret=keys.amadeus_client_secret
 )
 
-def get_access_token(api_key=keys.client_id, api_secret=keys.client_secret):
+def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_client_secret):
     auth_url = 'https://test.api.amadeus.com/v1/security/oauth2/token'
     response = requests.post(auth_url, data={
         'grant_type': 'client_credentials',

@@ -57,6 +57,7 @@ def getResponse(emailText, commentData, retries=0):
             if retries > 0:
                 return({"parsedOffer": details["data"], "details": None})
             else:
+                print("Encountered an error, trying one more time...")
                 return getResponse(emailText, commentData, retries=1)
         
         #generatedOffer = offerGenerator.generateOffer(emailText, details)
