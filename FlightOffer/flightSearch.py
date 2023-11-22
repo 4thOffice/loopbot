@@ -92,12 +92,12 @@ def extractSearchParameters(emailText, offerCount):
 
     print(user_msg)
 
-    new_obj = {"messages": [{"role": "user", "content": user_msg}, {"role": "assistant", "content": "test"}]}
-    with open("./FlightOffer/finetuning.json", 'r') as file:
-        existing_data = json.load(file)
-    existing_data["samples"].append(new_obj)
-    with open("./FlightOffer/finetuning.json", 'w') as file:
-        json.dump(existing_data, file, indent=4)
+    # new_obj = {"messages": [{"role": "user", "content": user_msg}, {"role": "assistant", "content": "test"}]}
+    # with open("./FlightOffer/finetuning.json", 'r') as file:
+    #     existing_data = json.load(file)
+    # existing_data["samples"].append(new_obj)
+    # with open("./FlightOffer/finetuning.json", 'w') as file:
+    #     json.dump(existing_data, file, indent=4)
     
 
     max_attempts = 2  # Maximum number of attempts
@@ -116,11 +116,11 @@ def extractSearchParameters(emailText, offerCount):
             #print(response.choices[0].message.content)
             flight = json.loads(response.choices[0].message.content)
 
-            with open("./FlightOffer/finetuning.json", 'r') as file:
-                existing_data = json.load(file)
-            existing_data["samples"][-1]["messages"][-1]["content"] = json.dumps(flight)
-            with open("./FlightOffer/finetuning.json", 'w') as file:
-                json.dump(existing_data, file, indent=4)
+            # with open("./FlightOffer/finetuning.json", 'r') as file:
+            #     existing_data = json.load(file)
+            # existing_data["samples"][-1]["messages"][-1]["content"] = json.dumps(flight)
+            # with open("./FlightOffer/finetuning.json", 'w') as file:
+            #     json.dump(existing_data, file, indent=4)
             print("----------------------------")
             print(flight)
             print("----------------------------")
