@@ -83,7 +83,7 @@ def extractSearchParameters(emailText, offerCount):
         for flight to go from the origin to the destination with no stop in between
         "children": 0,
         "infants": 0,
-        "travelClass": "ECONOMY" // options to choose from: ["ECONOMY", "PREMIUM_ECONOMY", 
+        "travelClass": "ECONOMY" // ONLY choose from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", 
          "BUSINESS", "FIRST"]
       }\n\n"""
     user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2023. Location codes must be 3-letter IATA codes. if origin is not provided, make the value empty string ''. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nEmail to extract details from:\n"
@@ -220,10 +220,11 @@ def get_flight_offers(access_token, search_params):
         response = requests.get(endpoint, headers=headers, params=search_params)
         responseJson = response.json()
         if "errors" in responseJson:
-            print(responseJson)
+            #print(responseJson)
             combined_detail = '\n'.join(error['detail'] for error in responseJson["errors"])
             return {"status": "error", "details": combined_detail}
         else:
+            #print(responseJson)
             print("initial flight offers: ", len(responseJson["data"]))
             return {"status": "ok", "details": responseJson}
     except ResponseError as error:
@@ -231,7 +232,7 @@ def get_flight_offers(access_token, search_params):
         return responseJson
     
 def getFlightOffer(flightDetails):
-    search_params = extractSearchParameters(flightDetails, 100)
+    search_params = extractSearchParameters(flightDetails, 250)
     
     exactOutboundDepartureTime = ""
     exactReturnDepartureTime = ""
@@ -253,15 +254,25 @@ def getFlightOffer(flightDetails):
             return {"status": "error", "data": flightOffers["details"]}
         elif flightOffers["status"] == "ok":
             flightOffers = flightOffers["details"]["data"]
+            time.sleep(0.1)
 
         if len(flightOffers) <= 0:
             print("No direct flights, now searching for fights with stops")
             if "nonStop" in search_params:
                 search_params.pop("nonStop")
                 flightOffers = get_flight_offers(access_token, search_params)["details"]["data"]
+                time.sleep(0.1)
+
+        if len(flightOffers) <= 0:
+            print("no class specific flights found, removing travel class")
+            if "travelClass" in search_params:
+                search_params.pop("travelClass")
+                flightOffers = get_flight_offers(access_token, search_params)["details"]["data"]
+                time.sleep(0.1)
     except:
         print("error 1")
-        return {"status": "error", "data": "Error occured"}
+        time.sleep(0.5)
+        return {"status": "error", "data": "Unknown Error occured"}
     #print(flightOffers)
 
     if len(flightOffers) <= 0:
@@ -300,14 +311,17 @@ def getFlightOffer(flightDetails):
     print("cheapestFlightOffers:\n", len(cheapestFlightOffers))
     if exactOutboundDepartureTime != "" or exactReturnDepartureTime != "":
         cheapestFlightOffers = [find_closest_flight_offer(cheapestFlightOffers, outbound_departure_time=exactOutboundDepartureTime, return_departure_time=exactReturnDepartureTime)]
-    
+    print(cheapestFlightOffers)
     print("length 1:", len(cheapestFlightOffers))
     if len(cheapestFlightOffers) > 1:
         cheapestFlightOffers = sorted(cheapestFlightOffers, key=lambda x: float(x["price"]["grandTotal"]))[:min(len(cheapestFlightOffers), 6)]
-    print("upsell data:\n", get_upsell(access_token, cheapestFlightOffers))
+    #print("upsell data:\n", get_upsell(access_token, cheapestFlightOffers))
     print("length 2:", len(cheapestFlightOffers))
-    print("get price offers for:\n",cheapestFlightOffers)
-    price_offers = get_price_offer(access_token, cheapestFlightOffers)["data"]["flightOffers"]
+    print("get price offers for:\n", cheapestFlightOffers)
+    try:
+        price_offers = get_price_offer(access_token, cheapestFlightOffers)["data"]["flightOffers"]
+    except:
+        return {"status": "error", "data": "Error with getting final price offer"}
     cheapestPriceOffers = sorted(price_offers, key=lambda x: float(x["price"]["grandTotal"]))
     #print(cheapestPriceOffers)
     
