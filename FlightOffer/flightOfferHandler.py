@@ -7,16 +7,26 @@ import magic
 import flightSearch
 import offerGenerator
 
-def getFlightOffer(cardID, authKey):
-    commentData = classification.getFirstCommentData(cardID, authKey)
+def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText):
+    commentData = classification.getFiles(attachments, htmlEmailtext)
+    emailText = "Subject: " + subject + "\n" + plainText
+    return getResponse(emailText, commentData)
+
+def getFlightOffer(cardID=None, authKey=None):
+    print(cardID)
     
+    commentData = classification.getFirstCommentData(cardID, authKey)
     if commentData["id"] is None:
         return({"parsedOffer": ("Failed to gather email data."), "details": None})
 
     emailText = classification.getCommentContent(commentData["id"], authKey)
+    
+    return getResponse(emailText, commentData)
+
+
+def getResponse(emailText, commentData, retries=0):
     answer = classification.classifyEmail(emailText)
-    print(emailText)
-    print(answer)
+    print("raw email text:", emailText)
 
     if answer:
         filesText = []
@@ -39,18 +49,25 @@ def getFlightOffer(cardID, authKey):
         if len(filesText) > 0 or len(filesPicture) == 0:
             print("Asking text specialized agent - ", str(len(filesText)) + " files")
             flightDetails = dataExtractor.askGPT(emailText, filesText, hasImages=False)
-        
+
         details = flightSearch.getFlightOffer(flightDetails)
-        generatedOffer = offerGenerator.generateOffer(emailText, details)
-        if details is None:
+        if details["status"] == "ok" and details["data"] is None:
             return({"parsedOffer": "No flights found", "details": None})
+        elif details["status"] == "error":
+            if retries > 0:
+                return({"parsedOffer": details["data"], "details": None})
+            else:
+                return getResponse(emailText, commentData, retries=1)
+        
+        #generatedOffer = offerGenerator.generateOffer(emailText, details)
+        generatedOffer = offerGenerator.generateFlightsString(details["data"])
         
         print("flight details gathered")
-        return({"parsedOffer": generatedOffer, "details": details})
+        return({"parsedOffer": generatedOffer, "details": details["data"]})
 
     else:
-        print("Not a tender enquiry")
-        return({"parsedOffer": "Not a tender enquiry", "details": None})
+        print("Not a flight tender enquiry")
+        return({"parsedOffer": "Not a flight tender enquiry", "details": None})
 
 #authKey = whitelist["user_1552217"]
 #getFlightOffer("DCwm6ekeYTewrKkymigycY4PBIA0T", authKey)

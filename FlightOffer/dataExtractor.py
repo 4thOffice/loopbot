@@ -33,9 +33,11 @@ def askGPT(emailText, files, hasImages):
     )
 
     if len(files) > 0:
-        content_text = "Extract ALL flight details from the email which I will give you. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
+        content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
+        if hasImages:
+            content_text += "\n\nImages are in PNG or JPG format."
     else:
-        content_text = "Extract ALL flight details from the email which I will give you. \n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
+        content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes and ALL other flight information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
     
     thread = client.beta.threads.create(
     messages=[

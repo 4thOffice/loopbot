@@ -24,19 +24,7 @@ def generateOffer(emailText, details):
     print("---------------------")
     print(details)
     # Generating the output strings
-    flights_string = ""
-    for flight in details["flights"]:
-        departure_date = iso_to_custom_date(flight["departure"]["at"])
-        duration = iso_to_hours_minutes(flight["duration"])
-        flight_number = flight["carrierCode"] + " " + flight["flightNumber"]
-        origin = flight["departure"]["iataCode"]
-        destination = flight["arrival"]["iataCode"]
-        arrival_time = datetime.fromisoformat(flight["arrival"]["at"]).strftime("%H:%M")
-        departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
-        
-        flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration})\n"
-
-    flights_string += "Price: " + details["price"]["grandTotal"] + " " + details["price"]["billingCurrency"]
+    flights_string = generateFlightsString(details)
 
     user_msg = "I will give you a flight tender enquiry email. I want you to generate an offer i can send back. Do NOT make up data. Email should be as short as possible(maximum 80 words) and formal. Do not include subject.\n\nThe following text in curly brackets is flight details and should be in thsi exact format in the final email you write:\n"
     user_msg += "{" + flights_string + "}"
@@ -62,3 +50,20 @@ def generateOffer(emailText, details):
         return generatedOffer
     else:
         print("Unexpected or empty response received.")
+
+def generateFlightsString(details):
+    flights_string = ""
+    for flight in details["flights"]:
+        departure_date = iso_to_custom_date(flight["departure"]["at"])
+        duration = iso_to_hours_minutes(flight["duration"])
+        flight_number = flight["carrierCode"] + " " + flight["flightNumber"]
+        origin = flight["departure"]["iataCode"]
+        destination = flight["arrival"]["iataCode"]
+        arrival_time = datetime.fromisoformat(flight["arrival"]["at"]).strftime("%H:%M")
+        departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
+        
+        flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration})\n"
+
+    flights_string += "Price: " + details["price"]["grandTotal"] + " " + details["price"]["billingCurrency"]
+
+    return flights_string

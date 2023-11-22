@@ -225,7 +225,7 @@ def get_flight_offer():
     responseID = json.loads(request.args.get('responseID', type=str))
 
     authKey = AIhelper_.getAuthkey(sender_userID)
-    flightOffer = flightOfferHandler.getFlightOffer(card_id, authKey)
+    flightOffer = flightOfferHandler.getFlightOffer(cardID=card_id, authKey=authKey)
     flightOffer["responseID"] = responseID
     return jsonify(flightOffer)
 
