@@ -254,21 +254,31 @@ def getFlightOffer(flightDetails):
             return {"status": "error", "data": flightOffers["details"]}
         elif flightOffers["status"] == "ok":
             flightOffers = flightOffers["details"]["data"]
-            time.sleep(0.1)
+            time.sleep(0.5)
 
         if len(flightOffers) <= 0:
             print("No direct flights, now searching for fights with stops")
             if "nonStop" in search_params:
                 search_params.pop("nonStop")
-                flightOffers = get_flight_offers(access_token, search_params)["details"]["data"]
-                time.sleep(0.1)
+                flightOffers = get_flight_offers(access_token, search_params)
+                if flightOffers["status"] == "error":
+                    print("error 3")
+                    return {"status": "error", "data": flightOffers["details"]}
+                elif flightOffers["status"] == "ok":
+                    flightOffers = flightOffers["details"]["data"]
+                    time.sleep(0.5)
 
         if len(flightOffers) <= 0:
             print("no class specific flights found, removing travel class")
             if "travelClass" in search_params:
                 search_params.pop("travelClass")
-                flightOffers = get_flight_offers(access_token, search_params)["details"]["data"]
-                time.sleep(0.1)
+                flightOffers = get_flight_offers(access_token, search_params)
+                if flightOffers["status"] == "error":
+                    print("error 4")
+                    return {"status": "error", "data": flightOffers["details"]}
+                elif flightOffers["status"] == "ok":
+                    flightOffers = flightOffers["details"]["data"]
+                    time.sleep(0.5)
     except:
         print("error 1")
         time.sleep(0.5)
