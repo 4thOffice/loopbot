@@ -1,5 +1,7 @@
 import io
 import json
+import typing
+
 import requests
 import classification
 import dataExtractor
@@ -7,7 +9,11 @@ import magic
 import flightSearch
 import offerGenerator
 
-def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText):
+def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText,
+                             verbose_checkpoint: typing.Callable[[str], None] = None):
+    if verbose_checkpoint:
+        verbose_checkpoint("To se bo pokazalo v logih")
+
     commentData = classification.getFiles(attachments, htmlEmailtext)
     emailText = "Subject: " + subject + "\n" + plainText
     return getResponse(emailText, commentData)
