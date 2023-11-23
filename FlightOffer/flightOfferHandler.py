@@ -52,10 +52,10 @@ def getResponse(emailText, commentData, retries=0):
 
         details = flightSearch.getFlightOffer(flightDetails)
         if details["status"] == "ok" and details["data"] is None:
-            return({"parsedOffer": "[FlightOfferAgentAI]\n\nNo flights found", "details": None})
+            return({"parsedOffer": "[TravelAI Success]\n\nNo flights found", "details": None})
         elif details["status"] == "error":
             if retries > 0:
-                return({"parsedOffer": "[FlightOfferAgentAI]\n\n" + details["data"], "details": None})
+                return({"parsedOffer": "[TravelAI Error]\n\n" + details["data"], "details": None})
             else:
                 print("Encountered an error, trying one more time...")
                 return getResponse(emailText, commentData, retries=1)
@@ -64,11 +64,11 @@ def getResponse(emailText, commentData, retries=0):
         generatedOffer = offerGenerator.generateFlightsString(details["data"])
         
         print("flight details gathered")
-        return({"parsedOffer": "[FlightOfferAgentAI]\n\n" + generatedOffer, "details": details["data"]})
+        return({"parsedOffer": "[TravelAI Success]\n\n" + generatedOffer, "details": details["data"]})
 
     else:
         print("Not a flight tender enquiry")
-        return({"parsedOffer": "[FlightOfferAgentAI]\n\n" + "Not a flight tender enquiry", "details": None})
+        return({"parsedOffer": "[TravelAI Success]\n\n" + "Not a flight tender enquiry", "details": None})
 
 #authKey = whitelist["user_1552217"]
 #getFlightOffer("DCwm6ekeYTewrKkymigycY4PBIA0T", authKey)

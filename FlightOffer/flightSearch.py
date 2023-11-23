@@ -71,8 +71,8 @@ def extractSearchParameters(emailText, offerCount):
     """
     user_msg += """{
         "currencyCode": "EUR", //Keep EUR if not specified
-        "originLocationCode": "LJU", //Leave LJU if not specified! Location codes must be 3-letter IATA codes
-        "destinationLocationCode": "PAR", //Location codes must be 3-letter IATA codes
+        "originLocationCode": "LJU", //Leave "LJU" if not specified! Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters!
+        "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters!
         "departureDate": "2023-12-09", //must be in format: YYYY-MM-DD
         "returnDate": "2023-12-15", //must be in format: YYYY-MM-DD
         "exactOutboundDepartureTime": "", //leave empty if not specified! format must be: "10:00:00"
