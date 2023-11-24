@@ -120,7 +120,10 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint):
         if response.choices:
             #print(response.choices[0].message.content)
             verbose(response.choices[0].message.content, verbose_checkpoint)
-            flight = json.loads(response.choices[0].message.content)
+            try:
+                flight = json.loads(response.choices[0].message.content)
+            except Exception:
+                return True, None
 
             # with open("./FlightOffer/finetuning.json", 'r') as file:
             #     existing_data = json.load(file)
@@ -151,7 +154,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint):
             if "originLocationCode" in flight and flight["originLocationCode"] == "":
                 flight["originLocationCode"] = "LJU"
 
-            return flight
+            return False, flight
         else:
             if attempt < max_attempts - 1:
                 print("No response received. Retrying in {} seconds...".format(retry_interval))
@@ -240,7 +243,9 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
         return responseJson
     
 def getFlightOffer(flightDetails, verbose_checkpoint=None):
-    search_params = extractSearchParameters(flightDetails, 250, verbose_checkpoint)
+    error, search_params = extractSearchParameters(flightDetails, 250, verbose_checkpoint)
+    if error:
+        return {"status": "error", "data": None}
     #search_params = getParametersJson.extractSearchParameters(flightDetails, 250)
     
     exactOutboundDepartureTime = ""
