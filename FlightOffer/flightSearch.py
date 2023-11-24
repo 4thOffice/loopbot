@@ -13,7 +13,7 @@ from amadeus import Client, ResponseError
 
 def verbose(message, verbose_checkpoint=None):
     if verbose_checkpoint:
-        verbose(message, verbose_checkpoint)
+        verbose_checkpoint(message)
 
 # Function to check time difference between flights
 def check_time_between_flights(itineraries, buffer):
@@ -93,7 +93,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint):
       }\n\n"""
     user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2023. Location codes must be 3-letter IATA codes. if origin is not provided, make the value empty string ''. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nEmail to extract details from:\n"
     user_msg += emailText
-    user_msg += "\n\nOutput should be ONLY json and NO other text!"
+    user_msg += "\n\nOutput should be ONLY json above with replaced parameter values and NO other text!"
 
     print(user_msg)
 
