@@ -1,6 +1,7 @@
 import io
 import json
 import typing
+
 import requests
 import classification
 import dataExtractor
