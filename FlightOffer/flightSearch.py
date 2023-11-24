@@ -9,6 +9,11 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import keys
 from amadeus import Client, ResponseError
+#import getParametersJson
+
+def verbose(message, verbose_checkpoint=None):
+    if verbose_checkpoint:
+        verbose(message, verbose_checkpoint)
 
 # Function to check time difference between flights
 def check_time_between_flights(itineraries, buffer):
@@ -88,7 +93,7 @@ def extractSearchParameters(emailText, offerCount):
       }\n\n"""
     user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2023. Location codes must be 3-letter IATA codes. if origin is not provided, make the value empty string ''. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nEmail to extract details from:\n"
     user_msg += emailText
-    user_msg += "\n\nOutput should be ONLY json and NO other text!"
+    user_msg += "\n\nOutput should be ONLY json object and ABSOLUTELY NO other text! Make sure this is the case!"
 
     print(user_msg)
 
@@ -170,7 +175,7 @@ def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_cli
 endpoint = 'https://test.api.amadeus.com/v2/shopping/flight-offers'
 
 def get_price_offer(access_token, flight_offers):
-    url = 'https://test.api.amadeus.com/v1/shopping/flight-offers/pricing'
+    url = 'https://test.api.amadeus.com/v1/shopping/flight-offers/pricing?include=bags'
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/vnd.amadeus+json'
@@ -211,16 +216,18 @@ def get_upsell(access_token, flight_offers):
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
     
-def get_flight_offers(access_token, search_params):
+def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/vnd.amadeus+json'
     }
     try:
+        #response = requests.post(endpoint, headers=headers, data=json.dumps(search_params))
         response = requests.get(endpoint, headers=headers, params=search_params)
         responseJson = response.json()
         if "errors" in responseJson:
-            #print(responseJson)
+            print(f"Error with fetching flight offers: {responseJson}")
+            verbose(f"Error with fetching flight offers: {responseJson}", verbose_checkpoint)
             combined_detail = '\n'.join(error['detail'] for error in responseJson["errors"])
             return {"status": "error", "details": combined_detail}
         else:
@@ -231,8 +238,9 @@ def get_flight_offers(access_token, search_params):
         print(error)
         return responseJson
     
-def getFlightOffer(flightDetails):
+def getFlightOffer(flightDetails, verbose_checkpoint=None):
     search_params = extractSearchParameters(flightDetails, 250)
+    #search_params = getParametersJson.extractSearchParameters(flightDetails, 250)
     
     exactOutboundDepartureTime = ""
     exactReturnDepartureTime = ""
@@ -247,10 +255,12 @@ def getFlightOffer(flightDetails):
 
     try:
         print(search_params)
+        verbose(search_params, verbose_checkpoint)
         access_token = get_access_token()
-        flightOffers = get_flight_offers(access_token, search_params)
+        flightOffers = get_flight_offers(access_token, search_params, verbose_checkpoint)
         if flightOffers["status"] == "error":
-            print("error 2")
+            print("error 1")
+            verbose("error 1", verbose_checkpoint)
             return {"status": "error", "data": flightOffers["details"]}
         elif flightOffers["status"] == "ok":
             flightOffers = flightOffers["details"]["data"]
@@ -258,11 +268,13 @@ def getFlightOffer(flightDetails):
 
         if len(flightOffers) <= 0:
             print("No direct flights, now searching for fights with stops")
+            verbose("No direct flights, now searching for fights with stops", verbose_checkpoint)
             if "nonStop" in search_params:
                 search_params.pop("nonStop")
                 flightOffers = get_flight_offers(access_token, search_params)
                 if flightOffers["status"] == "error":
-                    print("error 3")
+                    print("error 2")
+                    verbose("error 2", verbose_checkpoint)
                     return {"status": "error", "data": flightOffers["details"]}
                 elif flightOffers["status"] == "ok":
                     flightOffers = flightOffers["details"]["data"]
@@ -270,23 +282,29 @@ def getFlightOffer(flightDetails):
 
         if len(flightOffers) <= 0:
             print("no class specific flights found, removing travel class")
+            verbose("no class specific flights found, removing travel class", verbose_checkpoint)
             if "travelClass" in search_params:
                 search_params.pop("travelClass")
                 flightOffers = get_flight_offers(access_token, search_params)
                 if flightOffers["status"] == "error":
-                    print("error 4")
+                    print("error 3")
+                    verbose("error 3", verbose_checkpoint)
                     return {"status": "error", "data": flightOffers["details"]}
                 elif flightOffers["status"] == "ok":
                     flightOffers = flightOffers["details"]["data"]
                     time.sleep(0.5)
-    except:
-        print("error 1")
+    except ResponseError as error:
+        print("error 4")
+        verbose("error 4", verbose_checkpoint)
+        print(error)
+        verbose(error, verbose_checkpoint)
         time.sleep(0.5)
-        return {"status": "error", "data": "Unknown Error occured"}
+        return {"status": "error", "data": "Unknown error occured"}
     #print(flightOffers)
 
     if len(flightOffers) <= 0:
-        print("no flights 1")
+        print("no flights")
+        verbose("no flights", verbose_checkpoint)
         return {"status": "ok", "data": None}
     
     cheapestFlightOffers = []
@@ -299,6 +317,7 @@ def getFlightOffer(flightDetails):
         cheapestFlightOffers = []
         for flightOffer in flightOffers:
             satisfiesConditions = True
+            #if flightOffer["numberOfBookableSeats"] < len(search_params["travelers"]):
             if flightOffer["numberOfBookableSeats"] < search_params["adults"]:
                 satisfiesConditions = False
 
@@ -316,9 +335,11 @@ def getFlightOffer(flightDetails):
 
     if len(cheapestFlightOffers) <= 0:
         cheapestFlightOffers = flightOffers
-        print("none satisfied all conditions")
+        print("no flight offers satisfied all conditions.. using not optimal flights..")
+        verbose("no flight offers satisfied all conditions.. using not optimal flights..", verbose_checkpoint)
     
-    print("cheapestFlightOffers:\n", len(cheapestFlightOffers))
+    print("cheapestFlightOffers:\n", str(len(cheapestFlightOffers)))
+    verbose(("cheapestFlightOffers:\n" + str(len(cheapestFlightOffers))), verbose_checkpoint)
     if exactOutboundDepartureTime != "" or exactReturnDepartureTime != "":
         cheapestFlightOffers = [find_closest_flight_offer(cheapestFlightOffers, outbound_departure_time=exactOutboundDepartureTime, return_departure_time=exactReturnDepartureTime)]
     print(cheapestFlightOffers)
@@ -328,12 +349,13 @@ def getFlightOffer(flightDetails):
     #print("upsell data:\n", get_upsell(access_token, cheapestFlightOffers))
     print("length 2:", len(cheapestFlightOffers))
     print("get price offers for:\n", cheapestFlightOffers)
+    verbose(f"get price offers for:\n{cheapestFlightOffers}", verbose_checkpoint)
     try:
         price_offers = get_price_offer(access_token, cheapestFlightOffers)["data"]["flightOffers"]
     except:
         return {"status": "error", "data": "Error with getting final price offer"}
     cheapestPriceOffers = sorted(price_offers, key=lambda x: float(x["price"]["grandTotal"]))
-    #print(cheapestPriceOffers)
+    print(f"cheapest flight price offer:\n{cheapestPriceOffers}")
     
     flights = []
     for iterary in cheapestPriceOffers[0]["itineraries"]:

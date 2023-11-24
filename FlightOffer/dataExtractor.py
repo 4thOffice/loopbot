@@ -80,8 +80,7 @@ def askGPT(emailText, files, hasImages):
     messages = client.beta.threads.messages.list(
     thread_id=thread.id
     )
-
-    print("Answer\n:", messages.data[0].content[0].text.value)
+    print("Answer:\n", messages.data[0].content[0].text.value)
     answer = messages.data[0].content[0].text.value
     apiDataHandler.delete_assistant(textFileAssistant.id, keys.openAI_APIKEY)
     apiDataHandler.delete_assistant(pictureFileAssistant.id, keys.openAI_APIKEY)
