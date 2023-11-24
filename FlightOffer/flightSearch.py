@@ -175,7 +175,7 @@ def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_cli
 endpoint = 'https://test.api.amadeus.com/v2/shopping/flight-offers'
 
 def get_price_offer(access_token, flight_offers):
-    url = 'https://test.api.amadeus.com/v1/shopping/flight-offers/pricing?include=bags'
+    url = 'https://test.api.amadeus.com/v1/shopping/flight-offers/pricing'
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/vnd.amadeus+json'
