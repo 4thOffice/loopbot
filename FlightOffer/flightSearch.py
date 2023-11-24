@@ -65,7 +65,7 @@ def find_closest_flight_offer(flight_offers, outbound_departure_time="", return_
     return closest_offer
 
 
-def extractSearchParameters(emailText, offerCount):
+def extractSearchParameters(emailText, offerCount, verbose_checkpoint):
     user_msg = "I want you to extract flight details and replace values in this parameter json:\n"
 
     """
@@ -93,7 +93,7 @@ def extractSearchParameters(emailText, offerCount):
       }\n\n"""
     user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2023. Location codes must be 3-letter IATA codes. if origin is not provided, make the value empty string ''. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nEmail to extract details from:\n"
     user_msg += emailText
-    user_msg += "\n\nOutput should be ONLY json object and ABSOLUTELY NO other text! Make sure this is the case!"
+    user_msg += "\n\nOutput should be ONLY json and NO other text!"
 
     print(user_msg)
 
@@ -119,6 +119,7 @@ def extractSearchParameters(emailText, offerCount):
 
         if response.choices:
             #print(response.choices[0].message.content)
+            verbose(response.choices[0].message.content, verbose_checkpoint)
             flight = json.loads(response.choices[0].message.content)
 
             # with open("./FlightOffer/finetuning.json", 'r') as file:
@@ -239,7 +240,7 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
         return responseJson
     
 def getFlightOffer(flightDetails, verbose_checkpoint=None):
-    search_params = extractSearchParameters(flightDetails, 250)
+    search_params = extractSearchParameters(flightDetails, 250, verbose_checkpoint)
     #search_params = getParametersJson.extractSearchParameters(flightDetails, 250)
     
     exactOutboundDepartureTime = ""
