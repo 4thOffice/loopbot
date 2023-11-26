@@ -39,30 +39,34 @@ def check_number_of_stops(itineraries):
     return False
 
 def find_closest_flight_offer(flight_offers, outbound_departure_time="", return_departure_time=""):
-    closest_offer = None
-    smallest_time_diff = float('inf')
+    closest_offers = []
     if outbound_departure_time != "":
         outbound_departure_time = datetime.datetime.strptime(outbound_departure_time, '%H:%M:%S').time()
     if return_departure_time != "":
         return_departure_time = datetime.datetime.strptime(return_departure_time, '%H:%M:%S').time()
 
-    for index, offer in enumerate(flight_offers):
-        print(index)
-        time_diff = 0
-        if outbound_departure_time != "":
-            departure_time = offer["itineraries"][0]["segments"][0]["departure"]["at"]
-            departure_time = datetime.datetime.fromisoformat(departure_time).time()
-            time_diff += abs(outbound_departure_time.hour - departure_time.hour)
+    if len(flight_offers) <= 3:
+        return flight_offers
+    for index in range(0, 3):
+        smallest_time_diff = float('inf')
+        for index, offer in enumerate(flight_offers):
+            print(index)
+            time_diff = 0
+            if outbound_departure_time != "":
+                departure_time = offer["itineraries"][0]["segments"][0]["departure"]["at"]
+                departure_time = datetime.datetime.fromisoformat(departure_time).time()
+                time_diff += abs(outbound_departure_time.hour - departure_time.hour)
 
-        if return_departure_time != "":
-            departure_time = offer["itineraries"][1]["segments"][0]["departure"]["at"]
-            departure_time = datetime.datetime.fromisoformat(departure_time).time()
-            time_diff += abs(return_departure_time.hour - departure_time.hour)
-        if time_diff < smallest_time_diff:
-            smallest_time_diff = time_diff
-            closest_offer = offer
+            if return_departure_time != "":
+                departure_time = offer["itineraries"][1]["segments"][0]["departure"]["at"]
+                departure_time = datetime.datetime.fromisoformat(departure_time).time()
+                time_diff += abs(return_departure_time.hour - departure_time.hour)
+            if time_diff < smallest_time_diff:
+                smallest_time_diff = time_diff
+                closest_offers.append(offer)
+                flight_offers.remove(offer)
 
-    return closest_offer
+    return closest_offers
 
 
 def extractSearchParameters(emailText, offerCount, verbose_checkpoint):
@@ -347,7 +351,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     print("cheapestFlightOffers:\n", str(len(cheapestFlightOffers)))
     verbose(("cheapestFlightOffers:\n" + str(len(cheapestFlightOffers))), verbose_checkpoint)
     if exactOutboundDepartureTime != "" or exactReturnDepartureTime != "":
-        cheapestFlightOffers = [find_closest_flight_offer(cheapestFlightOffers, outbound_departure_time=exactOutboundDepartureTime, return_departure_time=exactReturnDepartureTime)]
+        cheapestFlightOffers = find_closest_flight_offer(cheapestFlightOffers, outbound_departure_time=exactOutboundDepartureTime, return_departure_time=exactReturnDepartureTime)
     print(cheapestFlightOffers)
     print("length 1:", len(cheapestFlightOffers))
     if len(cheapestFlightOffers) > 1:
@@ -361,11 +365,23 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     except:
         return {"status": "error", "data": "Error with getting final price offer"}
     cheapestPriceOffers = sorted(price_offers, key=lambda x: float(x["price"]["grandTotal"]))
-    print(f"cheapest flight price offer:\n{cheapestPriceOffers}")
+    cheapestPriceOffers = cheapestPriceOffers[:3]
+    print(f"cheapest flight price offers:\n{cheapestPriceOffers}")
     
-    flights = []
-    for iterary in cheapestPriceOffers[0]["itineraries"]:
-        for segment in iterary["segments"]:
-            flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"]})
+    returnData = {"status": "ok", "data": {"offers": []}}
+    for cheapest_price_offer in cheapestPriceOffers:
+        flights = []
+        for iterary in cheapest_price_offer["itineraries"]:
+            for segment in iterary["segments"]:
+                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"]})
 
-    return {"status": "ok", "data": {"price": {"grandTotal": cheapestPriceOffers[0]["price"]["grandTotal"], "billingCurrency": cheapestPriceOffers[0]["price"]["billingCurrency"]}, "flights": flights}}
+        includedCheckBagsOnly = False
+        if "includedCheckedBagsOnly" in cheapest_price_offer["pricingOptions"]:
+            includedCheckBagsOnly = cheapest_price_offer["pricingOptions"]["includedCheckedBagsOnly"]
+
+        includedCheckedBags = None
+        if "includedCheckedBags" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]:
+            includedCheckedBags = cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]
+        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["price"]["billingCurrency"]}, "luggage": {"includedCheckBagsOnly": includedCheckBagsOnly, "includedCheckedBags": includedCheckedBags}, "flights": flights})
+    
+    return returnData

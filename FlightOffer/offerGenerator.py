@@ -55,17 +55,25 @@ def generateOffer(emailText, details):
 
 def generateFlightsString(details):
     flights_string = ""
-    for flight in details["flights"]:
-        departure_date = iso_to_custom_date(flight["departure"]["at"])
-        duration = iso_to_hours_minutes(flight["duration"])
-        flight_number = flight["carrierCode"] + " " + flight["flightNumber"]
-        origin = flight["departure"]["iataCode"]
-        destination = flight["arrival"]["iataCode"]
-        arrival_time = datetime.fromisoformat(flight["arrival"]["at"]).strftime("%H:%M")
-        departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
-        
-        flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration})\n"
+    for index, offer in enumerate(details["offers"]):
+        flights_string += f"Offer {index+1}\n"
+        for flight in offer["flights"]:
+            departure_date = iso_to_custom_date(flight["departure"]["at"])
+            duration = iso_to_hours_minutes(flight["duration"])
+            flight_number = flight["carrierCode"] + " " + flight["flightNumber"]
+            origin = flight["departure"]["iataCode"]
+            destination = flight["arrival"]["iataCode"]
+            arrival_time = datetime.fromisoformat(flight["arrival"]["at"]).strftime("%H:%M")
+            departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
+            
+            flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration})\n"
 
-    flights_string += "Price: " + details["price"]["grandTotal"] + " " + details["price"]["billingCurrency"]
+        flights_string += f"includedCheckedBagsOnly: {offer['luggage']['includedCheckBagsOnly']}\n"
+        
+        if offer["luggage"]["includedCheckedBags"] is not None:
+            flights_string += f"Luggage: {offer['luggage']['includedCheckedBags']}\n"
+    
+        flights_string += "Total price: " + offer["price"]["grandTotal"] + " " + offer["price"]["billingCurrency"]
+        flights_string += "\n\n"
 
     return flights_string
