@@ -172,7 +172,7 @@ amadeus = Client(
 )
 
 def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_client_secret):
-    auth_url = 'https://test.api.amadeus.com/v1/security/oauth2/token'
+    auth_url = 'https://api.amadeus.com/v1/security/oauth2/token'
     response = requests.post(auth_url, data={
         'grant_type': 'client_credentials',
         'client_id': api_key,
@@ -180,10 +180,10 @@ def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_cli
     })
     return response.json().get('access_token')
 
-endpoint = 'https://test.api.amadeus.com/v2/shopping/flight-offers'
+endpoint = 'https://api.amadeus.com/v2/shopping/flight-offers'
 
 def get_price_offer(access_token, flight_offers):
-    url = 'https://test.api.amadeus.com/v1/shopping/flight-offers/pricing'
+    url = 'https://api.amadeus.com/v1/shopping/flight-offers/pricing'
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/vnd.amadeus+json'
@@ -204,7 +204,7 @@ def get_price_offer(access_token, flight_offers):
         return None
 
 def get_upsell(access_token, flight_offers):
-    url = 'https://test.api.amadeus.com/v1/shopping/flight-offers/upselling'
+    url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/vnd.amadeus+json'
