@@ -1,5 +1,4 @@
 import io
-import json
 import typing
 
 import requests
@@ -8,10 +7,8 @@ import dataExtractor
 import magic
 import flightSearch
 import offerGenerator
+from Auxiliary.verbose_checkpoint import verbose
 
-def verbose(message, verbose_checkpoint=None):
-    if verbose_checkpoint:
-        verbose_checkpoint(message)
 
 def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, verbose_checkpoint: typing.Callable[[str], None] = None):
     commentData = classification.getFiles(attachments, htmlEmailtext, verbose_checkpoint)

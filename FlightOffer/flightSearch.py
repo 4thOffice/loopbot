@@ -4,11 +4,9 @@ import time
 import openai
 import requests
 import keys
+from Auxiliary.verbose_checkpoint import verbose
 from amadeus import Client, ResponseError
 
-def verbose(message, verbose_checkpoint=None):
-    if verbose_checkpoint:
-        verbose_checkpoint(message)
 
 # Function to check time difference between flights
 def check_time_between_flights(itineraries, buffer):
