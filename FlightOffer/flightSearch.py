@@ -1,11 +1,16 @@
 import datetime
 import json
+import sys
 import time
 import openai
 import requests
+import os
+if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
+    sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import keys
 from Auxiliary.verbose_checkpoint import verbose
 from amadeus import Client, ResponseError
+import getParametersJson
 
 
 # Function to check time difference between flights
@@ -250,7 +255,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     #error, search_params = extractSearchParameters(flightDetails, 250, verbose_checkpoint)
     #if error:
     #    return {"status": "error", "data": None}
-    search_params, extraTimeframes = extractSearchParameters(flightDetails, 250, verbose_checkpoint)
+    search_params, extraTimeframes = getParametersJson.extractSearchParameters(flightDetails, 250)
 
     try:
         print(search_params)
