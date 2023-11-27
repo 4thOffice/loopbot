@@ -34,7 +34,7 @@ class AIregular:
 
         return answer
     
-    def returnDocAnswer(userInput, files=[]):
+    def returnDocAnswer(self, userInput, files=[]):
         client = OpenAI_()
 
         for index, file_ in enumerate(files):
