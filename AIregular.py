@@ -52,6 +52,8 @@ class AIregular:
 
         if len(files) > 0:
             content_text = "Answer the following prompt based on documents attached to this message.\nPrompt: " + userInput
+        else:
+            content_text = userInput
 
         thread = client.beta.threads.create(
         messages=[
