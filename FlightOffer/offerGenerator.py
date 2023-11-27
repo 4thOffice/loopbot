@@ -55,7 +55,12 @@ def generateOffer(emailText, details):
 
 def generateFlightsString(details):
     flights_string = ""
+
     for index, offer in enumerate(details["offers"]):
+        if index == 0:
+            flights_string += f"Suggested offer:\n"
+        elif index == 1:
+            flights_string += f"Alternative offers:\n"
         flights_string += f"Offer {index+1}\n"
         for flight in offer["flights"]:
             departure_date = iso_to_custom_date(flight["departure"]["at"])
