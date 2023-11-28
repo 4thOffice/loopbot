@@ -1,6 +1,7 @@
 import io
 import typing
-
+import os
+import sys
 import requests
 import classification
 import dataExtractor
@@ -8,7 +9,10 @@ import magic
 import flightSearch
 import offerGenerator
 from Auxiliary.verbose_checkpoint import verbose
-
+if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
+    sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+import AIregular
+import keys
 
 def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, verbose_checkpoint: typing.Callable[[str], None] = None):
     commentData = classification.getFiles(attachments, htmlEmailtext, verbose_checkpoint)
@@ -31,6 +35,7 @@ def getResponse(emailText, commentData, verbose_checkpoint=None, retries=0):
     answer = classification.classifyEmail(emailText)
     print("raw email text:", emailText)
 
+    AIregular_ = AIregular.AIregular(keys.openAI_APIKEY)
     if answer:
         filesText = []
         filesPicture = []
@@ -42,17 +47,23 @@ def getResponse(emailText, commentData, verbose_checkpoint=None, retries=0):
             file_content = io.BytesIO(response.content)
             file_type = magic.from_buffer(file_content.getvalue(), mime=True)
             if "image" in file_type:
-                filesPicture.append(file_content)
+                filesPicture.append(fileUrl)
             else:
                 filesText.append(file_content)
 
         if len(filesPicture) > 0:
             print("Asking picture specialized agent - ", str(len(filesPicture)) + " files")
-            flightDetails = dataExtractor.askGPT(emailText, filesPicture, hasImages=True)
+            prompt = "Extract ALL flight details from the email and attached images which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information.\n\nDo not forget to extract data from images too. Email:\n" + emailText
+            flightDetailsImages = AIregular_.processImages(prompt, filesPicture)
             verbose("Asking picture specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
+            if len(filesText) <= 0:
+                flightDetails = flightDetailsImages
         if len(filesText) > 0 or len(filesPicture) == 0:
             print("Asking text specialized agent - ", str(len(filesText)) + " files")
-            flightDetails = dataExtractor.askGPT(emailText, filesText, hasImages=False)
+            if len(filesPicture) > 0:
+                flightDetails = dataExtractor.askGPT(emailText, filesText, imageInfo=flightDetailsImages)
+            else:
+                flightDetails = dataExtractor.askGPT(emailText, filesText)
             verbose("Asking text specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
 
         details = flightSearch.getFlightOffer(flightDetails, verbose_checkpoint)

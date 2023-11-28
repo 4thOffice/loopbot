@@ -10,7 +10,7 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
 import keys
 import apiDataHandler
     
-def askGPT(emailText, files, hasImages):
+def askGPT(emailText, files, imageInfo=[]):
     client = OpenAI(api_key=keys.openAI_APIKEY)
 
     for index, file_ in enumerate(files):
@@ -27,17 +27,10 @@ def askGPT(emailText, files, hasImages):
     file_ids=[]
     )
 
-    pictureFileAssistant = client.beta.assistants.create(
-    instructions="You are a helpful robot.",
-    model="gpt-4-1106-preview",
-    tools=[{"type": "code_interpreter"}],
-    file_ids=[]
-    )
-
     if len(files) > 0:
         content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
-        if hasImages:
-            content_text += "\n\nImages are in PNG or JPG format."
+        if len(imageInfo) > 0:
+            content_text += "\n\nAlso take this important extra information about this email into consideration:\n" + imageInfo
     else:
         content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
     
@@ -51,10 +44,7 @@ def askGPT(emailText, files, hasImages):
     ]
     )
 
-    if hasImages:
-        assistant_id=pictureFileAssistant.id
-    else:
-        assistant_id=textFileAssistant.id
+    assistant_id=textFileAssistant.id
 
     run = client.beta.threads.runs.create(
     thread_id=thread.id,
@@ -83,7 +73,6 @@ def askGPT(emailText, files, hasImages):
     print("Answer:\n", messages.data[0].content[0].text.value)
     answer = messages.data[0].content[0].text.value
     apiDataHandler.delete_assistant(textFileAssistant.id, keys.openAI_APIKEY)
-    apiDataHandler.delete_assistant(pictureFileAssistant.id, keys.openAI_APIKEY)
 
     for file_ in files:
         apiDataHandler.delete_file(file_, keys.openAI_APIKEY)

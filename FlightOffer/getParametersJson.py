@@ -60,7 +60,7 @@ def extractSearchParameters(emailText, offerCount):
 
         if response.choices:
             flight = json.loads(response.choices[0].message.content)
-
+            #NDC
             search_params = {
                 "currencyCode": flight["currencyCode"],
                 "originDestinations": [],
@@ -146,13 +146,13 @@ def extractSearchParameters(emailText, offerCount):
                     }
                 }
                     
-                if flight_["alternativeDestinationsCodes"] != "" and flight_["alternativeDestinationsCodes"] != "[]":
+                if flight_["alternativeDestinationsCodes"] != "" and flight_["alternativeDestinationsCodes"] != []:
                     segment["alternativeDestinationsCodes"] = flight_["alternativeDestinationsCodes"]
 
-                if flight_["alternativeOriginsCodes"] != "" and flight_["alternativeOriginsCodes"] != "[]":
+                if flight_["alternativeOriginsCodes"] != "" and flight_["alternativeOriginsCodes"] != []:
                     segment["alternativeOriginsCodes"] = flight_["alternativeOriginsCodes"]
 
-                if flight_["includedConnectionPoints"] != "" and flight_["includedConnectionPoints"] != "[]":
+                if flight_["includedConnectionPoints"] != "" and flight_["includedConnectionPoints"] != []:
                     segment["includedConnectionPoints"] = flight_["includedConnectionPoints"]
                     
                 if flight_["exactDepartureTime"] != "":
