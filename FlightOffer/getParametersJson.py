@@ -155,7 +155,7 @@ def extractSearchParameters(emailText, offerCount):
                 if flight_["includedConnectionPoints"] != "" and flight_["includedConnectionPoints"] != []:
                     segment["includedConnectionPoints"] = flight_["includedConnectionPoints"]
                     
-                if flight_["exactDepartureTime"] != "":
+                if "exactDepartureTime" in flight_ and flight_["exactDepartureTime"] != "":
                     segment["departureDateTimeRange"]["time"] = flight_["exactDepartureTime"]
                     #segment["departureDateTimeRange"]["timeWindow"] = "12H"
 
