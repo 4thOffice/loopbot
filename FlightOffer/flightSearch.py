@@ -71,104 +71,6 @@ def find_closest_flight_offer(flight_offers, extraTimeframes):
 
     return closest_offers
 
-
-def extractSearchParameters(emailText, offerCount, verbose_checkpoint):
-    user_msg = "I want you to extract flight details and replace values in this parameter json:\n"
-
-    """
-        "latestOutboundDepartureTime": "", //leave empty if not specified! format must be: "10:00:00"
-        "earliestOutboundDepartureTime": "", //leave empty if not specified! format must be: "10:00:00"
-        "latestReturnDepartureTime": "", //leave empty if not specified! format must be: "10:00:00"
-        "earliestReturnDepartureTime": "", //leave empty if not specified! format must be: "10:00:00"
-    """
-    user_msg += """{
-        "currencyCode": "EUR", //Keep EUR if not specified
-        "originLocationCode": "LJU", //Leave "LJU" if not specified! Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters!
-        "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters!
-        "departureDate": "2023-12-09", //must be in format: YYYY-MM-DD
-        "returnDate": "2023-12-15", //must be in format: YYYY-MM-DD
-        "exactOutboundDepartureTime": "", //leave empty if not specified! format must be: "10:00:00"
-        "exactReturnDepartureTime": "", //leave empty if not specified! format must be: "10:00:00"
-        "adults": 1,
-        "nonStop": "true", //leave like this if not specified explicitly, options to choose from: ["true", "false"] set to true, ONLY if person 
-         requested 
-        for flight to go from the origin to the destination with no stop in between
-        "children": 0,
-        "infants": 0,
-        "travelClass": "ECONOMY" // ONLY choose from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", 
-         "BUSINESS", "FIRST"]
-      }\n\n"""
-    user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2023. Location codes must be 3-letter IATA codes. if origin is not provided, make the value empty string ''. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nEmail to extract details from:\n"
-    user_msg += emailText
-    user_msg += "\n\nOutput should be ONLY json above with replaced parameter values and NO other text!"
-
-    print(user_msg)
-
-    # new_obj = {"messages": [{"role": "user", "content": user_msg}, {"role": "assistant", "content": "test"}]}
-    # with open("./FlightOffer/finetuning.json", 'r') as file:
-    #     existing_data = json.load(file)
-    # existing_data["samples"].append(new_obj)
-    # with open("./FlightOffer/finetuning.json", 'w') as file:
-    #     json.dump(existing_data, file, indent=4)
-    
-
-    max_attempts = 2  # Maximum number of attempts
-    retry_interval = 10  # Retry interval in seconds
-
-    for attempt in range(max_attempts):
-        openai.api_key = keys.openAI_APIKEY
-        response = openai.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "user", "content": user_msg}
-            ]
-        )
-
-        if response.choices:
-            #print(response.choices[0].message.content)
-            verbose(response.choices[0].message.content, verbose_checkpoint)
-            try:
-                flight = json.loads(response.choices[0].message.content)
-            except Exception:
-                return True, None
-
-            # with open("./FlightOffer/finetuning.json", 'r') as file:
-            #     existing_data = json.load(file)
-            # existing_data["samples"][-1]["messages"][-1]["content"] = json.dumps(flight)
-            # with open("./FlightOffer/finetuning.json", 'w') as file:
-            #     json.dump(existing_data, file, indent=4)
-            print("----------------------------")
-            print(flight)
-            print("----------------------------")
-
-            year_from_string = int(flight["departureDate"][:4])
-            date_from_string = datetime.datetime.strptime(flight["departureDate"], "%Y-%m-%d")
-            current_date = datetime.datetime.now()
-            if date_from_string < current_date:
-                flight["departureDate"] = str(year_from_string+1) + flight["departureDate"][4:]
-                flight["returnDate"] = str(year_from_string+1) + flight["returnDate"][4:]
-
-            flight["max"] = offerCount
-            if "nonStop" in flight and (flight["nonStop"] == "false" or flight["nonStop"] == False):
-                flight.pop("nonStop")
-            if "children" in flight and flight["children"] == 0:
-                flight.pop("children")
-            if "infants" in flight and flight["infants"] == 0:
-                flight.pop("infants")
-            if "returnDate" in flight and flight["returnDate"] == "":
-                flight.pop("returnDate")
-                flight["oneWay"] = True
-            if "originLocationCode" in flight and flight["originLocationCode"] == "":
-                flight["originLocationCode"] = "LJU"
-
-            return False, flight
-        else:
-            if attempt < max_attempts - 1:
-                print("No response received. Retrying in {} seconds...".format(retry_interval))
-                time.sleep(retry_interval)  # Wait for the specified interval before retrying
-            else:
-                print("Exceeded maximum attempts. No response received.")
-
 amadeus = Client(
     client_id=keys.amadeus_client_id,
     client_secret=keys.amadeus_client_secret,
@@ -244,8 +146,10 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
             combined_detail = '\n'.join(error['detail'] for error in responseJson["errors"])
             return {"status": "error", "details": combined_detail}
         else:
-            #print(responseJson)
-            print("initial flight offers: ", len(responseJson["data"]))
+            print(responseJson)
+            print("initial flight offers length: ", len(responseJson["data"]))
+            verbose(f"initial flight offers:\n{responseJson}", verbose_checkpoint)
+            verbose(("initial flight offers length: ", len(responseJson["data"])), verbose_checkpoint)
             return {"status": "ok", "details": responseJson}
     except ResponseError as error:
         print(error)

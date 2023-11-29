@@ -72,7 +72,7 @@ def extractSearchParameters(emailText, offerCount):
                     "maxFlightOffers": offerCount,
                     "flightFilters": {
                     "connectionRestriction": {
-                        "maximumNumberOfConnections": flight["maximumNumberOfConnections"]
+                        "maximumNumberOfConnections": max(flight["maximumNumberOfConnections"], 0)
                     },
                     "cabinRestrictions": [
                         {
@@ -160,7 +160,7 @@ def extractSearchParameters(emailText, offerCount):
                     #segment["departureDateTimeRange"]["timeWindow"] = "12H"
 
                 if flight_["exactArrivalTime"] != "" and flight_["exactDepartureTime"] == "":
-                    segment["arrivalDateTimeRange"]["time"] = flight_["exactArrivalTime"]
+                    segment["arrivalDateTimeRange"] = {"time": flight_["exactArrivalTime"]}
                     #segment["departureDateTimeRange"]["timeWindow"] = "2H"
 
                 search_params["originDestinations"].append(segment)
