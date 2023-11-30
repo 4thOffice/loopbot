@@ -7,7 +7,26 @@ import os
 if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import keys
+from urllib.parse import urlencode, quote
 
+def getDeepLink(flightDetails):
+    command = f"/travelai createoffer {json.dumps(flightDetails)}"
+    deeplink = bb_code_link(send_chat_deeplink(command), "Prepare offer draft.")
+    return deeplink
+
+def url_encode(params):
+    return urlencode(params, quote_via=quote)
+
+
+def send_chat_deeplink(msg):
+    return f"intheloop:///send-chat?{url_encode({'msg': msg})}"
+
+def bb_code_link(link, content, preview: bool = None):
+    if preview is not None and isinstance(preview, bool):
+        return "[url href=\"{}\" preview={}]{}[/url]".format(link, preview, content)
+    else:
+        return "[url href=\"{}\"]{}[/url]".format(link, content)
+    
 def iso_to_custom_date(iso_date):
     parsed_date = datetime.fromisoformat(iso_date)
     return parsed_date.strftime("%d%b").upper()
@@ -53,7 +72,7 @@ def generateOffer(emailText, details):
     else:
         print("Unexpected or empty response received.")
 
-def generateFlightsString(details):
+def generateFlightsString(details, email_comment_id=None):
     flights_string = ""
 
     for index, offer in enumerate(details["offers"]):
@@ -79,6 +98,9 @@ def generateFlightsString(details):
             flights_string += f"Luggage: {offer['luggage']['includedCheckedBags']}\n"
     
         flights_string += "Total price: " + offer["price"]["grandTotal"] + " " + offer["price"]["billingCurrency"]
+        if email_comment_id:
+            flights_string += "\n"
+            flights_string += getDeepLink(offer, email_comment_id)
         flights_string += "\n\n"
 
     return flights_string

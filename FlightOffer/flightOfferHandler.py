@@ -14,10 +14,10 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
 import AIregular
 import keys
 
-def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, verbose_checkpoint: typing.Callable[[str], None] = None):
+def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, email_comment_id, verbose_checkpoint: typing.Callable[[str], None] = None):
     commentData = classification.getFiles(attachments, htmlEmailtext, verbose_checkpoint)
     emailText = "Subject: " + subject + "\n" + plainText
-    return getResponse(emailText, commentData, verbose_checkpoint)
+    return getResponse(emailText, commentData, email_comment_id, verbose_checkpoint)
 
 def getFlightOffer(cardID=None, authKey=None):
     print(cardID)
@@ -31,7 +31,7 @@ def getFlightOffer(cardID=None, authKey=None):
     return getResponse(emailText, commentData)
 
 
-def getResponse(emailText, commentData, verbose_checkpoint=None, retries=0):
+def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoint=None, retries=0):
     answer = classification.classifyEmail(emailText)
     print("raw email text:", emailText)
 
@@ -77,7 +77,7 @@ def getResponse(emailText, commentData, verbose_checkpoint=None, retries=0):
                 return getResponse(emailText, commentData, verbose_checkpoint, retries=1)
         
         #generatedOffer = offerGenerator.generateOffer(emailText, details)
-        generatedOffer = offerGenerator.generateFlightsString(details["data"])
+        generatedOffer = offerGenerator.generateFlightsString(details["data"], email_comment_id)
         
         print("flight details gathered")
         return({"parsedOffer": "[TravelAI Success]\n\n" + generatedOffer, "details": details["data"]})
