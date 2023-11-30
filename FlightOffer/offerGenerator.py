@@ -4,6 +4,9 @@ import re
 import openai
 import sys
 import os
+
+import Auxiliary.compressed_json
+
 if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import keys
@@ -13,7 +16,7 @@ def getDeepLink(flightDetails, email_comment_id=None):
     if email_comment_id:
         flightDetails = dict(flightDetails)  # shallow copy
         flightDetails["email_comment_id"] = email_comment_id
-    command = f"/travelai createoffer {json.dumps(flightDetails)}"
+    command = f"/travelai createoffer {Auxiliary.compressed_json.encode_json_to_string(flightDetails)}"
     deeplink = bb_code_link(send_chat_deeplink(command), "Prepare offer draft.")
     return deeplink
 
