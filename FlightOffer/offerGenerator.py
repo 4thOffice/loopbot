@@ -25,7 +25,7 @@ def url_encode(params):
 
 
 def send_chat_deeplink(msg):
-    return f"intheloop:///send-chat?{url_encode({'msg': msg})}"
+    return f"intheloop://send-chat?{url_encode({'msg': msg})}"
 
 def bb_code_link(link, content, preview: bool = None):
     if preview is not None and isinstance(preview, bool):
