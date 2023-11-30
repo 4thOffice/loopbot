@@ -1,4 +1,5 @@
 import io
+import re
 import typing
 import os
 import sys
@@ -66,12 +67,13 @@ def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoin
                 flightDetails = dataExtractor.askGPT(emailText, filesText)
             verbose("Asking text specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
 
+        intercontinentalText, travelClassText = getExtraInfo(flightDetails)
         details = flightSearch.getFlightOffer(flightDetails, verbose_checkpoint)
         if details["status"] == "ok" and details["data"] is None:
-            return({"parsedOffer": "[code][[/code]TravelAI Success[code]][/code]\n\nNo flights found", "details": None})
+            return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\nNo flights found", "details": None})
         elif details["status"] == "error":
             if retries > 0:
-                return({"parsedOffer": "[code][[/code]TravelAI Error[code]][/code]\n\n" + details["data"], "details": None})
+                return({"parsedOffer": f"[code][[/code]TravelAI Error[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\n" + details["data"], "details": None})
             else:
                 print("Encountered an error, trying one more time...")
                 return getResponse(emailText, commentData, verbose_checkpoint, retries=1)
@@ -80,11 +82,33 @@ def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoin
         generatedOffer = offerGenerator.generateFlightsString(details["data"], email_comment_id)
         #print(offerGenerator.generateOffer(emailText, details=details["data"]))
         print("flight details gathered")
-        return({"parsedOffer": "[code][[/code]TravelAI Success[code]][/code]\n\n" + generatedOffer, "details": details["data"]})
+        return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\n" + generatedOffer, "details": details["data"]})
 
     else:
         print("Not a flight tender inquiry")
-        return({"parsedOffer": "[code][[/code]TravelAI Success[code]][/code]\n\n" + "Not a flight tender inquiry", "details": None})
+        return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\n" + "Not a flight tender inquiry", "details": None})
+
+def getExtraInfo(emailText):
+    intercontinentalText = ""
+    isIntercontinental = dataExtractor.isIntercontinentalFlight(emailText)
+    if isIntercontinental:
+        intercontinentalText = "[code][[/code]INTERCONTINENTAL FLIGHT[code]][/code]"
+
+    travelClassText = ""
+    travelClass = dataExtractor.getTravelClass(emailText)
+    if travelClass != "":
+        pattern = r'\{([^}]+)\}'
+        match = re.search(pattern, travelClass)
+        if match:
+            text_inside_braces = match.group(1)
+            travelClassText = f"[code][[/code]{text_inside_braces}[code]][/code]"
+        else:
+            print("No match found")
+            travelClassText = "[code][[/code]ECONOMY[code]][/code]"
+    else: 
+        travelClassText = "[code][[/code]ECONOMY[code]][/code]"
+
+    return intercontinentalText, travelClassText
 
 #authKey = whitelist["user_1552217"]
 #getFlightOffer("DCwm6ekeYTewrKkymigycY4PBIA0T", authKey)
