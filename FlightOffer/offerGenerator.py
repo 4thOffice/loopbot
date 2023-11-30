@@ -45,9 +45,9 @@ def generateOffer(emailText, details):
     print("---------------------")
     print(details)
     # Generating the output strings
-    flights_string = generateFlightsString(details)
+    flights_string = generateFlightsString(details, usedForDraft=True)
 
-    user_msg = "I will give you a flight tender enquiry email. I want you to generate an offer i can send back. Do NOT make up data. Email should be as short as possible(maximum 80 words) and formal. Do not include subject.\n\nThe following text in curly brackets is flight details and should be in thsi exact format in the final email you write:\n"
+    user_msg = "I will give you a flight tender enquiry email. I want you to generate an offer i can send back. Do NOT make up data. Email should be as short as possible(maximum 80 words) and formal. Do not include subject.\n\nThe following text in curly brackets is flight details which MUST stay exactly the same and should be in this exact format in the final email you write:\n"
     user_msg += "{" + flights_string + "}"
 
     user_msg += "\n\nEmail I want you to respond to:\n"
@@ -72,15 +72,16 @@ def generateOffer(emailText, details):
     else:
         print("Unexpected or empty response received.")
 
-def generateFlightsString(details, email_comment_id=None):
+def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
     flights_string = ""
 
     for index, offer in enumerate(details["offers"]):
-        if index == 0:
-            flights_string += f"Suggested offer:\n"
-        elif index == 1:
-            flights_string += f"Alternative offers:\n"
-        flights_string += f"Offer {index+1}\n"
+        if not usedForDraft:
+            if index == 0:
+                flights_string += f"Suggested offer:\n"
+            elif index == 1:
+                flights_string += f"Alternative offers:\n"
+            flights_string += f"Offer {index+1}\n"
         for flight in offer["flights"]:
             departure_date = iso_to_custom_date(flight["departure"]["at"])
             duration = iso_to_hours_minutes(flight["duration"])
@@ -100,7 +101,10 @@ def generateFlightsString(details, email_comment_id=None):
         flights_string += "Total price: " + offer["price"]["grandTotal"] + " " + offer["price"]["billingCurrency"]
         if email_comment_id:
             flights_string += "\n"
-            flights_string += getDeepLink(offer, email_comment_id)
+            flights_string += getDeepLink(details, email_comment_id)
         flights_string += "\n\n"
+        
+        if usedForDraft and index == 0:
+            break
 
     return flights_string

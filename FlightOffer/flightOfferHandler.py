@@ -78,7 +78,7 @@ def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoin
         
         #generatedOffer = offerGenerator.generateOffer(emailText, details)
         generatedOffer = offerGenerator.generateFlightsString(details["data"], email_comment_id)
-        
+        #print(offerGenerator.generateOffer(emailText, details=details["data"]))
         print("flight details gathered")
         return({"parsedOffer": "[code][[/code]TravelAI Success[code]][/code]\n\n" + generatedOffer, "details": details["data"]})
 
