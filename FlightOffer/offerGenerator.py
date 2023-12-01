@@ -103,7 +103,7 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
         
         if offer["luggage"]["includedCheckedBags"] is not None:
             flights_string += f"Luggage: {offer['luggage']['includedCheckedBags']}\n"
-    
+        flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
         flights_string += "Total price: " + offer["price"]["grandTotal"] + " " + offer["price"]["billingCurrency"]
         if email_comment_id:
             flights_string += "\n"

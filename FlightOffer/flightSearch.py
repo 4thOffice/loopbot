@@ -54,22 +54,13 @@ def find_closest_flight_offer(flight_offers, extraTimeframes):
             arrival_time = datetime.datetime.fromisoformat(arrival_time).time()
 
             if "exactDepartureTime" in extraTimeframes[index1] and extraTimeframes[index1]["exactDepartureTime"] != "":
-                print("--------------")
-                print("departure")
-                print(departure_time)
-                print(datetime.datetime.strptime(extraTimeframes[index1]["exactDepartureTime"], '%H:%M:%S').time())
                 exactDepartureTime = datetime.datetime.strptime(extraTimeframes[index1]["exactDepartureTime"], '%H:%M:%S').time()
                 time_diff += abs((departure_time.hour + departure_time.minute) - (exactDepartureTime.hour + exactDepartureTime.minute))
                 print(abs((departure_time.hour + departure_time.minute) - (exactDepartureTime.hour + exactDepartureTime.minute)))
             if "exactArrivalTime" in extraTimeframes[index1] and extraTimeframes[index1]["exactArrivalTime"] != "":
-                print("arrival")
-                print(departure_time)
-                print(datetime.datetime.strptime(extraTimeframes[index1]["exactDepartureTime"], '%H:%M:%S').time())
                 exactArrivalTime = datetime.datetime.strptime(extraTimeframes[index1]["exactArrivalTime"], '%H:%M:%S').time()
                 time_diff += abs((arrival_time.hour + arrival_time.minute) - (exactArrivalTime.hour + exactArrivalTime.minute))
                 print(abs((arrival_time.hour + arrival_time.minute) - (exactArrivalTime.hour + exactArrivalTime.minute)))
-        print("total time diff:", str(time_diff))
-        print("--------------")
         closest_offers.append({"offer": offer, "time_difference": time_diff})
 
     return closest_offers
@@ -236,7 +227,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
 
     bestFlightOffersPerStopNumber = []
     for numberOfStops in range(0, 3):
-        print(f"Looaking at flight offers - number of stops: {numberOfStops}")
+        print(f"Looking at flight offers - number of stops: {numberOfStops}")
         toAppend = {"numberOfStops": numberOfStops, "offers": []}
 
         cheapestFlightOffers = []
@@ -328,6 +319,6 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         includedCheckedBags = None
         if "includedCheckedBags" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]:
             includedCheckedBags = cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]
-        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["price"]["billingCurrency"]}, "luggage": {"includedCheckBagsOnly": includedCheckBagsOnly, "includedCheckedBags": includedCheckedBags}, "flights": flights})
+        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["travelerPricings"]), "luggage": {"includedCheckBagsOnly": includedCheckBagsOnly, "includedCheckedBags": includedCheckedBags}, "flights": flights})
     
     return returnData
