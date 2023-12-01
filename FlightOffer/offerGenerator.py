@@ -9,8 +9,9 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
 import keys
 from urllib.parse import urlencode, quote
 
-def getDeepLink(flightDetails):
-    command = f"/travelai createoffer {json.dumps(flightDetails)}"
+def getDeepLink(flightDetails, email_comment_id):
+    ret_json = {"flightDetails": flightDetails, "email_comment_id": email_comment_id}
+    command = f"/travelai createoffer {json.dumps(ret_json)}"
     deeplink = bb_code_link(send_chat_deeplink(command), "Prepare offer draft.")
     return deeplink
 
