@@ -136,9 +136,9 @@ def extractSearchParameters(emailText, offerCount):
                 segment = {
                     "id": str(index+1),
                     "originLocationCode": flight_["originLocationCode"],
-                    "originRadius": 40,
+                    "originRadius": 30,
                     "destinationLocationCode": flight_["destinationLocationCode"],
-                    "destinationRadius": 40,
+                    "destinationRadius": 30,
                     "departureDateTimeRange": {
                         "date": flight_["departureDate"]
                     }
