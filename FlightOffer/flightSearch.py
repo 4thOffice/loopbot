@@ -45,6 +45,7 @@ def find_closest_flight_offer(flight_offers, extraTimeframes):
     
     closest_offers = []
     for offer in flight_offers:
+        time_diff = 0
         for index1, itinerary in enumerate(offer['itineraries']):
             departure_time = itinerary['segments'][0]['departure']['at']
             arrival_time = itinerary['segments'][-1]['arrival']['at']
@@ -52,14 +53,23 @@ def find_closest_flight_offer(flight_offers, extraTimeframes):
             departure_time = datetime.datetime.fromisoformat(departure_time).time()
             arrival_time = datetime.datetime.fromisoformat(arrival_time).time()
 
-            time_diff = 0
             if "exactDepartureTime" in extraTimeframes[index1] and extraTimeframes[index1]["exactDepartureTime"] != "":
+                print("--------------")
+                print("departure")
+                print(departure_time)
+                print(datetime.datetime.strptime(extraTimeframes[index1]["exactDepartureTime"], '%H:%M:%S').time())
                 exactDepartureTime = datetime.datetime.strptime(extraTimeframes[index1]["exactDepartureTime"], '%H:%M:%S').time()
                 time_diff += abs((departure_time.hour + departure_time.minute) - (exactDepartureTime.hour + exactDepartureTime.minute))
+                print(abs((departure_time.hour + departure_time.minute) - (exactDepartureTime.hour + exactDepartureTime.minute)))
             if "exactArrivalTime" in extraTimeframes[index1] and extraTimeframes[index1]["exactArrivalTime"] != "":
+                print("arrival")
+                print(departure_time)
+                print(datetime.datetime.strptime(extraTimeframes[index1]["exactDepartureTime"], '%H:%M:%S').time())
                 exactArrivalTime = datetime.datetime.strptime(extraTimeframes[index1]["exactArrivalTime"], '%H:%M:%S').time()
                 time_diff += abs((arrival_time.hour + arrival_time.minute) - (exactArrivalTime.hour + exactArrivalTime.minute))
-
+                print(abs((arrival_time.hour + arrival_time.minute) - (exactArrivalTime.hour + exactArrivalTime.minute)))
+        print("total time diff:", str(time_diff))
+        print("--------------")
         closest_offers.append({"offer": offer, "time_difference": time_diff})
 
     return closest_offers
@@ -157,6 +167,8 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
                 verbose("No flights found.. expanding time window by 2 hours", verbose_checkpoint)
                 if iteration == 0:
                     for originDestination in search_params['originDestinations']:
+                        del originDestination["originRadius"]
+                        del originDestination["destinationRadius"]
                         originDestination["departureDateTimeRange"]["timeWindow"] = "4H"
                 else:        
                     for originDestination in search_params['originDestinations']:

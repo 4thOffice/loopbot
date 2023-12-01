@@ -136,17 +136,19 @@ def extractSearchParameters(emailText, offerCount):
                 segment = {
                     "id": str(index+1),
                     "originLocationCode": flight_["originLocationCode"],
+                    "originRadius": 40,
                     "destinationLocationCode": flight_["destinationLocationCode"],
+                    "destinationRadius": 40,
                     "departureDateTimeRange": {
                         "date": flight_["departureDate"]
                     }
                 }
                     
                 if flight_["alternativeDestinationsCodes"] != "" and flight_["alternativeDestinationsCodes"] != []:
-                    segment["alternativeDestinationsCodes"] = flight_["alternativeDestinationsCodes"]
+                    segment["alternativeDestinationsCodes"] = flight_["alternativeDestinationsCodes"][:2]
 
                 if flight_["alternativeOriginsCodes"] != "" and flight_["alternativeOriginsCodes"] != []:
-                    segment["alternativeOriginsCodes"] = flight_["alternativeOriginsCodes"]
+                    segment["alternativeOriginsCodes"] = flight_["alternativeOriginsCodes"][:2]
 
                 if flight_["includedConnectionPoints"] != "" and flight_["includedConnectionPoints"] != []:
                     segment["includedConnectionPoints"] = flight_["includedConnectionPoints"][:2]

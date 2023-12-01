@@ -86,7 +86,7 @@ def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoin
 
     else:
         print("Not a flight tender inquiry")
-        return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\n" + "Not a flight tender inquiry", "details": None})
+        return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n\n" + "Not a flight tender inquiry", "details": None})
 
 def getExtraInfo(emailText):
     intercontinentalText = ""
@@ -97,13 +97,13 @@ def getExtraInfo(emailText):
     travelClassText = ""
     travelClass = dataExtractor.getTravelClass(emailText)
     if travelClass != "":
-        pattern = r'\{([^}]+)\}'
-        match = re.search(pattern, travelClass)
-        if match:
-            text_inside_braces = match.group(1)
-            travelClassText = f"[code][[/code]{text_inside_braces}[code]][/code]"
+        if "ECONOMY" in travelClass:
+            travelClassText = "[code][[/code]ECONOMY[code]][/code]"
+        elif "BUSINESS" in travelClass:
+            travelClassText = travelClassText = "[code][[/code]BUSINESS[code]][/code]"
+        elif "FIRST" in travelClass:
+            travelClassText = travelClassText = "[code][[/code]FIRST[code]][/code]"
         else:
-            print("No match found")
             travelClassText = "[code][[/code]ECONOMY[code]][/code]"
     else: 
         travelClassText = "[code][[/code]ECONOMY[code]][/code]"
