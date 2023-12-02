@@ -46,13 +46,14 @@ def parseHtml(commentContent):
 
 def getFiles(attachments, commentContent, verbose_checkpoint=None):
     returnFileUrls = []
-    signature = ""
-    signature = cut_string_at_keyword(commentContent, ["LP", "lep pozdrav", "Lep pozdrav", "lp", "pozdrav"])
+    #signature = ""
+    #signature = cut_string_at_keyword(commentContent, ["LP", "lep pozdrav", "Lep pozdrav", "lp", "pozdrav"])
     for attachment in attachments:
-        if attachment["id"] not in signature:
-            returnFileUrls.append(attachment["urlLink"])
-    if verbose_checkpoint:
-        verbose_checkpoint("Extracted file urls:\n" + '\n'.join(returnFileUrls))
+        #if attachment["id"] not in signature:
+        #    returnFileUrls.append(attachment["urlLink"])
+        returnFileUrls.append(attachment["urlLink"])
+    #if verbose_checkpoint:
+    #    verbose_checkpoint("Extracted file urls:\n" + '\n'.join(returnFileUrls))
     return {"fileUrls": returnFileUrls}
 
 def getCommentContent(commentID, authkey):
@@ -113,8 +114,9 @@ def getFirstCommentData(cardID, authkey):
                 if "content" in comment["body"]:
                     signature = cut_string_at_keyword(comment["body"]["content"], ["LP", "lep pozdrav", "Lep pozdrav", "lp", "pozdrav"])
                 for attachment in attachments:
-                    if attachment["id"] not in signature:
-                        fileUrls.append(attachment["urlLink"])
+                    #if attachment["id"] not in signature:
+                    #    fileUrls.append(attachment["urlLink"])
+                    fileUrls.append(attachment["urlLink"])
                 return {"id": comment["id"], "fileUrls": fileUrls}
     else:
         print(f"Error: {response.status_code} - {response.text}")

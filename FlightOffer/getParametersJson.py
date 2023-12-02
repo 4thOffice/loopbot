@@ -11,7 +11,7 @@ import keys
 
 def extractSearchParameters(emailText, offerCount):
     user_msg = "I want you to extract flight details and replace values in this parameter json:\n"
-
+    #"includeNearAirportsAsOrigin": "false" //If it is excplicitly specified that departure can be from any of near airports, then set to "true", else leaveit as "false"
     user_msg += """{
         "currencyCode": "EUR", //Keep EUR if not specified
         "adults": 1,
@@ -67,6 +67,7 @@ def extractSearchParameters(emailText, offerCount):
                 "searchCriteria": {
                     "maxFlightOffers": offerCount,
                     "flightFilters": {
+                    "crossBorderAllowed": True,
                     "connectionRestriction": {
                         "maximumNumberOfConnections": max(flight["maximumNumberOfConnections"], 0)
                     },
@@ -102,7 +103,6 @@ def extractSearchParameters(emailText, offerCount):
                 if not found:
                     usedDestinationLocationCodes.append(flightSegment["destinationLocationCode"])
 
-
             if flight["maximumNumberOfConnections"] == 0:
                 search_params["searchCriteria"]["flightFilters"]["connectionRestriction"]["nonStopPreferred"] = "true"
             
@@ -115,8 +115,8 @@ def extractSearchParameters(emailText, offerCount):
                 }
                 search_params["travelers"].append(traveler)
             for index in range(0, flight["children"]):
-                traveler =     {
-                    "id": str(index+1),
+                traveler = {
+                    "id": str((flight["adults"]+index+1)),
                     "travelerType": "CHILD"
                 }
                 search_params["travelers"].append(traveler)
@@ -124,8 +124,21 @@ def extractSearchParameters(emailText, offerCount):
             if flight["includedAirlineCodes"] != "":
                 search_params["searchCriteria"]["flightFilters"]["AirlineRestrictions"] = {"includedAirlineCodes": flight["includedAirlineCodes"]}
 
+            #print("includeNearAirportsAsOrigin:", flight["includeNearAirportsAsOrigin"])
+
             extraTimeframes = []
+            usedOriginCodes = []
+            usedDestinationCodes = []
             for index, flight_ in enumerate(flight["flightSegments"]):
+                if flight_["originLocationCode"] in usedOriginCodes:
+                    continue
+                else:
+                    usedOriginCodes.append(flight_["originLocationCode"])
+
+                if flight_["destinationLocationCode"] in usedDestinationCodes:
+                    continue
+                else:
+                    usedDestinationCodes.append(flight_["destinationLocationCode"])
 
                 year_from_string = int(flight_["departureDate"][:4])
                 date_from_string = datetime.datetime.strptime(flight_["departureDate"], "%Y-%m-%d")
@@ -152,14 +165,13 @@ def extractSearchParameters(emailText, offerCount):
 
                 if flight_["includedConnectionPoints"] != "" and flight_["includedConnectionPoints"] != []:
                     segment["includedConnectionPoints"] = flight_["includedConnectionPoints"][:2]
-                    print("SEGMENT CONNECT ", segment["includedConnectionPoints"])
                     
                 if "exactDepartureTime" in flight_ and flight_["exactDepartureTime"] != "":
                     segment["departureDateTimeRange"]["time"] = flight_["exactDepartureTime"]
                     #segment["departureDateTimeRange"]["timeWindow"] = "12H"
 
-                if flight_["exactArrivalTime"] != "" and flight_["exactDepartureTime"] == "":
-                    segment["arrivalDateTimeRange"] = {"time": flight_["exactArrivalTime"]}
+                #elif flight_["exactArrivalTime"] != "" and flight_["exactDepartureTime"] == "":
+                    #segment["arrivalDateTimeRange"] = {"time": flight_["exactArrivalTime"]}
                     #segment["departureDateTimeRange"]["timeWindow"] = "2H"
 
                 search_params["originDestinations"].append(segment)
@@ -189,6 +201,11 @@ def extractSearchParameters(emailText, offerCount):
                     segmentDictionary["earliestArrivalTime"] = ""
 
                 extraTimeframes.append(segmentDictionary)
+            
+            #print(flight["includeNearAirportsAsOrigin"])
+            #if "includeNearAirportsAsOrigin" in flight and flight["includeNearAirportsAsOrigin"] == "true":
+            #    print("nearest airports included")
+            #    search_params["originDestinations"][0]["originRadius"] = 200
 
             return search_params, extraTimeframes
         else:

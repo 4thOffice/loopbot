@@ -36,6 +36,7 @@ def askGPT(emailText, files, imageInfo=[]):
         - maximum number of connections
         - requested airlines with codes
         - travel class.
+        - whether near airports should be included as departure options
 
         For each flight segment extract the following data:
         - origin location names and IATA 3-letter codes
