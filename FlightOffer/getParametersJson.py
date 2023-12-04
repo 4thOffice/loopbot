@@ -14,9 +14,9 @@ def extractSearchParameters(emailText, offerCount):
     #"includeNearAirportsAsOrigin": "false" //If it is excplicitly specified that departure can be from any of near airports, then set to "true", else leaveit as "false"
     user_msg += """{
         "currencyCode": "EUR", //Keep EUR if not specified
-        "adults": 1,
+        "passangers": 1,
         "maximumNumberOfConnections": 0,
-        "children": 0,
+        "checkedBags": 0 //amount of checked bags, leave 0 if not specified explicitly
         "includedAirlineCodes": "" //leave empty if not specified! must be in format (comma-seperated): "6X,7X,8X"
         "travelClass": "ECONOMY", // ONLY choose from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
         "flightSegments": [ //seperate flight segments that customer is asking for. If flight is one-way, there should be only one flight segment. If it is round-trip, it should have 2 flight segments. If customer is asking for multiple options from different origins, then only use EXACTLY one.
@@ -108,16 +108,10 @@ def extractSearchParameters(emailText, offerCount):
             
             search_params["searchCriteria"]["flightFilters"]["maxFlightTime"] = 200
 
-            for index in range(0, flight["adults"]):
+            for index in range(0, flight["passangers"]):
                 traveler =     {
                     "id": str(index+1),
                     "travelerType": "ADULT"
-                }
-                search_params["travelers"].append(traveler)
-            for index in range(0, flight["children"]):
-                traveler = {
-                    "id": str((flight["adults"]+index+1)),
-                    "travelerType": "CHILD"
                 }
                 search_params["travelers"].append(traveler)
 
@@ -130,15 +124,15 @@ def extractSearchParameters(emailText, offerCount):
             usedOriginCodes = []
             usedDestinationCodes = []
             for index, flight_ in enumerate(flight["flightSegments"]):
-                if flight_["originLocationCode"] in usedOriginCodes:
-                    continue
-                else:
-                    usedOriginCodes.append(flight_["originLocationCode"])
+                #if flight_["originLocationCode"] in usedOriginCodes:
+                #    continue
+                #else:
+                #    usedOriginCodes.append(flight_["originLocationCode"])
 
-                if flight_["destinationLocationCode"] in usedDestinationCodes:
-                    continue
-                else:
-                    usedDestinationCodes.append(flight_["destinationLocationCode"])
+                #if flight_["destinationLocationCode"] in usedDestinationCodes:
+                #    continue
+                #else:
+                #    usedDestinationCodes.append(flight_["destinationLocationCode"])
 
                 year_from_string = int(flight_["departureDate"][:4])
                 date_from_string = datetime.datetime.strptime(flight_["departureDate"], "%Y-%m-%d")
@@ -207,7 +201,13 @@ def extractSearchParameters(emailText, offerCount):
             #    print("nearest airports included")
             #    search_params["originDestinations"][0]["originRadius"] = 200
 
-            return search_params, extraTimeframes
+            checkedbags = 0
+            if "checkedBags" in flight:
+                checkedbags = flight["checkedBags"]
+                if checkedbags == "":
+                    checkedbags = 0
+
+            return search_params, extraTimeframes, checkedbags
         else:
             if attempt < max_attempts - 1:
                 print("No response received. Retrying in {} seconds...".format(retry_interval))

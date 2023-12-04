@@ -96,10 +96,35 @@ def get_price_offer(access_token, flight_offers):
         }
     }
 
-    response = requests.post(url, headers=headers, json=payload)
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
     if response.status_code == 200:
         print('Flight Offers price information retrieved successfully!')
         return response.json()  # Return the JSON response
+    else:
+        print(f'Failed to retrieve data: {response.status_code} - {response.text}')
+        return None
+    
+def get_upsell_offer(access_token, flight_offers):
+    url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/vnd.amadeus+json'
+    }
+    for offer in flight_offers:
+        offer["pricingOptions"]["refundableFare"] = True
+
+    payload = {
+        'data': {
+            'type': 'flight-offers-pricing',
+            'flightOffers': flight_offers
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    if response.status_code == 200:
+        print('Flight Offers upsell information retrieved successfully!')
+        offers = response.json()["data"]
+        return offers[0]
     else:
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
@@ -132,7 +157,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     #error, search_params = extractSearchParameters(flightDetails, 250, verbose_checkpoint)
     #if error:
     #    return {"status": "error", "data": None}
-    search_params, extraTimeframes = getParametersJson.extractSearchParameters(flightDetails, 250)
+    search_params, extraTimeframes, checkedBags = getParametersJson.extractSearchParameters(flightDetails, 250)
 
     try:
         print(search_params)
@@ -304,6 +329,24 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         cheapestPriceOffers = sorted(offersBySegment, key=lambda x: float(x["numberOfSegments"]))
         cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
     print(f"final offers:\n{cheapestPriceOffers}")
+
+
+    #refundable_price_offers = cheapestPriceOffers
+    #for offer in refundable_price_offers:
+    #    offer["pricingOptions"]["refundableFare"] = True
+    #refundable_price_offers = get_price_offer(access_token, refundable_price_offers)
+    #print(f"refundable prices: {refundable_price_offers}")
+
+    """print("----------")
+    priceOffersWithbags = cheapestPriceOffers
+    for offer in priceOffersWithbags:
+        for traveler in offer["travelerPricings"]:
+            for segment in traveler["fareDetailsBySegment"]:
+                segment["additionalServices"] = {"chargeableCheckedBags": {"quantity": checkedBags}}
+
+    priceOffersWithbags = get_price_offer(access_token, priceOffersWithbags)["data"]["flightOffers"]
+    print(f"price with {checkedBags} additional checked bags: {priceOffersWithbags}")
+    print("----------")"""
 
     returnData = {"status": "ok", "data": {"offers": []}}
     for cheapest_price_offer in cheapestPriceOffers:

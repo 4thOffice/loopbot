@@ -29,14 +29,14 @@ def askGPT(emailText, files, imageInfo=[]):
     )
 
     if len(files) > 0:
-        content_text = """Extract ALL flight details from the email which I will give you. Extract the following data:
+        content_text = """Extract ALL flight details from the email which I will give you. Extract ALL of the following data:
         - currency
-        - number of adult passangers
-        - number of child passangers
+        - number of passangers
         - maximum number of connections
         - requested airlines with codes
         - travel class.
         - whether near airports should be included as departure options
+        - amount of checked bags
 
         For each flight segment extract the following data:
         - origin location names and IATA 3-letter codes
@@ -52,6 +52,7 @@ def askGPT(emailText, files, imageInfo=[]):
         - earliest arrival time
         - latest arrival time
         
+        Remember, extract ALL of this data!
         Email (in text format) to extract details from:\n\n"""
         content_text += emailText
         #content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
