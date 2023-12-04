@@ -1,5 +1,6 @@
 import datetime
 import json
+import math
 import sys
 import time
 import openai
@@ -162,6 +163,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     try:
         print(search_params)
         print(extraTimeframes)
+        print(f"checked bags: {checkedBags}")
         verbose(search_params, verbose_checkpoint)
         verbose(extraTimeframes, verbose_checkpoint)
         access_token = get_access_token()
@@ -337,16 +339,32 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     #refundable_price_offers = get_price_offer(access_token, refundable_price_offers)
     #print(f"refundable prices: {refundable_price_offers}")
 
-    """print("----------")
-    priceOffersWithbags = cheapestPriceOffers
-    for offer in priceOffersWithbags:
+    for index, offer in enumerate(cheapestPriceOffers):
+        bagsAdded = False
+        oldPrice = offer["price"]["grandTotal"]
         for traveler in offer["travelerPricings"]:
             for segment in traveler["fareDetailsBySegment"]:
-                segment["additionalServices"] = {"chargeableCheckedBags": {"quantity": checkedBags}}
-
-    priceOffersWithbags = get_price_offer(access_token, priceOffersWithbags)["data"]["flightOffers"]
-    print(f"price with {checkedBags} additional checked bags: {priceOffersWithbags}")
-    print("----------")"""
+                if "quantity" in segment["includedCheckedBags"]:
+                    includedBagsInSegment = segment["includedCheckedBags"]["quantity"]
+                else:
+                    includedBagsInSegment = 1
+                bagsToAdd = checkedBags - includedBagsInSegment
+                if bagsToAdd > 0:
+                    bagsAdded = True
+                    segment["additionalServices"] = {"chargeableCheckedBags": {"quantity": bagsToAdd}}
+        
+        if bagsAdded:
+            try:
+                priceOfferWithbags = get_price_offer(access_token, [offer])["data"]["flightOffers"][0]
+            except Exception:
+                verbose(f"Offer {index}: error fetching price for offer with additional checked bags", verbose_checkpoint)
+                print(f"Offer {index}: error fetching price for offer with additional checked bags: {newPrice}\n")
+                continue
+            cheapestPriceOffers[index] = priceOfferWithbags
+            offer = cheapestPriceOffers[index]
+            newPrice = offer["price"]["grandTotal"]
+            verbose(f"Offer {index}: price without additional checked bags: {oldPrice}\nPrice with additional checked bags: {newPrice}\n", verbose_checkpoint)
+            print(f"Offer {index}: price without additional checked bags: {oldPrice}\nPrice with additional checked bags: {newPrice}\n")
 
     returnData = {"status": "ok", "data": {"offers": []}}
     for cheapest_price_offer in cheapestPriceOffers:
@@ -354,14 +372,18 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         for iterary in cheapest_price_offer["itineraries"]:
             for segment in iterary["segments"]:
                 flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"]})
+        
+        includedBags = 0
+        if "quantity" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
+            includedBags = cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]["quantity"]
+        elif "weight" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
+            includedBags = 1
+            
+        checkedBags = includedBags
+        if "additionalServices" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]:
+            if "chargeableCheckedBags" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]:
+                checkedBags += cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]["chargeableCheckedBags"]["quantity"]
 
-        includedCheckBagsOnly = False
-        if "includedCheckedBagsOnly" in cheapest_price_offer["pricingOptions"]:
-            includedCheckBagsOnly = cheapest_price_offer["pricingOptions"]["includedCheckedBagsOnly"]
-
-        includedCheckedBags = None
-        if "includedCheckedBags" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]:
-            includedCheckedBags = cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]
-        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["travelerPricings"]), "luggage": {"includedCheckBagsOnly": includedCheckBagsOnly, "includedCheckedBags": includedCheckedBags}, "flights": flights})
+        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["travelerPricings"]), "checkedBags": checkedBags, "flights": flights})
     
     return returnData

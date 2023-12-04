@@ -98,13 +98,11 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
             departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
             
             flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration})\n"
-
-        flights_string += f"includedCheckedBagsOnly: {offer['luggage']['includedCheckBagsOnly']}\n"
         
-        if offer["luggage"]["includedCheckedBags"] is not None:
-            flights_string += f"Luggage: {offer['luggage']['includedCheckedBags']}\n"
+        flights_string += f"Checked bags: {offer['checkedBags']}\n"
         flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
-        flights_string += "Total price: " + offer["price"]["grandTotal"] + " " + offer["price"]["billingCurrency"]
+        pricePerPerson = float(offer["price"]["grandTotal"])/float(offer["passengers"])
+        flights_string += "Price: " + str(pricePerPerson) + " " + offer["price"]["billingCurrency"] + "/person"
         if email_comment_id:
             flights_string += "\n"
             flights_string += getDeepLink(details, email_comment_id)

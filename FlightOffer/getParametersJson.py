@@ -18,8 +18,8 @@ def extractSearchParameters(emailText, offerCount):
         "maximumNumberOfConnections": 0,
         "checkedBags": 0 //amount of checked bags, leave 0 if not specified explicitly
         "includedAirlineCodes": "" //leave empty if not specified! must be in format (comma-seperated): "6X,7X,8X"
-        "travelClass": "ECONOMY", // ONLY choose from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
-        "flightSegments": [ //seperate flight segments that customer is asking for. If flight is one-way, there should be only one flight segment. If it is round-trip, it should have 2 flight segments. If customer is asking for multiple options from different origins, then only use EXACTLY one.
+        "travelClass": "ECONOMY", // ONLY choose ONE from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
+        "flightSegments": [ //seperate flight segments that customer is asking for. If flight is one-way, there should be only one flight segment. If it is round-trip, it should have 2 flight segments. If customer is asking about multiple flight trips, choose ONLY one!
                 {
                     "originLocationCode": "LJU", //If location is not specified, think logically what it could be. Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
                     "alternativeOriginsCodes": "", //only alternative origins for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
@@ -121,18 +121,17 @@ def extractSearchParameters(emailText, offerCount):
             #print("includeNearAirportsAsOrigin:", flight["includeNearAirportsAsOrigin"])
 
             extraTimeframes = []
-            usedOriginCodes = []
-            usedDestinationCodes = []
+            previousOriginCode = ""
+            previousDestinationCode = ""
             for index, flight_ in enumerate(flight["flightSegments"]):
-                #if flight_["originLocationCode"] in usedOriginCodes:
-                #    continue
-                #else:
-                #    usedOriginCodes.append(flight_["originLocationCode"])
+                if flight_["originLocationCode"] == flight["flightSegments"][0]["originLocationCode"] and index != 0:
+                    break
 
-                #if flight_["destinationLocationCode"] in usedDestinationCodes:
-                #    continue
-                #else:
-                #    usedDestinationCodes.append(flight_["destinationLocationCode"])
+                if flight_["destinationLocationCode"] == previousDestinationCode or flight_["originLocationCode"] == previousOriginCode:
+                    continue
+                else:
+                    previousOriginCode = flight_["originLocationCode"]
+                    previousDestinationCode = flight_["destinationLocationCode"]
 
                 year_from_string = int(flight_["departureDate"][:4])
                 date_from_string = datetime.datetime.strptime(flight_["departureDate"], "%Y-%m-%d")

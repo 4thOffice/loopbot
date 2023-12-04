@@ -31,12 +31,12 @@ def askGPT(emailText, files, imageInfo=[]):
     if len(files) > 0:
         content_text = """Extract ALL flight details from the email which I will give you. Extract ALL of the following data:
         - currency
-        - number of passangers
+        - number of passangers (MUST ALWAYS include in output)
         - maximum number of connections
         - requested airlines with codes
-        - travel class.
+        - travel class
         - whether near airports should be included as departure options
-        - amount of checked bags
+        - amount of checked bags (MUST ALWAYS include in output)
 
         For each flight segment extract the following data:
         - origin location names and IATA 3-letter codes
