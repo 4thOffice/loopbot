@@ -157,6 +157,11 @@ def extractSearchParameters(emailText, offerCount):
                     segment["alternativeOriginsCodes"] = flight_["alternativeOriginsCodes"][:2]
 
                 if flight_["includedConnectionPoints"] != "" and flight_["includedConnectionPoints"] != []:
+                    if flight_["destinationLocationCode"] in flight_["includedConnectionPoints"]:
+                        flight_["includedConnectionPoints"].remove(flight_["destinationLocationCode"])
+                    if flight_["originLocationCode"] in flight_["includedConnectionPoints"]:
+                        flight_["includedConnectionPoints"].remove(flight_["originLocationCode"])
+
                     segment["includedConnectionPoints"] = flight_["includedConnectionPoints"][:2]
                     
                 if "exactDepartureTime" in flight_ and flight_["exactDepartureTime"] != "":
