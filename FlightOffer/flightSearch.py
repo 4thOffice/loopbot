@@ -105,7 +105,7 @@ def get_price_offer(access_token, flight_offers):
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
     
-def get_upsell_offer(access_token, flight_offers):
+def get_upsell_offer(access_token, flight_offers, amenityDescription):
     url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -124,8 +124,29 @@ def get_upsell_offer(access_token, flight_offers):
     response = requests.post(url, headers=headers, json=payload)
     if response.status_code == 200:
         print('Flight Offers upsell information retrieved successfully!')
-        offers = response.json()["data"]
-        return offers[0]
+        res = response.json()
+        if "status" in res:
+            if res["status"] == "400":
+                return None
+        
+        for offer in res:
+            eligible = True
+            for traveler in offer["travelerPricings"]:
+                for segment in traveler["fareDetailsBySegment"]:
+                    amenityFoundInSegment = False
+                    for amenity in segment["amenities"]:
+                        print(amenity["description"])
+                        if amenity["description"] == amenityDescription:
+                            amenityFoundInSegment = True
+                            break
+                    if not amenityFoundInSegment:
+                        eligible = False
+                if not eligible:
+                    break
+            if eligible:
+                return offer
+        return None
+        
     else:
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
@@ -170,7 +191,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
 
         iteration = 0
         flightsFound = False
-        while iteration < 10 and not flightsFound:
+        while iteration < 4 and not flightsFound:
             flightOffers = get_flight_offers(access_token, search_params, verbose_checkpoint)
             if flightOffers["status"] == "error":
                 print("error 1")
@@ -339,6 +360,11 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     #refundable_price_offers = get_price_offer(access_token, refundable_price_offers)
     #print(f"refundable prices: {refundable_price_offers}")
 
+    #for index, offer, in enumerate(cheapestPriceOffers):
+    #    upsold = get_upsell_offer(access_token, [offer], "REFUNDABLE FARE")
+    #    if upsold != None:
+    #        print("UPSOLD OFFER: ", upsold)
+
     for index, offer in enumerate(cheapestPriceOffers):
         bagsAdded = False
         oldPrice = offer["price"]["grandTotal"]
@@ -358,7 +384,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
                 priceOfferWithbags = get_price_offer(access_token, [offer])["data"]["flightOffers"][0]
             except Exception:
                 verbose(f"Offer {index}: error fetching price for offer with additional checked bags", verbose_checkpoint)
-                print(f"Offer {index}: error fetching price for offer with additional checked bags: {newPrice}\n")
+                print(f"Offer {index}: error fetching price for offer with additional checked bags")
                 continue
             cheapestPriceOffers[index] = priceOfferWithbags
             offer = cheapestPriceOffers[index]
