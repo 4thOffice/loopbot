@@ -78,7 +78,7 @@ def askGPT(emailText, files, imageInfo=[]):
     assistant_id=assistant_id
     )
 
-    while True:
+    for i in range(500):
         time.sleep(3)
         run = client.beta.threads.runs.retrieve(
         thread_id=thread.id,
