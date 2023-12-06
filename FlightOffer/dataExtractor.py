@@ -10,7 +10,8 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import keys
 import apiDataHandler
-    
+import exceptions
+
 def askGPT(emailText, files, imageInfo=[]):
     client = OpenAI(api_key=keys.openAI_APIKEY)
 
@@ -78,7 +79,8 @@ def askGPT(emailText, files, imageInfo=[]):
     assistant_id=assistant_id
     )
 
-    for i in range(500):
+    i = 0
+    while True:
         time.sleep(3)
         run = client.beta.threads.runs.retrieve(
         thread_id=thread.id,
@@ -91,7 +93,12 @@ def askGPT(emailText, files, imageInfo=[]):
             return "There was an error extracting data."
         if run.status == "completed":
             break
-    
+
+        if i >= 100:
+            raise exceptions.stuck("no response")
+
+        i += 1
+
     print("Done")
 
     messages = client.beta.threads.messages.list(
@@ -106,12 +113,31 @@ def askGPT(emailText, files, imageInfo=[]):
 
     return answer
 
-def isIntercontinentalFlight(emailText):
+def extractCities(emailText):
         openai.api_key = keys.openAI_APIKEY
         response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "user", "content": ("I will provide you an email text about flight tender inquiry. I want you to tell me if it is a request for a intercontinental flight. A flight is intercontinental if it flies from one continent to another.\n\nEmail text:\n" + emailText + "\n\nOutput should be ONLY yes/no.")}
+                {"role": "user", "content": ("Lets think step by step.\nI will provide you an email text about flight tender inquiry. There will be origin and destination locations of the flight mentioned. Tell me what the initial origin location and final destination of the flight is. (connection flight locations dont count)\n\nEmail text:\n" + emailText)}
+            ],
+            temperature=0.0
+        )
+
+        if response.choices:
+            res = (response.choices[0].message.content).lower()
+            return res
+        else:
+            return False
+        
+def isIntercontinentalFlight(emailText):
+        locations = extractCities(emailText)
+        print(locations)
+
+        openai.api_key = keys.openAI_APIKEY
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": ("Lets think step by step.\nI will give you 2 locations. Think about in which continents each of these locations are. I want you to tell me if these 2 locations are on different continents. \n\nEmail text:\n" + locations + "\n\nOutput should be ONLY yes/no and NO other text!!. (yes if they are on different continents and no if they are on the same continent)")}
             ],
             temperature=0.0
         )

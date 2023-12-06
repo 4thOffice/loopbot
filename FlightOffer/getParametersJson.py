@@ -177,16 +177,28 @@ def extractSearchParameters(emailText, offerCount):
 
                 segmentDictionary = {}
                 if "earliestDepartureTime" in flight_:
+                    if flight_["earliestDepartureTime"] == "24:00:00":
+                        flight_["earliestDepartureTime"] = "00:00:00"
                     segmentDictionary["earliestDepartureTime"] = flight_["earliestDepartureTime"]
                 if "latestDepartureTime" in flight_:
+                    if flight_["latestDepartureTime"] == "24:00:00":
+                        flight_["latestDepartureTime"] = "00:00:00"
                     segmentDictionary["latestDepartureTime"] = flight_["latestDepartureTime"]
                 if "exactDepartureTime" in flight_:
+                    if flight_["exactDepartureTime"] == "24:00:00":
+                        flight_["exactDepartureTime"] = "00:00:00"
                     segmentDictionary["exactDepartureTime"] = flight_["exactDepartureTime"]
                 if "earliestArrivalTime" in flight_:
+                    if flight_["earliestArrivalTime"] == "24:00:00":
+                        flight_["earliestArrivalTime"] = "00:00:00"
                     segmentDictionary["earliestArrivalTime"] = flight_["earliestArrivalTime"]
                 if "latestArrivalTime" in flight_:
+                    if flight_["latestArrivalTime"] == "24:00:00":
+                        flight_["latestArrivalTime"] = "00:00:00"
                     segmentDictionary["latestArrivalTime"] = flight_["latestArrivalTime"]
                 if "exactArrivalTime" in flight_:
+                    if flight_["exactArrivalTime"] == "24:00:00":
+                        flight_["exactArrivalTime"] = "00:00:00"
                     segmentDictionary["exactArrivalTime"] = flight_["exactArrivalTime"]
 
                 if segmentDictionary["earliestDepartureTime"] == segmentDictionary["exactDepartureTime"]:

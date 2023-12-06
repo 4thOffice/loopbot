@@ -76,6 +76,7 @@ def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoin
                 return({"parsedOffer": f"[code][[/code]TravelAI Error[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\n" + details["data"], "details": None})
             else:
                 print("Encountered an error, trying one more time...")
+                verbose("Encountered an error, trying one more time...", verbose_checkpoint)
                 return getResponse(emailText, commentData, verbose_checkpoint, retries=1)
         
         #generatedOffer = offerGenerator.generateOffer(emailText, details)

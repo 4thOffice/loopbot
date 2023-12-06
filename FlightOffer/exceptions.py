@@ -1,0 +1,2 @@
+class stuck(Exception):
+    pass
