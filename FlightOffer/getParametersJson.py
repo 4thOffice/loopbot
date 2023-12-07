@@ -16,7 +16,7 @@ def extractSearchParameters(emailText, offerCount):
         "currencyCode": "EUR", //Keep EUR if not specified
         "passangers": 1,
         "maximumNumberOfConnections": 0,
-        "checkedBags": 0 //amount of checked bags, leave 0 if not specified explicitly
+        "checkedBags": 0 //amount of checked bags per person, leave 0 if not specified explicitly
         "includedAirlineCodes": "" //leave empty if not specified! must be in format (comma-seperated): "6X,7X,8X"
         "travelClass": "ECONOMY", // ONLY choose ONE from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
         "flightSegments": [ //seperate flight segments that customer is asking for. If flight is one-way, there should be only one flight segment. If it is round-trip, it should have 2 flight segments. If customer is asking about multiple flight trips, choose ONLY one!
@@ -177,10 +177,14 @@ def extractSearchParameters(emailText, offerCount):
 
                 segmentDictionary = {}
                 if "earliestDepartureTime" in flight_:
+                    if "T" in flight_["earliestDepartureTime"]:
+                        flight_["earliestDepartureTime"] = flight_["earliestDepartureTime"].split("T")[1]
                     if flight_["earliestDepartureTime"] == "24:00:00":
                         flight_["earliestDepartureTime"] = "00:00:00"
                     segmentDictionary["earliestDepartureTime"] = flight_["earliestDepartureTime"]
                 if "latestDepartureTime" in flight_:
+                    if "T" in flight_["latestDepartureTime"]:
+                        flight_["latestDepartureTime"] = flight_["latestDepartureTime"].split("T")[1]
                     if flight_["latestDepartureTime"] == "24:00:00":
                         flight_["latestDepartureTime"] = "00:00:00"
                     segmentDictionary["latestDepartureTime"] = flight_["latestDepartureTime"]
@@ -189,10 +193,14 @@ def extractSearchParameters(emailText, offerCount):
                         flight_["exactDepartureTime"] = "00:00:00"
                     segmentDictionary["exactDepartureTime"] = flight_["exactDepartureTime"]
                 if "earliestArrivalTime" in flight_:
+                    if "T" in flight_["earliestArrivalTime"]:
+                        flight_["earliestArrivalTime"] = flight_["earliestArrivalTime"].split("T")[1]
                     if flight_["earliestArrivalTime"] == "24:00:00":
                         flight_["earliestArrivalTime"] = "00:00:00"
                     segmentDictionary["earliestArrivalTime"] = flight_["earliestArrivalTime"]
                 if "latestArrivalTime" in flight_:
+                    if "T" in flight_["latestArrivalTime"]:
+                        flight_["latestArrivalTime"] = flight_["latestArrivalTime"].split("T")[1]
                     if flight_["latestArrivalTime"] == "24:00:00":
                         flight_["latestArrivalTime"] = "00:00:00"
                     segmentDictionary["latestArrivalTime"] = flight_["latestArrivalTime"]
