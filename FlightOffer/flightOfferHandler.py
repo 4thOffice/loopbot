@@ -43,6 +43,9 @@ def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoin
         file_content = None
         print(commentData["fileUrls"])
         for fileUrl in commentData["fileUrls"]:
+            if fileUrl.startswith("data:"):
+                filesPicture.append(fileUrl)
+                continue
             response = requests.get(fileUrl)
             response.raise_for_status()
             file_content = io.BytesIO(response.content)
