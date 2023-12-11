@@ -15,6 +15,8 @@ def extractSearchParameters(emailText, offerCount):
     user_msg += """{
         "currencyCode": "EUR", //Keep EUR if not specified
         "passangers": 1,
+        "refundableTicket": "false", //set this to "true" only if it is excplicitly specified that ticket should have insurance for the risk of cancellation
+        "changeableTicket": "false", //set this to "true" only if it is excplicitly specified that ticket should be changeable
         "maximumNumberOfConnections": 0,
         "checkedBags": 0 //amount of checked bags per person, leave 0 if not specified explicitly
         "includedAirlineCodes": "" //leave empty if not specified! must be in format (comma-seperated): "6X,7X,8X"
@@ -231,7 +233,21 @@ def extractSearchParameters(emailText, offerCount):
                 if checkedbags == "":
                     checkedbags = 0
 
-            return search_params, extraTimeframes, checkedbags
+            refundableTicket = False
+            if "refundableTicket" in flight:
+                if flight["refundableTicket"] == "true":
+                    refundableTicket = True
+                else:
+                    refundableTicket = False
+
+            changeableTicket = False
+            if "changeableTicket" in flight:
+                if flight["changeableTicket"] == "true":
+                    changeableTicket = True
+                else:
+                    changeableTicket = False
+
+            return search_params, extraTimeframes, checkedbags, refundableTicket, changeableTicket
         else:
             if attempt < max_attempts - 1:
                 print("No response received. Retrying in {} seconds...".format(retry_interval))

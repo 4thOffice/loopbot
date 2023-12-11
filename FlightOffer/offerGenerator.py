@@ -102,6 +102,29 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
         flights_string += f"Checked bags: {offer['checkedBags']}\n"
         flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
         pricePerPerson = float(offer["price"]["grandTotal"])/float(offer["passengers"])
+        
+        print(offer["amenities"])
+        refundableMsgAdded = False
+        for amenity in offer["amenities"]:
+            if (amenity["amenity_description"] == "REFUNDABLE TICKET" or amenity["amenity_description"] == "CHANGEABLE TICKET") and not refundableMsgAdded:
+                refundableMsgAdded = True
+                if amenity["included"] == True:
+                    if amenity["isChargeable"] == True:
+                        flights_string += "Ticket is refundable with a fee\n"
+                    else:
+                        flights_string += "Ticket is refundable free of charge\n"
+                else:
+                    flights_string += "Ticket is not refundable\n"
+
+            if amenity["amenity_description"] == "CHANGEABLE TICKET":
+                if amenity["included"] == True:
+                    if amenity["isChargeable"] == True:
+                        flights_string += "Ticket is changeable with a fee\n"
+                    else:
+                        flights_string += "Ticket is changeable free of charge\n"
+                else:
+                    flights_string += "Ticket is not changeable\n"
+
         flights_string += "Price: " + str(pricePerPerson) + " " + offer["price"]["billingCurrency"] + "/person"
         if email_comment_id:
             flights_string += "\n"

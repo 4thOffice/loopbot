@@ -61,11 +61,14 @@ def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoin
                 flightDetails = flightDetailsImages
         if len(filesText) > 0 or len(filesPicture) == 0:
             print("Asking text specialized agent - ", str(len(filesText)) + " files")
+            verbose("Asking text specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
             if len(filesPicture) > 0:
                 flightDetails = dataExtractor.askGPT(emailText, filesText, imageInfo=flightDetailsImages)
             else:
                 flightDetails = dataExtractor.askGPT(emailText, filesText)
-            verbose("Asking text specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
+
+            if flightDetails == None:
+                return({"parsedOffer": f"[code][[/code]TravelAI Error[code]][/code]\n\n" + "Timeout while asking AI to extract data.", "details": None})
 
         intercontinentalText, travelClassText = getExtraInfo(flightDetails)
         details = flightSearch.getFlightOffer(flightDetails, verbose_checkpoint)

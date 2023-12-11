@@ -12,59 +12,9 @@ import keys
 from Auxiliary.verbose_checkpoint import verbose
 from amadeus import Client, ResponseError
 import getParametersJson
-
-
-# Function to check time difference between flights
-def check_time_between_flights(itineraries, buffer):
-    for itinerary in itineraries:
-        segments = itinerary.get('segments', [])
-        for i in range(len(segments) - 1):
-            current_arrival_time = datetime.datetime.fromisoformat(segments[i]['arrival']['at'])
-            next_departure_time = datetime.datetime.fromisoformat(segments[i + 1]['departure']['at'])
-            time_difference = next_departure_time - current_arrival_time
-            hours_difference = time_difference.total_seconds() / 3600
-
-            if hours_difference > (2.5+buffer) or hours_difference < 1.7:
-                return True
-
-    return False
-
-def check_number_of_stops(itineraries, numberOfStops):
-    for itinerary in itineraries:
-        segments = itinerary.get('segments', [])
-        if numberOfStops == 2:
-            if len(segments) < (numberOfStops+1):
-                return True
-        elif len(segments) != (numberOfStops+1):
-            return True
-
-    return False
-
-def find_closest_flight_offer(flight_offers, extraTimeframes):
-    if extraTimeframes == {}:
-        return flight_offers
-    
-    closest_offers = []
-    for offer in flight_offers:
-        time_diff = 0
-        for index1, itinerary in enumerate(offer['itineraries']):
-            departure_time = itinerary['segments'][0]['departure']['at']
-            arrival_time = itinerary['segments'][-1]['arrival']['at']
-
-            departure_time = datetime.datetime.fromisoformat(departure_time).time()
-            arrival_time = datetime.datetime.fromisoformat(arrival_time).time()
-
-            if "exactDepartureTime" in extraTimeframes[index1] and extraTimeframes[index1]["exactDepartureTime"] != "":
-                exactDepartureTime = datetime.datetime.strptime(extraTimeframes[index1]["exactDepartureTime"], '%H:%M:%S').time()
-                time_diff += abs((departure_time.hour + departure_time.minute) - (exactDepartureTime.hour + exactDepartureTime.minute))
-                print(abs((departure_time.hour + departure_time.minute) - (exactDepartureTime.hour + exactDepartureTime.minute)))
-            if "exactArrivalTime" in extraTimeframes[index1] and extraTimeframes[index1]["exactArrivalTime"] != "":
-                exactArrivalTime = datetime.datetime.strptime(extraTimeframes[index1]["exactArrivalTime"], '%H:%M:%S').time()
-                time_diff += abs((arrival_time.hour + arrival_time.minute) - (exactArrivalTime.hour + exactArrivalTime.minute))
-                print(abs((arrival_time.hour + arrival_time.minute) - (exactArrivalTime.hour + exactArrivalTime.minute)))
-        closest_offers.append({"offer": offer, "time_difference": time_diff})
-
-    return closest_offers
+import offerBagHandler
+import upsellHandler
+import flightAuxiliary
 
 amadeus = Client(
     client_id=keys.amadeus_client_id,
@@ -97,56 +47,10 @@ def get_price_offer(access_token, flight_offers):
         }
     }
 
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response = requests.post(url, headers=headers, json=payload)
     if response.status_code == 200:
         print('Flight Offers price information retrieved successfully!')
         return response.json()  # Return the JSON response
-    else:
-        print(f'Failed to retrieve data: {response.status_code} - {response.text}')
-        return None
-    
-def get_upsell_offer(access_token, flight_offers, amenityDescription):
-    url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
-    headers = {
-        'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/vnd.amadeus+json'
-    }
-    for offer in flight_offers:
-        offer["pricingOptions"]["refundableFare"] = True
-
-    payload = {
-        'data': {
-            'type': 'flight-offers-pricing',
-            'flightOffers': flight_offers
-        }
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-    if response.status_code == 200:
-        print('Flight Offers upsell information retrieved successfully!')
-        res = response.json()
-        if "status" in res:
-            if res["status"] == "400":
-                return None
-        
-        for offer in res:
-            eligible = True
-            for traveler in offer["travelerPricings"]:
-                for segment in traveler["fareDetailsBySegment"]:
-                    amenityFoundInSegment = False
-                    for amenity in segment["amenities"]:
-                        print(amenity["description"])
-                        if amenity["description"] == amenityDescription:
-                            amenityFoundInSegment = True
-                            break
-                    if not amenityFoundInSegment:
-                        eligible = False
-                if not eligible:
-                    break
-            if eligible:
-                return offer
-        return None
-        
     else:
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
@@ -163,7 +67,11 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
         if "errors" in responseJson:
             print(f"Error with fetching flight offers: {responseJson}")
             verbose(f"Error with fetching flight offers: {responseJson}", verbose_checkpoint)
-            combined_detail = '\n'.join(error['detail'] for error in responseJson["errors"])
+            for error in responseJson["errors"]:
+                if "detail" in error:
+                    combined_detail += "\n" + error['detail']
+                else:
+                    combined_detail += "\nSYSTEM ERROR HAS OCCURRED"
             return {"status": "error", "details": combined_detail}
         else:
             print(responseJson)
@@ -176,19 +84,22 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
         return responseJson
     
 def getFlightOffer(flightDetails, verbose_checkpoint=None):
-    #error, search_params = extractSearchParameters(flightDetails, 250, verbose_checkpoint)
-    #if error:
-    #    return {"status": "error", "data": None}
-    search_params, extraTimeframes, checkedBags = getParametersJson.extractSearchParameters(flightDetails, 250)
+    search_params, extraTimeframes, checkedBags, refundableTicket, changeableTicket = getParametersJson.extractSearchParameters(flightDetails, 250)
+
+    travelClass = search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["cabin"]
 
     try:
-        print(search_params)
-        print(extraTimeframes)
+        print(f"Search parameters: {search_params}")
+        print(f"Extra timeframes: {extraTimeframes}")
         print(f"checked bags: {checkedBags}")
-        verbose(search_params, verbose_checkpoint)
-        verbose(extraTimeframes, verbose_checkpoint)
+        print(f"refundable ticket: {refundableTicket}")
+        print(f"changeable ticket: {changeableTicket}")
+        verbose(f"Search parameters: {search_params}", verbose_checkpoint)
+        verbose(f"Extra timeframes: {extraTimeframes}", verbose_checkpoint)
+        verbose(f"Checked bags per person: {checkedBags}", verbose_checkpoint)
         access_token = get_access_token()
 
+        #repeat this and expand time window untill amadeus returns at least 1 flight offer
         iteration = 0
         flightsFound = False
         while iteration < 4 and not flightsFound:
@@ -206,15 +117,17 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
                 verbose("No flights found.. expanding time window by 2 hours", verbose_checkpoint)
                 if iteration == 0:
                     for originDestination in search_params['originDestinations']:
-                        del originDestination["originRadius"]
-                        del originDestination["destinationRadius"]
-                        originDestination["departureDateTimeRange"]["timeWindow"] = "4H"
+                        if "time" in originDestination["departureDateTimeRange"]:
+                            del originDestination["originRadius"]
+                            del originDestination["destinationRadius"]
+                            originDestination["departureDateTimeRange"]["timeWindow"] = "4H"
                 else:        
                     for originDestination in search_params['originDestinations']:
-                        current_time_window = originDestination['departureDateTimeRange']['timeWindow']
-                        new_time_window = int(current_time_window[:-1]) + 2
-                        new_time_window = f"{new_time_window}H"
-                        originDestination['departureDateTimeRange']['timeWindow'] = new_time_window
+                        if "time" in originDestination["departureDateTimeRange"]:
+                            current_time_window = originDestination['departureDateTimeRange']['timeWindow']
+                            new_time_window = int(current_time_window[:-1]) + 2
+                            new_time_window = f"{new_time_window}H"
+                            originDestination['departureDateTimeRange']['timeWindow'] = new_time_window
                 iteration += 1
             else:
                 flightsFound = True
@@ -228,6 +141,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         return {"status": "error", "data": "Unknown error occured"}
     #print(flightOffers)
 
+    #if amadeus returned no flight offers
     if len(flightOffers) <= 0:
         print("no flights")
         verbose("no flights", verbose_checkpoint)
@@ -236,7 +150,6 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     cheapestFlightOffers = []
     #check which offers qualify
     for flightOffer in flightOffers:
-        # Access 'itineraries' within each flight offer
         timeframesSatisfied = True
         for index, itinerary in enumerate(flightOffer['itineraries']):
             departure_time = itinerary['segments'][0]['departure']['at']
@@ -276,12 +189,13 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     bestFlightOffersPerStopNumber = []
     for numberOfStops in range(0, 3):
         print(f"Looking at flight offers - number of stops: {numberOfStops}")
+        verbose(f"Looking at flight offers - number of stops: {numberOfStops}", verbose_checkpoint)
         toAppend = {"numberOfStops": numberOfStops, "offers": []}
 
         cheapestFlightOffers = []
         if numberOfStops <= 2:
             for flightOffer in flightOffers:
-                if not check_number_of_stops(flightOffer["itineraries"], numberOfStops):
+                if not flightAuxiliary.check_number_of_stops(flightOffer["itineraries"], numberOfStops):
                     print("satisfies number of stops")
                     cheapestFlightOffers.append(flightOffer)
 
@@ -291,10 +205,10 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
             bestFlightOffersPerStopNumber.append(toAppend)
             continue
 
-        print("cheapestFlightOffers:\n", str(len(cheapestFlightOffers)))
-        verbose(("cheapestFlightOffers:\n" + str(len(cheapestFlightOffers))), verbose_checkpoint)
+        print(f"cheapestFlightOffers with {numberOfStops} number of stops: {len(cheapestFlightOffers)}")
+        verbose(f"cheapestFlightOffers with {numberOfStops} number of stops: {len(cheapestFlightOffers)}", verbose_checkpoint)
         
-        cheapestFlightOffers = find_closest_flight_offer(cheapestFlightOffers, extraTimeframes)
+        cheapestFlightOffers = flightAuxiliary.get_time_difference_data(cheapestFlightOffers, extraTimeframes)
         cheapestFlightOffers = sorted(cheapestFlightOffers, key=lambda x: (x["time_difference"], float(x["offer"]["price"]["total"])))
         cheapestFlightOffers = [offer["offer"] for offer in cheapestFlightOffers][:6]
 
@@ -305,7 +219,8 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
             price_offers = get_price_offer(access_token, cheapestFlightOffers)["data"]["flightOffers"]
         except:
             return {"status": "error", "data": "Error with getting final price offer"}
-        cheapestPriceOffers = find_closest_flight_offer(price_offers, extraTimeframes)
+        
+        cheapestPriceOffers = flightAuxiliary.get_time_difference_data(price_offers, extraTimeframes)
         cheapestPriceOffers = sorted(cheapestPriceOffers, key=lambda x: (x["time_difference"], float(x["offer"]["price"]["grandTotal"])))
         cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
         cheapestPriceOffers = cheapestPriceOffers[:3]
@@ -319,20 +234,23 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     #print("-----------")
 
     print(f"best offers per number of stops:\n{bestFlightOffersPerStopNumber}")
+    verbose(f"best offers per number of stops:\n{bestFlightOffersPerStopNumber}", verbose_checkpoint)
     cheapestPriceOffers = []
     for numberOfStops, offers in enumerate(bestFlightOffersPerStopNumber):
         offersList = offers["offers"]
         if numberOfStops == 0:
             if len(offersList) > 0:
                 print("added offers from flights with number of stops: 0")
+                verbose("added offers from flights with number of stops: 0", verbose_checkpoint)
                 for i in range(0, min(2, len(offersList))):
                     cheapestPriceOffers.append(offersList[i])
         elif (3-len(cheapestPriceOffers)) > 0 and len(offersList) > 0:
                 print(f"added offers from flights with number of stops: {numberOfStops}")
+                verbose(f"added offers from flights with number of stops: {numberOfStops}", verbose_checkpoint)
                 for i in range(min(len(offersList), 3-len(cheapestPriceOffers))):
                     cheapestPriceOffers.append(offersList[i])
 
-    cheapestPriceOffers = find_closest_flight_offer(cheapestPriceOffers, extraTimeframes)
+    cheapestPriceOffers = flightAuxiliary.get_time_difference_data(cheapestPriceOffers, extraTimeframes)
     cheapestPriceOffers = sorted(cheapestPriceOffers, key=lambda x: (x["time_difference"]))
     print("----------------")
     print([offer["time_difference"] for offer in cheapestPriceOffers])
@@ -353,63 +271,34 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
     print(f"final offers:\n{cheapestPriceOffers}")
 
+    cheapestPriceOffers = upsellHandler.getUpsellOffers(cheapestPriceOffers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token)
 
-    #refundable_price_offers = cheapestPriceOffers
-    #for offer in refundable_price_offers:
-    #    offer["pricingOptions"]["refundableFare"] = True
-    #refundable_price_offers = get_price_offer(access_token, refundable_price_offers)
-    #print(f"refundable prices: {refundable_price_offers}")
+    just_offers = [item["offer"] for item in cheapestPriceOffers]
 
-    #for index, offer, in enumerate(cheapestPriceOffers):
-    #    upsold = get_upsell_offer(access_token, [offer], "REFUNDABLE FARE")
-    #    if upsold != None:
-    #        print("UPSOLD OFFER: ", upsold)
+    just_offers = offerBagHandler.addBags(just_offers, checkedBags, get_price_offer, access_token, verbose_checkpoint)
 
-    for index, offer in enumerate(cheapestPriceOffers):
-        bagsAdded = False
-        oldPrice = offer["price"]["grandTotal"]
-        for traveler in offer["travelerPricings"]:
-            for segment in traveler["fareDetailsBySegment"]:
-                if "quantity" in segment["includedCheckedBags"]:
-                    includedBagsInSegment = segment["includedCheckedBags"]["quantity"]
-                else:
-                    includedBagsInSegment = 1
-                bagsToAdd = checkedBags - includedBagsInSegment
-                if bagsToAdd > 0:
-                    bagsAdded = True
-                    segment["additionalServices"] = {"chargeableCheckedBags": {"quantity": bagsToAdd}}
-        
-        if bagsAdded:
-            try:
-                priceOfferWithbags = get_price_offer(access_token, [offer])["data"]["flightOffers"][0]
-            except Exception:
-                verbose(f"Offer {index}: error fetching price for offer with additional checked bags", verbose_checkpoint)
-                print(f"Offer {index}: error fetching price for offer with additional checked bags")
-                continue
-            cheapestPriceOffers[index] = priceOfferWithbags
-            offer = cheapestPriceOffers[index]
-            newPrice = offer["price"]["grandTotal"]
-            verbose(f"Offer {index}: price without additional checked bags: {oldPrice}\nPrice with additional checked bags: {newPrice}\n", verbose_checkpoint)
-            print(f"Offer {index}: price without additional checked bags: {oldPrice}\nPrice with additional checked bags: {newPrice}\n")
+    for index, offer_ in enumerate(just_offers):
+        cheapestPriceOffers[index] = {"offer": offer_, "amenities": cheapestPriceOffers[index]["amenities"]}
 
     returnData = {"status": "ok", "data": {"offers": []}}
     for cheapest_price_offer in cheapestPriceOffers:
+        amenities = cheapest_price_offer["amenities"]
         flights = []
-        for iterary in cheapest_price_offer["itineraries"]:
+        for iterary in cheapest_price_offer["offer"]["itineraries"]:
             for segment in iterary["segments"]:
                 flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"]})
         
         includedBags = 0
-        if "quantity" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
-            includedBags = cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]["quantity"]
-        elif "weight" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
+        if "quantity" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
+            includedBags = cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]["quantity"]
+        elif "weight" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
             includedBags = 1
             
         checkedBags = includedBags
-        if "additionalServices" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]:
-            if "chargeableCheckedBags" in cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]:
-                checkedBags += cheapest_price_offer["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]["chargeableCheckedBags"]["quantity"]
+        if "additionalServices" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]:
+            if "chargeableCheckedBags" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]:
+                checkedBags += cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]["chargeableCheckedBags"]["quantity"]
 
-        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["travelerPricings"]), "checkedBags": checkedBags, "flights": flights})
+        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities, "flights": flights})
     
     return returnData

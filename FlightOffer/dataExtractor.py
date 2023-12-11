@@ -11,6 +11,39 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
 import keys
 import apiDataHandler
 import exceptions
+from contextlib import ExitStack
+
+class AiAssistantManager:
+    def __init__(self, content_text, files):
+        self.content_text = content_text
+        self.files = files
+
+    def __enter__(self):
+        client = OpenAI(api_key=keys.openAI_APIKEY)
+
+        self.textFileAssistant = client.beta.assistants.create(
+        instructions="You are a helpful robot who extracts flight details from email.",
+        model="gpt-4-1106-preview",
+        tools=[{"type": "retrieval"}],
+        file_ids=[]
+        )
+
+        self.thread = client.beta.threads.create(
+        messages=[
+            {
+            "role": "user",
+            "content": self.content_text,
+            "file_ids": self.files
+            }
+        ]
+        )
+        
+        return self.textFileAssistant, self.thread
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        apiDataHandler.delete_assistant(self.textFileAssistant.id, keys.openAI_APIKEY)
+        for file_ in self.files:
+            apiDataHandler.delete_file(file_, keys.openAI_APIKEY)
 
 def askGPT(emailText, files, imageInfo=[]):
     client = OpenAI(api_key=keys.openAI_APIKEY)
@@ -21,14 +54,6 @@ def askGPT(emailText, files, imageInfo=[]):
         purpose='assistants'
         ).id
 
-    # Add the file to the assistant
-    textFileAssistant = client.beta.assistants.create(
-    instructions="You are a helpful robot who extracts flight details from email.",
-    model="gpt-4-1106-preview",
-    tools=[{"type": "retrieval"}],
-    file_ids=[]
-    )
-
     if len(files) > 0:
         content_text = """Extract ALL flight details from the email which I will give you. Extract ALL of the following data:
         - currency
@@ -37,7 +62,9 @@ def askGPT(emailText, files, imageInfo=[]):
         - requested airlines with codes
         - travel class
         - whether near airports should be included as departure options
-        - amount of checked bags (MUST ALWAYS include in output)
+        - amount of checked bags per person (MUST ALWAYS include in output)
+        - insurance for the risk of cancellation (say "no" if not specified otherwise)
+        - changeable ticket (say "no" if not specified otherwise)
 
         For each flight segment extract the following data:
         - origin location names and IATA 3-letter codes
@@ -61,18 +88,21 @@ def askGPT(emailText, files, imageInfo=[]):
             content_text += "\n\nAlso take this important extra information about this email into consideration:\n" + imageInfo
     else:
         content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
-    
-    thread = client.beta.threads.create(
-    messages=[
-        {
-        "role": "user",
-        "content": content_text,
-        "file_ids": files
-        }
-    ]
-    )
 
-    assistant_id=textFileAssistant.id
+    with AiAssistantManager(content_text, files) as (assistant, thread):
+        answer = None
+        try:
+            answer = runThread(assistant, thread, client)
+        except exceptions.stuck as e:
+            print(f"Caught an exception: {e}")
+            try:
+                answer = runThread(assistant, thread, client)
+            except exceptions.stuck as e:
+                return None
+        return answer
+
+def runThread(assistant, thread, client):
+    assistant_id=assistant.id
 
     run = client.beta.threads.runs.create(
     thread_id=thread.id,
@@ -106,10 +136,6 @@ def askGPT(emailText, files, imageInfo=[]):
     )
     print("Answer:\n", messages.data[0].content[0].text.value)
     answer = messages.data[0].content[0].text.value
-    apiDataHandler.delete_assistant(textFileAssistant.id, keys.openAI_APIKEY)
-
-    for file_ in files:
-        apiDataHandler.delete_file(file_, keys.openAI_APIKEY)
 
     return answer
 
