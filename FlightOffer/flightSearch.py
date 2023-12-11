@@ -55,6 +55,24 @@ def get_price_offer(access_token, flight_offers):
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
     
+def get_airport_coordinates(access_token, IATA):
+    url = 'https://api.amadeus.com/v1/reference-data/locations/A' + IATA
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/vnd.amadeus+json'
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        print('Airport information retrieved successfully!')
+
+        res = response.json()
+        geoCode = res["data"]["geoCode"]
+        return geoCode
+    else:
+        print(f'Failed to retrieve airport information: {response.status_code} - {response.text}')
+        return None
+    
 def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -65,6 +83,7 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
         #response = requests.get(endpoint, headers=headers, params=search_params)
         responseJson = response.json()
         if "errors" in responseJson:
+            combined_detail = ""
             print(f"Error with fetching flight offers: {responseJson}")
             verbose(f"Error with fetching flight offers: {responseJson}", verbose_checkpoint)
             for error in responseJson["errors"]:
@@ -87,7 +106,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     search_params, extraTimeframes, checkedBags, refundableTicket, changeableTicket = getParametersJson.extractSearchParameters(flightDetails, 250)
 
     travelClass = search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["cabin"]
-
+    
     try:
         print(f"Search parameters: {search_params}")
         print(f"Extra timeframes: {extraTimeframes}")
@@ -98,6 +117,8 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         verbose(f"Extra timeframes: {extraTimeframes}", verbose_checkpoint)
         verbose(f"Checked bags per person: {checkedBags}", verbose_checkpoint)
         access_token = get_access_token()
+
+        geoCode = get_airport_coordinates(access_token, search_params["originDestinations"][0]["destinationLocationCode"])
 
         #repeat this and expand time window untill amadeus returns at least 1 flight offer
         iteration = 0
@@ -301,4 +322,4 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
 
         returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities, "flights": flights})
     
-    return returnData
+    return returnData, geoCode

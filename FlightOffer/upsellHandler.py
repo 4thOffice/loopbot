@@ -147,8 +147,18 @@ def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, chan
             if len(upsold["amenities"]) > 0:
                 upsold_price_offer = get_price_offer(access_token, [upsold["offer"]])["data"]["flightOffers"][0]
                 offers[index] = {"offer": upsold_price_offer, "amenities": upsold['amenities']}
+            else:
+                includedAmenities = []
+                for amenity in amenitiesToSearchFor:
+                    includedAmenities.append({"amenity_description": amenity["amenity_description"], "included": False, "isChargeable": False, "isRequested": amenity["isRequested"]})
+
+                    offers[index] = {"offer": offer, "amenities": includedAmenities}
         else:
-            offers[index] = {"offer": offer, "amenities": upsold['amenities']}
+            includedAmenities = []
+            for amenity in amenitiesToSearchFor:
+                includedAmenities.append({"amenity_description": amenity["amenity_description"], "included": False, "isChargeable": False, "isRequested": amenity["isRequested"]})
+
+            offers[index] = {"offer": offer, "amenities": includedAmenities}
 
         print("----------------------------")
     

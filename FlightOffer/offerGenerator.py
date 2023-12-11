@@ -47,36 +47,63 @@ def iso_to_hours_minutes(iso_duration):
     else:
         return "00h:00min"
     
-def generateOffer(emailText, details):
+def generateFlightTable(offerDetails):
+    flightTable = ""
+    for flight in offerDetails["flights"]:
+        departure_date = iso_to_custom_date(flight["departure"]["at"])
+        duration = iso_to_hours_minutes(flight["duration"])
+        flight_number = flight["carrierCode"] + " " + flight["flightNumber"]
+        origin = flight["departure"]["iataCode"]
+        destination = flight["arrival"]["iataCode"]
+        arrival_time = datetime.fromisoformat(flight["arrival"]["at"]).strftime("%H:%M")
+        departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
+        
+        flightTable += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration})\n"
+
+    return flightTable
+
+def generateOffer(offerDetails):
     print("---------------------")
-    print(details)
+    print(offerDetails)
     # Generating the output strings
-    flights_string = generateFlightsString(details, usedForDraft=True)
+    #flights_string = generateFlightsString(dict(offers=[offerDetails]), usedForDraft=True)
 
-    user_msg = "I will give you a flight tender enquiry email. I want you to generate an offer i can send back. Do NOT make up data. Email should be as short as possible(maximum 80 words) and formal. Do not include subject.\n\nThe following text in curly brackets is flight details which MUST stay exactly the same and should be in this exact format in the final email you write:\n"
-    user_msg += "{" + flights_string + "}"
+    offerDraftText = "Pozdravljeni,\n\nHvala za povpraševanje. Glede na želje posredujem sledečo ponudbo:\n\n"
 
-    user_msg += "\n\nEmail I want you to respond to:\n"
-    user_msg += emailText
-    user_msg += "\n\nRespond in same language as the email you are replying to."
-    user_msg += "\n\nYour reply should ONLY be email text and NO other text."
+    offerDraftText += generateFlightTable(offerDetails) + "\n\n"
+
+    pricePerPerson = float(offerDetails["price"]["grandTotal"])/float(offerDetails["passengers"])
+    offerDraftText += "Cena: " + str(pricePerPerson) + " " + offerDetails["price"]["billingCurrency"] + "/osebo - "
     
-    print(user_msg)
-
-    openai.api_key = keys.openAI_APIKEY
-    response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "user", "content": user_msg}
-        ]
-    )
-
-    if response.choices:
-        print("Offer generated successfuly.")
-        generatedOffer = response.choices[0].message.content
-        return generatedOffer
+    if offerDetails['checkedBags'] >= 1:
+        offerDraftText += f"(Vključena ročna prtljaga in {offerDetails['checkedBags']}x oddan kos do 23kg"
     else:
-        print("Unexpected or empty response received.")
+        offerDraftText += f"(Vključena zgolj ročna prtljaga"
+
+    refundableMsgAdded = False
+    for amenity in offerDetails["amenities"]:
+        if (amenity["amenity_description"] == "REFUNDABLE TICKET" or amenity["amenity_description"] == "CHANGEABLE TICKET") and not refundableMsgAdded:
+            refundableMsgAdded = True
+            if amenity["included"] == True:
+                if amenity["isChargeable"] == True:
+                    offerDraftText += ", povračilo z odpovednimi stroški"
+                else:
+                    offerDraftText += ", povračilo za odpoved je možno"
+            else:
+                offerDraftText += ", povračilo za odpoved ni možno"
+
+        if amenity["amenity_description"] == "CHANGEABLE TICKET":
+            if amenity["included"] == True:
+                if amenity["isChargeable"] == True:
+                    offerDraftText += ", naknadne spremembe možne z doplačilom"
+                else:
+                    offerDraftText += ", naknadne spremembe možne"
+            else:
+                offerDraftText += ", naknadne spremembe niso možne"
+
+    offerDraftText += ")\n\n"
+    
+    return offerDraftText
 
 def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
     flights_string = ""

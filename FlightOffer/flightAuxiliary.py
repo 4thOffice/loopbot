@@ -19,11 +19,17 @@ def check_time_between_flights(itineraries, buffer):
 def check_number_of_stops(itineraries, numberOfStops):
     for itinerary in itineraries:
         segments = itinerary.get('segments', [])
+        found = False
         if numberOfStops == 2:
             if len(segments) < (numberOfStops+1):
                 return True
-        elif len(segments) != (numberOfStops+1):
+        elif len(segments) > (numberOfStops+1):
             return True
+        elif len(segments) == (numberOfStops+1):
+            found = True
+         
+    if not found:
+        return True
 
     return False
 
