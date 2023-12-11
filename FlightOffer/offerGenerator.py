@@ -105,7 +105,7 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
         flights_string += "Price: " + str(pricePerPerson) + " " + offer["price"]["billingCurrency"] + "/person"
         if email_comment_id:
             flights_string += "\n"
-            flights_string += getDeepLink(details, email_comment_id)
+            flights_string += getDeepLink(offer, email_comment_id)
         flights_string += "\n\n"
         
         if usedForDraft and index == 0:
