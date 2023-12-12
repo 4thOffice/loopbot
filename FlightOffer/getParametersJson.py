@@ -40,7 +40,7 @@ def extractSearchParameters(emailText, offerCount):
 }\n\n"""
     user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2023. Location codes must be 3-letter IATA codes. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nEmail to extract details from:\n"
     user_msg += emailText
-    user_msg += "\n\nOutput should be ONLY json and NO other text!"
+    user_msg += "\n\nIf there is a specific flight written, choose that one.\n\nOutput should be ONLY json and NO other text!"
 
     max_attempts = 2  # Maximum number of attempts
     retry_interval = 10  # Retry interval in seconds
@@ -157,6 +157,14 @@ def extractSearchParameters(emailText, offerCount):
 
                 if flight_["alternativeOriginsCodes"] != "" and flight_["alternativeOriginsCodes"] != []:
                     segment["alternativeOriginsCodes"] = flight_["alternativeOriginsCodes"][:2]
+
+                if flight_["alternativeOriginsCodes"] != "" and flight_["alternativeOriginsCodes"] != []:
+                    if flight_["alternativeDestinationsCodes"] != "" and flight_["alternativeDestinationsCodes"] != []:
+                        for originCode in flight_["alternativeOriginsCodes"]:
+                            for destCode in flight_["alternativeDestinationsCodes"]:
+                                if originCode == destCode:
+                                    flight_["alternativeOriginsCodes"].remove(originCode)
+                                    flight_["alternativeDestinationsCodes"].remove(destCode)
 
                 if flight_["includedConnectionPoints"] != "" and flight_["includedConnectionPoints"] != []:
                     if flight_["destinationLocationCode"] in flight_["includedConnectionPoints"]:

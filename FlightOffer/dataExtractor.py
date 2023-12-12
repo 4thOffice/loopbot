@@ -54,41 +54,41 @@ def askGPT(emailText, files, imageInfo=[]):
         purpose='assistants'
         ).id
 
-    if len(files) > 0:
-        content_text = """Extract ALL flight details from the email which I will give you. Extract ALL of the following data:
-        - currency
-        - number of passangers (MUST ALWAYS include in output)
-        - maximum number of connections
-        - requested airlines with codes
-        - travel class
-        - whether near airports should be included as departure options
-        - amount of checked bags per person (MUST ALWAYS include in output)
-        - insurance for the risk of cancellation (say "no" if not specified otherwise)
-        - changeable ticket (say "no" if not specified otherwise)
 
-        For each flight segment extract the following data:
-        - origin location names and IATA 3-letter codes
-        - alternative origin locations names and IATA 3-letter codes (only for this specific segment)
-        - destination locationname and IATA 3-letter code
-        - alternative destination locations names and IATA 3-letter codes (only for this specific segment)
-        - included connection points names and IATA 3-letter codes
-        - departure date
-        - exact departure time
-        - earliest departure time
-        - latest departure time
-        - exact arrival time
-        - earliest arrival time
-        - latest arrival time
-        
-        Remember, extract ALL of this data!
-        Email (in text format) to extract details from:\n\n"""
-        content_text += emailText
+    content_text = """Extract ALL flight details from the text which I will give you. Extract ALL of the following data:
+    - currency
+    - number of passangers (MUST ALWAYS include in output)
+    - maximum number of connections
+    - requested airlines with codes
+    - travel class
+    - whether near airports should be included as departure options
+    - amount of checked bags per person (MUST ALWAYS include in output)
+    - insurance for the risk of cancellation (say "no" if not specified otherwise)
+    - changeable ticket (say "no" if not specified otherwise)
+
+    For each flight segment extract the following data:
+    - origin location names and IATA 3-letter codes
+    - alternative origin locations names and IATA 3-letter codes (only for this specific segment)
+    - destination locationname and IATA 3-letter code
+    - alternative destination locations names and IATA 3-letter codes (only for this specific segment)
+    - included connection points names and IATA 3-letter codes
+    - departure date
+    - exact departure time
+    - earliest departure time
+    - latest departure time
+    - exact arrival time
+    - earliest arrival time
+    - latest arrival time
+    
+    Remember, extract ALL of this data!
+    The text to extract details from:\n\n"""
+    content_text += emailText
         #content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
-        if len(imageInfo) > 0:
-            content_text += "\n\nAlso take this important extra information about this email into consideration:\n" + imageInfo
-    else:
-        content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
+    if len(imageInfo) > 0:
+        content_text += "\n\nAlso take this important extra information into consideration:\n" + imageInfo
 
+    content_text += "\n\nIf there is a specific flight written, say that it is a preffered option."
+    
     with AiAssistantManager(content_text, files) as (assistant, thread):
         answer = None
         try:
