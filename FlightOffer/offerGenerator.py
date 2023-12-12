@@ -126,7 +126,7 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
             
             flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration})\n"
         
-        flights_string += f"Checked bags: {offer['checkedBags']}\n"
+        flights_string += f"Checked bags per passenger: {offer['checkedBags']}\n"
         flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
         pricePerPerson = float(offer["price"]["grandTotal"])/float(offer["passengers"])
         

@@ -1,6 +1,7 @@
 import math
 import requests
 import flightSearch
+from Auxiliary.verbose_checkpoint import verbose
 
 def getHigherClasses(travelClass):
     if travelClass == "ECONOMY":
@@ -12,7 +13,7 @@ def getHigherClasses(travelClass):
     elif travelClass == "FIRST":
       return []
 
-def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checkedBags):
+def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checkedBags, verbose_checkpoint=None):
     url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -100,7 +101,8 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
             if wrongTravelClass:
                 continue
             
-            print(includedAmenities)
+            print(f"included amenities: {includedAmenities}")
+            verbose(f"included amenities: {includedAmenities}", verbose_checkpoint)
             amenityCount = sum(value["included"] is True and value["isRequested"] is True for value in includedAmenities.values())
             for index, offer_ in enumerate(offersWithAmenityCount):
                 if offer == offer_["offer"]:
@@ -120,7 +122,7 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
 
-def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token):
+def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, verbose_checkpoint=None):
     for index, offer in enumerate(offers):
         print("----------------------------")
         print("offer to get upsell for:\n", offer)
@@ -138,11 +140,12 @@ def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, chan
                 amenity["isRequested"] = True
                 amenitiesToSearchFor[index1] = amenity
         
-        upsold = get_upsell_offer(access_token, [offer], amenitiesToSearchFor, travelClass, checkedBags) #CHANGEABLE TICKET
+        upsold = get_upsell_offer(access_token, [offer], amenitiesToSearchFor, travelClass, checkedBags, verbose_checkpoint) #CHANGEABLE TICKET
 
         if upsold != None:
             print(f"UPSOLD OFFER: {upsold['offer']}")
             print(f"AMENITIES OF UPSOLD OFFER: {upsold['amenities']}")
+            verbose(f"AMENITIES OF UPSOLD OFFER: {upsold['amenities']}", verbose_checkpoint)
         
             if len(upsold["amenities"]) > 0:
                 upsold_price_offer = get_price_offer(access_token, [upsold["offer"]])["data"]["flightOffers"][0]

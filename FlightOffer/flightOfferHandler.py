@@ -74,8 +74,8 @@ def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoin
                 return({"parsedOffer": f"[code][[/code]TravelAI Error[code]][/code]\n\n" + "Timeout while asking AI to extract data.", "details": None})
 
         intercontinentalText, travelClassText = getExtraInfo(flightDetails)
-        details, geoCode = flightSearch.getFlightOffer(flightDetails, verbose_checkpoint)
-        print("geoCode:", geoCode)
+        details = flightSearch.getFlightOffer(flightDetails, verbose_checkpoint)
+
         if details["status"] == "ok" and details["data"] is None:
             return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\nNo flights found", "details": None})
         elif details["status"] == "error":
@@ -87,7 +87,10 @@ def getResponse(emailText, commentData, email_comment_id=None, verbose_checkpoin
                 return getResponse(emailText, commentData, verbose_checkpoint=verbose_checkpoint, retries=1)
         
         #generatedOffer = offerGenerator.generateOffer(emailText, details)
-        generatedOffer = offerGenerator.generateFlightsString(details["data"], email_comment_id=email_comment_id)
+        geoCode = details["data"]["geoCode"]
+        print("geoCode:", geoCode)
+
+        generatedOffer = offerGenerator.generateFlightsString({"offers": details["data"]["offers"]}, email_comment_id=email_comment_id)
         #print(offerGenerator.generateOffer(details["data"]["offers"][0]))
         print("flight details gathered")
         return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\n" + generatedOffer, "details": details["data"]})

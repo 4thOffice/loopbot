@@ -152,21 +152,20 @@ def extractSearchParameters(emailText, offerCount):
                     }
                 }
                     
-                if flight_["alternativeDestinationsCodes"] != "" and flight_["alternativeDestinationsCodes"] != []:
+                if flight_["alternativeDestinationsCodes"]:
                     segment["alternativeDestinationsCodes"] = flight_["alternativeDestinationsCodes"][:2]
 
-                if flight_["alternativeOriginsCodes"] != "" and flight_["alternativeOriginsCodes"] != []:
+                if flight_["alternativeOriginsCodes"]:
                     segment["alternativeOriginsCodes"] = flight_["alternativeOriginsCodes"][:2]
 
-                if flight_["alternativeOriginsCodes"] != "" and flight_["alternativeOriginsCodes"] != []:
-                    if flight_["alternativeDestinationsCodes"] != "" and flight_["alternativeDestinationsCodes"] != []:
-                        for originCode in flight_["alternativeOriginsCodes"]:
-                            for destCode in flight_["alternativeDestinationsCodes"]:
-                                if originCode == destCode:
-                                    flight_["alternativeOriginsCodes"].remove(originCode)
-                                    flight_["alternativeDestinationsCodes"].remove(destCode)
+                if flight_["alternativeOriginsCodes"] and flight_["alternativeDestinationsCodes"]:
+                    for originCode in flight_["alternativeOriginsCodes"]:
+                        for destCode in flight_["alternativeDestinationsCodes"]:
+                            if originCode == destCode:
+                                flight_["alternativeOriginsCodes"].remove(originCode)
+                                flight_["alternativeDestinationsCodes"].remove(destCode)
 
-                if flight_["includedConnectionPoints"] != "" and flight_["includedConnectionPoints"] != []:
+                if flight_["includedConnectionPoints"]:
                     if flight_["destinationLocationCode"] in flight_["includedConnectionPoints"]:
                         flight_["includedConnectionPoints"].remove(flight_["destinationLocationCode"])
                     if flight_["originLocationCode"] in flight_["includedConnectionPoints"]:
@@ -174,7 +173,7 @@ def extractSearchParameters(emailText, offerCount):
 
                     segment["includedConnectionPoints"] = flight_["includedConnectionPoints"][:2]
                     
-                if "exactDepartureTime" in flight_ and flight_["exactDepartureTime"] != "":
+                if "exactDepartureTime" in flight_ and flight_["exactDepartureTime"]:
                     segment["departureDateTimeRange"]["time"] = flight_["exactDepartureTime"]
                     #segment["departureDateTimeRange"]["timeWindow"] = "12H"
 
