@@ -56,6 +56,7 @@ def get_price_offer(access_token, flight_offers):
         return None
     
 def get_airport_coordinates(access_token, IATA):
+    print(f"IATA {IATA}")
     url = 'https://api.amadeus.com/v1/reference-data/locations/A' + IATA
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -68,7 +69,9 @@ def get_airport_coordinates(access_token, IATA):
 
         res = response.json()
         geoCode = res["data"]["geoCode"]
-        return geoCode
+        airportName = res["data"]["name"]
+
+        return geoCode, airportName
     else:
         print(f'Failed to retrieve airport information: {response.status_code} - {response.text}')
         return None
@@ -122,8 +125,6 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         verbose(f"Extra timeframes: {extraTimeframes}", verbose_checkpoint)
         verbose(f"Checked bags per person: {checkedBags}", verbose_checkpoint)
         access_token = get_access_token()
-
-        geoCode = get_airport_coordinates(access_token, search_params["originDestinations"][0]["destinationLocationCode"])
 
         #repeat this and expand time window untill amadeus returns at least 1 flight offer
         iteration = 0
@@ -306,13 +307,16 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     for index, offer_ in enumerate(just_offers):
         cheapestPriceOffers[index] = {"offer": offer_, "amenities": cheapestPriceOffers[index]["amenities"]}
 
-    returnData = {"status": "ok", "data": {"offers": [], "geoCode": geoCode}}
+    returnData = {"status": "ok", "data": {"offers": []}}
     for cheapest_price_offer in cheapestPriceOffers:
         amenities = cheapest_price_offer["amenities"]
+        
+        geoCode, airportName = get_airport_coordinates(access_token, cheapest_price_offer["offer"]["itineraries"][0]["segments"][-1]["arrival"]["iataCode"])
+        
         flights = []
-        for iterary in cheapest_price_offer["offer"]["itineraries"]:
+        for iteraryIndex, iterary in enumerate(cheapest_price_offer["offer"]["itineraries"]):
             for segment in iterary["segments"]:
-                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"]})
+                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex})
         
         includedBags = 0
         if "quantity" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
@@ -325,6 +329,6 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
             if "chargeableCheckedBags" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]:
                 checkedBags += cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]["chargeableCheckedBags"]["quantity"]
 
-        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities, "flights": flights})
+        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities, "flights": flights, "geoCode": geoCode, "airportName": airportName})
     
     return returnData
