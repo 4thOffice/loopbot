@@ -316,7 +316,11 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         flights = []
         for iteraryIndex, iterary in enumerate(cheapest_price_offer["offer"]["itineraries"]):
             for segment in iterary["segments"]:
-                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex})
+                for detailsBySegment in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"]:
+                    if detailsBySegment["segmentId"] == segment["id"]:
+                        travelClass = detailsBySegment["cabin"]
+                        break
+                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex, "travelClass": travelClass})
         
         includedBags = 0
         if "quantity" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
