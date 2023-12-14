@@ -105,12 +105,15 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
             try:
                 for index, offer in enumerate(details["data"]["offers"]):
                     geoCode = offer["geoCode"]
+                    cityCode = offer["cityCode"]
                     airportName = offer["airportName"]
                     print("geoCode:", geoCode)
+                    print("cityCode:", cityCode)
                     print("airportName:", airportName)
                     
-                    del offer["airportName"]
+                    del offer["cityCode"]
                     del offer["geoCode"]
+                    del offer["airportName"]
 
                     checkInDate = offer["flights"][0]["arrival"]["at"]
                     checkInDate = datetime.datetime.strptime(checkInDate, '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
@@ -121,7 +124,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
 
                     hotelDetails = None
                     try:
-                        hotelDetails = hotelSearch.getHotelOffer({"latitude": geoCode["latitude"], "longitude": geoCode["longitude"], "checkInDate": checkInDate, "checkOutDate": checkoutDate, "adults": adults, "currency": currency})
+                        hotelDetails = hotelSearch.getHotelOffer({"cityCode": cityCode, "latitude": geoCode["latitude"], "longitude": geoCode["longitude"], "checkInDate": checkInDate, "checkOutDate": checkoutDate, "adults": adults, "currency": currency})
 
                         airportGooglePlaceID = googleAPI.get_place_id(geoCode["latitude"], geoCode["longitude"], 10, airportName)
                     except Exception:

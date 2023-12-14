@@ -69,9 +69,10 @@ def get_airport_coordinates(access_token, IATA):
 
         res = response.json()
         geoCode = res["data"]["geoCode"]
+        cityCode = res["data"]["address"]["cityCode"]
         airportName = res["data"]["name"]
 
-        return geoCode, airportName
+        return geoCode, cityCode, airportName
     else:
         print(f'Failed to retrieve airport information: {response.status_code} - {response.text}')
         return None
@@ -311,7 +312,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     for cheapest_price_offer in cheapestPriceOffers:
         amenities = cheapest_price_offer["amenities"]
         
-        geoCode, airportName = get_airport_coordinates(access_token, cheapest_price_offer["offer"]["itineraries"][0]["segments"][-1]["arrival"]["iataCode"])
+        geoCode, cityCode, airportName = get_airport_coordinates(access_token, cheapest_price_offer["offer"]["itineraries"][0]["segments"][-1]["arrival"]["iataCode"])
         
         flights = []
         for iteraryIndex, iterary in enumerate(cheapest_price_offer["offer"]["itineraries"]):
@@ -333,6 +334,6 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
             if "chargeableCheckedBags" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]:
                 checkedBags += cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]["chargeableCheckedBags"]["quantity"]
 
-        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities, "flights": flights, "geoCode": geoCode, "airportName": airportName})
+        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode})
     
     return returnData

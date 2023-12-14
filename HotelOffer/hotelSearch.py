@@ -67,15 +67,14 @@ def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_cli
     print("Access key:\n", response.json())
     return response.json().get('access_token')
 
-def getHotelList(access_token, latitude, longitude, radius):
-    url = 'https://api.amadeus.com/v1/reference-data/locations/hotels/by-geocode'
+def getHotelList(access_token, cityCode, radius):
+    url = 'https://api.amadeus.com/v1/reference-data/locations/hotels/by-city'
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/vnd.amadeus+json'
     }
     params = {
-        "latitude": latitude,
-        "longitude": longitude,
+        "cityCode": cityCode,
         "radius": radius,
         "radiusUnit": "KM",
         "ratings": 4,
@@ -153,7 +152,7 @@ def getHotelOffer(hotelDetails, verbose_checkpoint=None):
     radius = 5
     hotelOffers = []
     for i in range(5):
-        hotelsIDs = getHotelList(access_token, hotelDetails["latitude"], hotelDetails["longitude"], radius)
+        hotelsIDs = getHotelList(access_token, hotelDetails["cityCode"], radius)
         #print(hotelsIDs)
 
         if not hotelsIDs:
