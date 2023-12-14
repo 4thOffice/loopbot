@@ -39,13 +39,16 @@ def iso_to_custom_date(iso_date):
 
 # Function to calculate duration in hours and minutes from ISO duration string
 def iso_to_hours_minutes(iso_duration):
-    duration = re.match(r'PT(\d+)H(?:(\d+)M)?', iso_duration)
-    if duration:
-        hours = int(duration.group(1))
-        minutes = int(duration.group(2)) if duration.group(2) else 0
-        return f"{hours:02d}h:{minutes:02d}min"
-    else:
-        return "00h:00min"
+    hours = re.findall(r'(\d+)H', iso_duration)
+    minutes = re.findall(r'(\d+)M', iso_duration)
+
+    hours = int(hours[0]) if hours else 0
+    minutes = int(minutes[0]) if minutes else 0
+
+    duration = timedelta(hours=hours, minutes=minutes)
+    formatted_duration = f'{duration.seconds // 3600:02d}h:{(duration.seconds % 3600) // 60:02d}min'
+
+    return formatted_duration
     
 def generateFlightTable(offerDetails):
     flightTable = ""
