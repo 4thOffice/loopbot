@@ -145,13 +145,14 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
         if not usedForDraft:
             deeplink = ""
             if email_comment_id:
+                print("deeplink offer", offer)
                 deeplink = getDeepLink(offer, email_comment_id)
             if index == 0:
                 flights_string += f"Top offer: {deeplink}\n"
             elif index == 1:
-                flights_string += f"\n\nAlternative offer 1: {deeplink}\n"
+                flights_string += f"\n\n\nAlternative offer 1: {deeplink}\n"
             elif index == 2:
-                flights_string += f"\n\nAlternative offer 2: {deeplink}\n"
+                flights_string += f"\n\n\nAlternative offer 2: {deeplink}\n"
         for flight in offer["flights"]:
             departure_date = iso_to_custom_date(flight["departure"]["at"])
             duration = iso_to_hours_minutes(flight["duration"])

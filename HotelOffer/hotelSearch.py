@@ -162,9 +162,8 @@ def getHotelOffer(hotelDetails, verbose_checkpoint=None):
 
         hotelOffers = getHotelOffers(access_token, hotelsIDs, hotelDetails["checkInDate"], hotelDetails["checkOutDate"], hotelDetails["adults"], hotelDetails["currency"])
 
-        print(f"Hotel offers found: {len(hotelOffers)}")
-
-        if len(hotelOffers) > 0:
+        if hotelOffers != None and len(hotelOffers) > 0:
+            print(f"Hotel offers found: {len(hotelOffers)}")
             break
             
         print("No hotel offers found, increasing search radius..")
