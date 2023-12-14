@@ -18,27 +18,30 @@ amadeus = Client(
     hostname='production'
 )
 
-def get_latest_currency_rates(baseCurrency, currency, api_key=keys.currencyFreaks_APIKEY):
-    base_url = "https://api.currencyfreaks.com/v2.0/rates/latest"
+def convert_currency(baseCurrency, currency, api_key=keys.fixer_APIKEY):
+    base_url = 'http://data.fixer.io/api/latest'
+
+    print(api_key)
     params = {
+        'access_key': api_key,
         'base': baseCurrency,
-        'symbols': 'EUR',
-        'apikey': api_key
+        'symbols': currency
     }
 
     response = requests.get(base_url, params=params)
 
-    print(currency)
-    print(baseCurrency)
+    # Checking if the request was successful (status code 200)
     if response.status_code == 200:
+        # Getting the converted amount from the response JSON
         data = response.json()
-        date = data['date']
-        base_currency = data['base']
-        rates = data['rates']
-        
-        return float(rates[currency])
+        if data["success"] == False:
+            print(data)
+            print("Failed to fetch conversion data")
+            return None
+        print(f"Converted {baseCurrency} to {currency}")
+        return data["rates"][currency]
     else:
-        print("Failed to fetch data from the API.")
+        print("Failed to fetch conversion data. Status code:", response.status_code)
         return None
 
 
@@ -80,7 +83,7 @@ def getTransferOffers(access_token, LocationCode, startGooglePlaceId, endGoogleP
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
 
-def getTransferOffer(startGooglePlaceId, endGooglePlaceId, LocationCode, passengers, startDatetime, verbose_checkpoint=None):
+def getTransferOffer(startGooglePlaceId, endGooglePlaceId, LocationCode, passengers, startDatetime, currency, verbose_checkpoint=None):
     access_token = get_access_token()
 
     transferOffers = getTransferOffers(access_token, LocationCode, startGooglePlaceId, endGooglePlaceId, passengers, startDatetime)
@@ -91,7 +94,20 @@ def getTransferOffer(startGooglePlaceId, endGooglePlaceId, LocationCode, passeng
     print(sortedTransferOffers[0])
     chosenOffer = sortedTransferOffers[0]
 
-    return {"carType": chosenOffer["vehicle"]["description"], "startTime": chosenOffer["start"]["dateTime"], "price": chosenOffer["quotation"]["monetaryAmount"], "currency": chosenOffer["quotation"]["currencyCode"]}
+    price = chosenOffer["quotation"]["monetaryAmount"]
+    baseCurrency = chosenOffer["quotation"]["currencyCode"]
+
+    if currency != baseCurrency:
+        converion_rate = convert_currency(baseCurrency, currency)
+    else:
+        converion_rate = None
+    print(converion_rate)
+    if converion_rate != None:
+        converted_price = round(float(price) * float(converion_rate), 2)
+        baseCurrency = currency
+        price = converted_price
+
+    return {"carType": chosenOffer["vehicle"]["description"], "startTime": chosenOffer["start"]["dateTime"], "price": price, "currency": baseCurrency}
     #return {"price": total, "currency": currency, "checkInDate": checkInDate, "checkOutDate": checkOutDate, "hotelName": hotelName, "googlePlaceID": googlePlaceID}
 
 #transferOffer = getTransferOffer("ChIJZwkilQJfpkcRRfEptBP_Lik", "ChIJub76MURjpkcREZePvIreCrA", "LEJ", 1, "2024-01-17T13:30:00")

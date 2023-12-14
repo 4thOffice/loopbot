@@ -9,6 +9,7 @@ import keys
 from Auxiliary.verbose_checkpoint import verbose
 from amadeus import Client, ResponseError
 import googleAPI
+import openai
 
 amadeus = Client(
     client_id=keys.amadeus_client_id,
@@ -16,27 +17,43 @@ amadeus = Client(
     hostname='production'
 )
 
-def get_latest_currency_rates(baseCurrency, currency, api_key=keys.currencyFreaks_APIKEY):
-    base_url = "https://api.currencyfreaks.com/v2.0/rates/latest"
+def translate(text):
+    openai.api_key = keys.openAI_APIKEY
+
+    user_msg = "Translate the following text to slovenian:\n\n" + text
+
+    response = openai.chat.completions.create(
+                                            model="gpt-3.5-turbo",
+                                            messages=[{"role": "user", "content": user_msg}]
+                                            )
+    
+    answer = response.choices[0].message.content
+    return answer
+
+def convert_currency(baseCurrency, currency, api_key=keys.fixer_APIKEY):
+    base_url = 'http://data.fixer.io/api/latest'
+    
+    print(api_key)
     params = {
+        'access_key': api_key,
         'base': baseCurrency,
-        'symbols': 'EUR',
-        'apikey': api_key
+        'symbols': currency
     }
 
     response = requests.get(base_url, params=params)
 
-    print(currency)
-    print(baseCurrency)
+    # Checking if the request was successful (status code 200)
     if response.status_code == 200:
+        # Getting the converted amount from the response JSON
         data = response.json()
-        date = data['date']
-        base_currency = data['base']
-        rates = data['rates']
-        
-        return float(rates[currency])
+        if data["success"] == False:
+            print(data)
+            print("Failed to fetch conversion data")
+            return None
+        print(f"Converted {baseCurrency} to {currency}")
+        return data["rates"][currency]
     else:
-        print("Failed to fetch data from the API.")
+        print("Failed to fetch conversion data. Status code:", response.status_code)
         return None
 
 
@@ -182,18 +199,24 @@ def getHotelOffer(hotelDetails, verbose_checkpoint=None):
     checkInDate = offerPrice["offers"][0]["checkInDate"]
     checkOutDate = offerPrice["offers"][0]["checkOutDate"]
     hotelName = offerPrice["hotel"]["name"]
+    descriptionANG = offerPrice["offers"][0]["room"]["description"]["text"]
 
-    convert_factor = get_latest_currency_rates(currency, hotelDetails["currency"])
-    print(convert_factor)
-    if convert_factor != None:
-        total = convert_factor * float(total)
-        total = round(total, 2)
+    descriptionSLO = translate(descriptionANG).lower()
+
+    if currency != hotelDetails["currency"]:
+        conversion_rate = convert_currency(currency, hotelDetails["currency"])
+    else:
+        conversion_rate = None
+    print(conversion_rate)
+    if conversion_rate != None:
+        converted_total = round(float(conversion_rate) * float(total), 2)
         currency = hotelDetails["currency"]
+        total = converted_total
 
     googlePlaceID = googleAPI.get_place_id(hotelDetails["latitude"], hotelDetails["longitude"], radius, hotelName)
 
     photosReferenceID = googleAPI.place_details(googlePlaceID)[:3]
 
-    return {"price": total, "currency": currency, "checkInDate": checkInDate, "checkOutDate": checkOutDate, "hotelName": hotelName, "googlePlaceID": googlePlaceID, "photosReferenceID": photosReferenceID}
+    return {"price": total, "currency": currency, "checkInDate": checkInDate, "checkOutDate": checkOutDate, "hotelName": hotelName, "googlePlaceID": googlePlaceID, "photosReferenceID": photosReferenceID, "descriptionANG": descriptionANG, "descriptionSLO": descriptionSLO}
 
 #getHotelOffer({"latitude": 49.01278, "longitude": 2.55, "checkInDate": "2024-09-06", "checkOutDate": "2024-09-13"})

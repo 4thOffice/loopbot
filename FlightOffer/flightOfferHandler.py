@@ -15,6 +15,7 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import AIregular
 import keys
+import traceback
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
 hotel_offer_path = os.path.join(current_directory, 'HotelOffer')
@@ -83,16 +84,16 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                 flightDetails = dataExtractor.askGPT(emailText, filesText)
 
             if flightDetails == None:
-                return({"parsedOffer": f"[code][[/code]TravelAI Error[code]][/code]\n\n" + "Timeout while asking AI to extract data.", "details": None})
+                return({"parsedOffer": "Error requesting offers: Timeout while asking AI to extract data.", "details": None})
 
         intercontinentalText, travelClassText = getExtraInfo(flightDetails)
         details = flightSearch.getFlightOffer(flightDetails, verbose_checkpoint)
 
         if details["status"] == "ok" and details["data"] is None:
-            return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\nNo flights found", "details": None})
+            return({"parsedOffer": f"{travelClassText}\n\nNo flights found", "details": None})
         elif details["status"] == "error":
             if retries > 0:
-                return({"parsedOffer": f"[code][[/code]TravelAI Error[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\n" + details["data"], "details": None})
+                return({"parsedOffer": f"{travelClassText}\n\n" + "Error requesting offers:" + details["data"], "details": None})
             else:
                 print("Encountered an error, trying one more time...")
                 verbose("Encountered an error, trying one more time...", verbose_checkpoint)
@@ -124,6 +125,8 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
 
                         airportGooglePlaceID = googleAPI.get_place_id(geoCode["latitude"], geoCode["longitude"], 10, airportName)
                     except Exception:
+                        print(traceback.print_exc())
+                        print("Failed gathering hotel offers")
                         details["data"]["offers"][index]["hotel"] = None
                         details["data"]["offers"][index]["AirportToHotelTransfer"] = None
                         details["data"]["offers"][index]["HotelToAirportTransfer"] = None
@@ -143,21 +146,25 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                     one_hour_less = datetime_obj - datetime.timedelta(hours=2)
                     transferStartBackTime = one_hour_less.strftime("%Y-%m-%dT%H:%M:%S")
 
+                    AirportToHotelTransferDetails = None
+                    HotelToAirportTransferDetails = None
                     try:
-                        AirportToHotelTransferDetails = transferSearch.getTransferOffer(airportGooglePlaceID, hotelDetails["googlePlaceID"], LocationCode, adults, transferStartTime)
-                        HotelToAirportTransferDetails = transferSearch.getTransferOffer(hotelDetails["googlePlaceID"], airportGooglePlaceID, LocationCode, adults, transferStartBackTime)
-                    except Exception:
-                        AirportToHotelTransferDetails = None
-                        AirportToHotelTransferDetails = None
+                        AirportToHotelTransferDetails = transferSearch.getTransferOffer(airportGooglePlaceID, hotelDetails["googlePlaceID"], LocationCode, adults, transferStartTime, currency)
+                        HotelToAirportTransferDetails = transferSearch.getTransferOffer(hotelDetails["googlePlaceID"], airportGooglePlaceID, LocationCode, adults, transferStartBackTime, currency)
+                        print("TRANSFER DETAILS")
+                        print(AirportToHotelTransferDetails)
+                        print(HotelToAirportTransferDetails)
                         
-                    print("TRANSFER DETAILS")
-                    print(AirportToHotelTransferDetails)
-                    print(HotelToAirportTransferDetails)
+                    except Exception:
+                        print("Failed gathering transfer offers")
+                        print(traceback.print_exc())
 
                     details["data"]["offers"][index]["hotel"] = hotelDetails
                     details["data"]["offers"][index]["AirportToHotelTransfer"] = AirportToHotelTransferDetails
                     details["data"]["offers"][index]["HotelToAirportTransfer"] = HotelToAirportTransferDetails
             except Exception:
+                print(traceback.print_exc())
+                print("Failed gathering hotel or transfer offers")
                 details["data"]["offers"][index]["hotel"] = None
                 details["data"]["offers"][index]["AirportToHotelTransfer"] = None
                 details["data"]["offers"][index]["HotelToAirportTransfer"] = None
@@ -172,11 +179,11 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
         print(offerGenerator.generateOffer(details["data"]["offers"][0]))
 
         print("flight details gathered")
-        return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n{intercontinentalText}\n{travelClassText}\n\n" + generatedOffer, "details": details["data"]})
+        return({"parsedOffer": f"{travelClassText}\n\n" + generatedOffer, "details": details["data"]})
 
     else:
         print("Not a flight tender inquiry")
-        return({"parsedOffer": f"[code][[/code]TravelAI Success[code]][/code]\n\n" + "Not a flight tender inquiry", "details": None})
+        return({"parsedOffer": f"Not a flight travel request", "details": None})
 
 def getExtraInfo(emailText):
     intercontinentalText = ""
@@ -188,15 +195,15 @@ def getExtraInfo(emailText):
     travelClass = dataExtractor.getTravelClass(emailText)
     if travelClass != "":
         if "ECONOMY" in travelClass:
-            travelClassText = "[code][[/code]ECONOMY[code]][/code]"
+            travelClassText = "Suggested offers (economy requested) per person:"
         elif "BUSINESS" in travelClass:
-            travelClassText = travelClassText = "[code][[/code]BUSINESS[code]][/code]"
+            travelClassText = travelClassText = "Suggested offers (business requested) per person:"
         elif "FIRST" in travelClass:
-            travelClassText = travelClassText = "[code][[/code]FIRST[code]][/code]"
+            travelClassText = travelClassText = "Suggested offers (first class requested) per person:"
         else:
-            travelClassText = "[code][[/code]ECONOMY[code]][/code]"
+            travelClassText = "Suggested offers (economy requested) per person:"
     else: 
-        travelClassText = "[code][[/code]ECONOMY[code]][/code]"
+        travelClassText = "Suggested offers (economy requested) per person:"
 
     return intercontinentalText, travelClassText
 

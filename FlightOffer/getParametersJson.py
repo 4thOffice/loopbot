@@ -7,7 +7,7 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import openai
 import keys
-
+import flightAuxiliary
 
 def extractSearchParameters(emailText, offerCount):
     user_msg = "I want you to extract flight details and replace values in this parameter json:\n"
@@ -217,6 +217,15 @@ def extractSearchParameters(emailText, offerCount):
                     if flight_["exactArrivalTime"] == "24:00:00":
                         flight_["exactArrivalTime"] = "00:00:00"
                     segmentDictionary["exactArrivalTime"] = flight_["exactArrivalTime"]
+
+                if not flightAuxiliary.is_valid_time_format(segmentDictionary["earliestDepartureTime"]):
+                    segmentDictionary["earliestDepartureTime"] = ""
+                if not flightAuxiliary.is_valid_time_format(segmentDictionary["latestDepartureTime"]):
+                    segmentDictionary["latestDepartureTime"] = ""
+                if not flightAuxiliary.is_valid_time_format(segmentDictionary["latestArrivalTime"]):
+                    segmentDictionary["latestArrivalTime"] = ""
+                if not flightAuxiliary.is_valid_time_format(segmentDictionary["earliestArrivalTime"]):
+                    segmentDictionary["earliestArrivalTime"] = ""
 
                 if segmentDictionary["earliestDepartureTime"] == segmentDictionary["exactDepartureTime"]:
                     segmentDictionary["earliestDepartureTime"] = ""

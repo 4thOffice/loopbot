@@ -17,7 +17,7 @@ def getDeepLink(flightDetails, email_comment_id=None):
         flightDetails = dict(flightDetails)  # shallow copy
         flightDetails["email_comment_id"] = email_comment_id
     command = f"/travelai createoffer {Auxiliary.compressed_json.encode_json_to_string(flightDetails)}"
-    deeplink = bb_code_link(send_chat_deeplink(command), "Prepare offer draft.")
+    deeplink = bb_code_link(send_chat_deeplink(command), "Prepare draft with this offer")
     return deeplink
 
 def url_encode(params):
@@ -57,8 +57,9 @@ def generateFlightTable(offerDetails):
         destination = flight["arrival"]["iataCode"]
         arrival_time = datetime.fromisoformat(flight["arrival"]["at"]).strftime("%H:%M")
         departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
+        cabin = flight["travelClass"]
         
-        flightTable += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration})\n"
+        flightTable += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({cabin}) ({duration})\n"
 
     return flightTable
 
@@ -114,16 +115,19 @@ def generateOffer(offerDetails):
     if hotelDetails:
         offerDraftText += f"Predlagana namestitev:\n\n"
         offerDraftText += f"Ime hotela: {hotelDetails['hotelName']}\n"
+        offerDraftText += f"Opis sobe: {hotelDetails['descriptionSLO']}\n"
         offerDraftText += f"Termin:\n od: {hotelDetails['checkInDate']}\n do: {hotelDetails['checkOutDate']}\n"
         offerDraftText += f"Kliknite za podrobnejši ogled: {googlePlacebaseURL + hotelDetails['googlePlaceID']}\n"
-        offerDraftText += f"Namestitev v želenem terminu znaša skupaj za nočitve: {float(hotelDetails['price'])/float(offerDetails['passengers'])} {hotelDetails['currency']}/osebo"
-    
+        offerDraftText += f"Namestitev v želenem terminu znaša skupaj za nočitve: {float(hotelDetails['price'])/float(offerDetails['passengers'])} {hotelDetails['currency']}/osebo\n"
+        for i in range(len(hotelDetails['photosReferenceID'])):
+            offerDraftText += f"GooglePlacesRef::<{hotelDetails['photosReferenceID'][i]}>::"
+
         if AirportToHotelTransfer:
             offerDraftText += "\n\n"
             offerDraftText += f"Predlagan prevoz od letališča do namestitve:\n\n"
             offerDraftText += f"Opis prevoza: {AirportToHotelTransfer['carType']}\n"
             offerDraftText += f"Čas, ko Vas bodo pobrali: {AirportToHotelTransfer['startTime'].split('T')[1]}\n"
-            offerDraftText += f"Celotni prevoz znaša: {AirportToHotelTransfer['price']}\n"
+            offerDraftText += f"Celotni prevoz znaša: {AirportToHotelTransfer['price']} {HotelToAirportTransfer['currency']}\n"
 
         if HotelToAirportTransfer:
             offerDraftText += "\n\n"
@@ -139,11 +143,15 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
 
     for index, offer in enumerate(details["offers"]):
         if not usedForDraft:
+            deeplink = ""
+            if email_comment_id:
+                deeplink = getDeepLink(offer, email_comment_id)
             if index == 0:
-                flights_string += f"Suggested offer:\n"
+                flights_string += f"Top offer: {deeplink}\n"
             elif index == 1:
-                flights_string += f"Alternative offers:\n"
-            flights_string += f"Offer {index+1}\n"
+                flights_string += f"\n\nAlternative offer 1: {deeplink}\n"
+            elif index == 2:
+                flights_string += f"\n\nAlternative offer 2: {deeplink}\n"
         for flight in offer["flights"]:
             departure_date = iso_to_custom_date(flight["departure"]["at"])
             duration = iso_to_hours_minutes(flight["duration"])
@@ -152,11 +160,19 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
             destination = flight["arrival"]["iataCode"]
             arrival_time = datetime.fromisoformat(flight["arrival"]["at"]).strftime("%H:%M")
             departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
-            
-            flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration})\n"
-        
-        flights_string += f"Checked bags per passenger: {offer['checkedBags']}\n"
-        flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
+            cabin = flight["travelClass"]
+            cabinString = "(" + cabin + ")"
+            if cabin.lower() == "economy":
+                cabinString = ""
+
+            flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration}) {cabinString}\n"
+        if offer['checkedBags'] == 0:
+            flights_string += "\nOnly carry-on included. "
+        elif offer['checkedBags'] == 1:
+            flights_string += f"\n{offer['checkedBags']} checked bag & carry-on included. "
+        elif offer['checkedBags'] > 1:
+            flights_string += f"\n{offer['checkedBags']} checked bags & carry-on included. "
+        #flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
         pricePerPerson = float(offer["price"]["grandTotal"])/float(offer["passengers"])
         
         print(offer["amenities"])
@@ -166,26 +182,22 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
                 refundableMsgAdded = True
                 if amenity["included"] == True:
                     if amenity["isChargeable"] == True:
-                        flights_string += "Ticket is refundable with a fee\n"
+                        flights_string += "Refundable with a fee, "
                     else:
-                        flights_string += "Ticket is refundable free of charge\n"
+                        flights_string += "Refundable, "
                 else:
-                    flights_string += "Ticket is not refundable\n"
+                    flights_string += "Non-refundable, "
 
             if amenity["amenity_description"] == "CHANGEABLE TICKET":
                 if amenity["included"] == True:
                     if amenity["isChargeable"] == True:
-                        flights_string += "Ticket is changeable with a fee\n"
+                        flights_string += "changeable with a fee ticket"
                     else:
-                        flights_string += "Ticket is changeable free of charge\n"
+                        flights_string += "changeable ticket"
                 else:
-                    flights_string += "Ticket is not changeable\n"
+                    flights_string += "non-changeable ticket"
 
-        flights_string += "Price: " + str(pricePerPerson) + " " + offer["price"]["billingCurrency"] + "/person"
-        if email_comment_id:
-            flights_string += "\n"
-            flights_string += getDeepLink(offer, email_comment_id)
-        flights_string += "\n\n"
+        flights_string += "\nPrice: " + str(pricePerPerson) + " " + offer["price"]["billingCurrency"] + "/person"
         
         if usedForDraft and index == 0:
             break

@@ -1,6 +1,10 @@
 # Function to check time difference between flights
 import datetime
+import re
 
+def is_valid_time_format(time_string):
+    pattern = r'^\d{2}:\d{2}:\d{2}$'  # HH:MM:SS format pattern
+    return re.match(pattern, time_string) is not None
 
 def check_time_between_flights(itineraries, buffer):
     for itinerary in itineraries:

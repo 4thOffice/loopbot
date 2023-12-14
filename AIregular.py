@@ -27,8 +27,7 @@ class AIregular:
 
         chain = LLMChain(
         llm=ChatOpenAI(temperature="0.7", model_name='gpt-3.5-turbo'),
-        prompt=chat_prompt,
-        verbose=True
+        prompt=chat_prompt
         )
         answer = chain.run({"message": userInput})
 
