@@ -42,7 +42,7 @@ def getFlightOffer(cardID=None, authKey=None):
 
     emailText = classification.getCommentContent(commentData["id"], authKey)
     
-    return getResponse(emailText, commentData, False)
+    return getResponse(emailText, commentData, True)
 
 
 def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_checkpoint=None, retries=0):

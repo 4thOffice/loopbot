@@ -17,7 +17,7 @@ def getDeepLink(flightDetails, email_comment_id=None):
         flightDetails = dict(flightDetails)  # shallow copy
         flightDetails["email_comment_id"] = email_comment_id
     command = f"/travelai createoffer {Auxiliary.compressed_json.encode_json_to_string(flightDetails)}"
-    deeplink = bb_code_link(send_chat_deeplink(command), "Prepare draft with this offer")
+    deeplink = bb_code_link(send_chat_deeplink(command), "Prepare draft")
     return deeplink
 
 def url_encode(params):
@@ -153,7 +153,7 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
                 print("deeplink offer", offer)
                 deeplink = getDeepLink(offer, email_comment_id)
             if index == 0:
-                flights_string += f"Top offer: {deeplink}\n"
+                flights_string += f"Featured offer: {deeplink}\n"
             elif index == 1:
                 flights_string += f"\n\n\nAlternative offer 1: {deeplink}\n"
             elif index == 2:
