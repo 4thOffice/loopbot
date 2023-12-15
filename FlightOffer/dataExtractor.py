@@ -78,16 +78,14 @@ def askGPT(emailText, files, imageInfo=[]):
     - latest departure time
     - exact arrival time
     - earliest arrival time
-    - latest arrival time
-    
-    Remember, extract ALL of this data!
-    The text to extract details from:\n\n"""
-    content_text += emailText
+    - latest arrival time\n\n"""
+    #content_text += emailText
+    content_text = "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nText to extract details from:\n\n" + emailText
         #content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
     if len(imageInfo) > 0:
         content_text += "\n\nAlso take this important extra information into consideration:\n" + imageInfo
 
-    content_text += "\n\nIf there is a specific flight written, say that it is a preffered option."
+    #content_text += "\n\nIf there is a specific flight written, say that it is a preffered option."
     
     with AiAssistantManager(content_text, files) as (assistant, thread):
         answer = None
