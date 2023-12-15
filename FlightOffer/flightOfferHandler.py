@@ -42,7 +42,7 @@ def getFlightOffer(cardID=None, authKey=None):
 
     emailText = classification.getCommentContent(commentData["id"], authKey)
     
-    return getResponse(emailText, commentData, True)
+    return getResponse(emailText, commentData, False)
 
 
 def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_checkpoint=None, retries=0):
@@ -93,7 +93,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
             return({"parsedOffer": f"{travelClassText}\n\nNo flights found", "details": None})
         elif details["status"] == "error":
             if retries > 0:
-                return({"parsedOffer": f"{travelClassText}\n\n" + "Error requesting offers:" + details["data"], "details": None})
+                return({"parsedOffer": f"{travelClassText}\n\n" + "Error requesting offers: " + details["data"], "details": None})
             else:
                 print("Encountered an error, trying one more time...")
                 verbose("Encountered an error, trying one more time...", verbose_checkpoint)
@@ -175,8 +175,12 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
             except Exception:
                 print(traceback.print_exc())
                 #dodaj prazen upsell v vsak offer
-                for index, offer in details["data"]["offers"]:
+                for index, offer in (details["data"]["offers"]):
                     details["data"]["offers"][index]["upsellOffers"] = []
+        else:
+            for index, offer in enumerate(details["data"]["offers"]):
+                details["data"]["offers"][index]["upsellOffers"] = []
+        
         
 
         generatedOffer = offerGenerator.generateFlightsString({"offers": details["data"]["offers"]}, email_comment_id=email_comment_id)

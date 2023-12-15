@@ -154,7 +154,7 @@ def getHotelOffer(hotelDetails, verbose_checkpoint=None):
     for i in range(5):
         hotelsIDs = getHotelList(access_token, hotelDetails["cityCode"], radius, hotelDetails["stars"])
         #print(hotelsIDs)
-        hotelsIDs = hotelsIDs[:60]
+        hotelsIDs = hotelsIDs[:100]
         if not hotelsIDs:
             print("No hotels found, increasing search radius..")
             radius += 10
