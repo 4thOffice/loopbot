@@ -70,10 +70,6 @@ def generateOffer(offerDetails):
     print("---------------------")
     print(offerDetails)
 
-    hotelDetails = offerDetails["hotel"]
-    AirportToHotelTransfer = offerDetails["AirportToHotelTransfer"]
-    HotelToAirportTransfer = offerDetails["HotelToAirportTransfer"]
-
     # Generating the output strings
     #flights_string = generateFlightsString(dict(offers=[offerDetails]), usedForDraft=True)
 
@@ -112,32 +108,38 @@ def generateOffer(offerDetails):
             else:
                 offerDraftText += ", naknadne spremembe niso možne"
 
-    offerDraftText += ")\n\n"
+    offerDraftText += ")"
 
-    googlePlacebaseURL = "https://www.google.com/maps/search/?api=1&query=Google&query_place_id="
-    if hotelDetails:
-        offerDraftText += f"Predlagana namestitev:\n\n"
-        offerDraftText += f"Ime hotela: {hotelDetails['hotelName']}\n"
-        offerDraftText += f"Opis sobe: {hotelDetails['descriptionSLO']}\n"
-        offerDraftText += f"Termin:\n od: {hotelDetails['checkInDate']}\n do: {hotelDetails['checkOutDate']}\n"
-        offerDraftText += f"Kliknite za podrobnejši ogled: {googlePlacebaseURL + hotelDetails['googlePlaceID']}\n"
-        offerDraftText += f"Namestitev v želenem terminu znaša skupaj za nočitve: {float(hotelDetails['price'])/float(offerDetails['passengers'])} {hotelDetails['currency']}/osebo\n"
-        for i in range(len(hotelDetails['photosReferenceID'])):
-            offerDraftText += f"GooglePlacesRef::<{hotelDetails['photosReferenceID'][i]}>::"
+    for upsellOffer in offerDetails["upsellOffers"]:
+        hotelDetails = upsellOffer["hotelDetails"]
+        AirportToHotelTransfer = upsellOffer["AirportToHotelTransferDetails"]
+        HotelToAirportTransfer = upsellOffer["HotelToAirportTransferDetails"]
 
-        if AirportToHotelTransfer:
+        googlePlacebaseURL = "https://www.google.com/maps/search/?api=1&query=Google&query_place_id="
+        if hotelDetails:
             offerDraftText += "\n\n"
-            offerDraftText += f"Predlagan prevoz od letališča do namestitve:\n\n"
-            offerDraftText += f"Opis prevoza: {AirportToHotelTransfer['carType']}\n"
-            offerDraftText += f"Čas, ko Vas bodo pobrali: {AirportToHotelTransfer['startTime'].split('T')[1]}\n"
-            offerDraftText += f"Celotni prevoz znaša: {AirportToHotelTransfer['price']} {HotelToAirportTransfer['currency']}\n"
+            offerDraftText += f"Predlagana namestitev:\n\n"
+            offerDraftText += f"Ime hotela: {hotelDetails['hotelName']}\n"
+            offerDraftText += f"Opis sobe: {hotelDetails['descriptionSLO']}\n"
+            offerDraftText += f"Termin:\n od: {hotelDetails['checkInDate']}\n do: {hotelDetails['checkOutDate']}\n"
+            offerDraftText += f"Kliknite za podrobnejši ogled: {googlePlacebaseURL + hotelDetails['googlePlaceID']}\n"
+            offerDraftText += f"Namestitev v želenem terminu znaša skupaj za nočitve: {float(hotelDetails['price'])/float(offerDetails['passengers'])} {hotelDetails['currency']}/osebo\n"
+            for i in range(len(hotelDetails['photosReferenceID'])):
+                offerDraftText += f"GooglePlacesRef::<{hotelDetails['photosReferenceID'][i]}>::"
 
-        if HotelToAirportTransfer:
-            offerDraftText += "\n\n"
-            offerDraftText += f"Predlagan prevoz od namestitve do letališča:\n\n"
-            offerDraftText += f"Opis prevoza: {HotelToAirportTransfer['carType']}\n"
-            offerDraftText += f"Čas, ko Vas bodo pobrali: {HotelToAirportTransfer['startTime'].split('T')[1]}\n"
-            offerDraftText += f"Celotni prevoz znaša: {HotelToAirportTransfer['price']} {HotelToAirportTransfer['currency']}\n"
+            if AirportToHotelTransfer:
+                offerDraftText += "\n\n"
+                offerDraftText += f"Predlagan prevoz od letališča do namestitve:\n\n"
+                offerDraftText += f"Opis prevoza: {AirportToHotelTransfer['carType']}\n"
+                offerDraftText += f"Čas, ko Vas bodo pobrali: {AirportToHotelTransfer['startTime'].split('T')[1]}\n"
+                offerDraftText += f"Celotni prevoz znaša: {AirportToHotelTransfer['price']} {HotelToAirportTransfer['currency']}\n"
+
+            if HotelToAirportTransfer:
+                offerDraftText += "\n\n"
+                offerDraftText += f"Predlagan prevoz od namestitve do letališča:\n\n"
+                offerDraftText += f"Opis prevoza: {HotelToAirportTransfer['carType']}\n"
+                offerDraftText += f"Čas, ko Vas bodo pobrali: {HotelToAirportTransfer['startTime'].split('T')[1]}\n"
+                offerDraftText += f"Celotni prevoz znaša: {HotelToAirportTransfer['price']} {HotelToAirportTransfer['currency']}\n"
 
     return offerDraftText
 

@@ -101,6 +101,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
         
         #generatedOffer = offerGenerator.generateOffer(emailText, details)
 
+        upsellOffersPerCity = {}
         if upsell:
             try:
                 for index, offer in enumerate(details["data"]["offers"]):
@@ -115,73 +116,76 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                     del offer["geoCode"]
                     del offer["airportName"]
 
-                    checkInDate = offer["flights"][0]["arrival"]["at"]
-                    checkInDate = datetime.datetime.strptime(checkInDate, '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
-                    checkoutDate = offer["flights"][-1]["departure"]["at"]
-                    checkoutDate = datetime.datetime.strptime(checkoutDate, '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
-                    adults = int(offer["passengers"])
-                    currency = offer["price"]["billingCurrency"]
-
-                    hotelDetails = None
-                    try:
-                        hotelDetails = hotelSearch.getHotelOffer({"cityCode": cityCode, "latitude": geoCode["latitude"], "longitude": geoCode["longitude"], "checkInDate": checkInDate, "checkOutDate": checkoutDate, "adults": adults, "currency": currency})
-
+                    if cityCode in upsellOffersPerCity:
+                        details["data"]["offers"][index]["upsellOffers"] = upsellOffersPerCity[cityCode]
+                    else:
+                        checkInDate = offer["flights"][0]["arrival"]["at"]
+                        checkInDate = datetime.datetime.strptime(checkInDate, '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
+                        checkoutDate = offer["flights"][-1]["departure"]["at"]
+                        checkoutDate = datetime.datetime.strptime(checkoutDate, '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
+                        adults = int(offer["passengers"])
+                        currency = offer["price"]["billingCurrency"]
                         airportGooglePlaceID = googleAPI.get_place_id(geoCode["latitude"], geoCode["longitude"], 10, airportName)
-                    except Exception:
-                        print(traceback.print_exc())
-                        print("Failed gathering hotel offers")
-                        details["data"]["offers"][index]["hotel"] = None
-                        details["data"]["offers"][index]["AirportToHotelTransfer"] = None
-                        details["data"]["offers"][index]["HotelToAirportTransfer"] = None
-                        continue
-                    
-                    transferStartTime = ""
-                    transferStartBackTime = ""
-                    LocationCode = ""
-                    for flight in offer["flights"]:
-                        if flight["iteraryNumber"] == 0:
-                            transferStartTime = flight["arrival"]["at"]
-                            LocationCode = flight["arrival"]["iataCode"]
-                        elif flight["iteraryNumber"] == 1 and not transferStartBackTime:
-                            transferStartBackTime = flight["departure"]["at"]
-
-                    datetime_obj = datetime.datetime.fromisoformat(transferStartBackTime)
-                    one_hour_less = datetime_obj - datetime.timedelta(hours=2)
-                    transferStartBackTime = one_hour_less.strftime("%Y-%m-%dT%H:%M:%S")
-
-                    AirportToHotelTransferDetails = None
-                    HotelToAirportTransferDetails = None
-                    try:
-                        AirportToHotelTransferDetails = transferSearch.getTransferOffer(airportGooglePlaceID, hotelDetails["googlePlaceID"], LocationCode, adults, transferStartTime, currency)
-                        HotelToAirportTransferDetails = transferSearch.getTransferOffer(hotelDetails["googlePlaceID"], airportGooglePlaceID, LocationCode, adults, transferStartBackTime, currency)
-                        print("TRANSFER DETAILS")
-                        print(AirportToHotelTransferDetails)
-                        print(HotelToAirportTransferDetails)
                         
-                    except Exception:
-                        print("Failed gathering transfer offers")
-                        print(traceback.print_exc())
+                        upsellOffers = []
+                        for i in range(3):
+                            hotelDetails = None
+                            try:
+                                hotelDetails = hotelSearch.getHotelOffer({"cityCode": cityCode, "latitude": geoCode["latitude"], "longitude": geoCode["longitude"], "checkInDate": checkInDate, "checkOutDate": checkoutDate, "adults": adults, "currency": currency, "stars": i+3})
+                                if not hotelDetails["hotelName"]:
+                                    raise Exception
+                                
+                                print("HOTEL SUCCESSFUL")
+                            except Exception:
+                                print(traceback.print_exc())
+                                continue
+                            
+                            transferStartTime = ""
+                            transferStartBackTime = ""
+                            LocationCode = ""
+                            for flight in offer["flights"]:
+                                if flight["iteraryNumber"] == 0:
+                                    transferStartTime = flight["arrival"]["at"]
+                                    LocationCode = flight["arrival"]["iataCode"]
+                                elif flight["iteraryNumber"] == 1 and not transferStartBackTime:
+                                    transferStartBackTime = flight["departure"]["at"]
 
-                    details["data"]["offers"][index]["hotel"] = hotelDetails
-                    details["data"]["offers"][index]["AirportToHotelTransfer"] = AirportToHotelTransferDetails
-                    details["data"]["offers"][index]["HotelToAirportTransfer"] = HotelToAirportTransferDetails
+                            datetime_obj = datetime.datetime.fromisoformat(transferStartBackTime)
+                            one_hour_less = datetime_obj - datetime.timedelta(hours=2)
+                            transferStartBackTime = one_hour_less.strftime("%Y-%m-%dT%H:%M:%S")
+
+                            AirportToHotelTransferDetails = None
+                            HotelToAirportTransferDetails = None
+                            try:
+                                AirportToHotelTransferDetails = transferSearch.getTransferOffer(airportGooglePlaceID, hotelDetails["googlePlaceID"], LocationCode, adults, transferStartTime, currency)
+                                HotelToAirportTransferDetails = transferSearch.getTransferOffer(hotelDetails["googlePlaceID"], airportGooglePlaceID, LocationCode, adults, transferStartBackTime, currency)
+                                print("TRANSFER SUCESSFUL")
+                                print(AirportToHotelTransferDetails)
+                                print(HotelToAirportTransferDetails)
+                                
+                            except Exception:
+                                print("Failed gathering transfer offers")
+                                print(traceback.print_exc())
+
+                            upsellOffer = {"hotelDetails": hotelDetails, "AirportToHotelTransferDetails": AirportToHotelTransferDetails, "HotelToAirportTransferDetails": HotelToAirportTransferDetails}
+                            upsellOffers.append(upsellOffer)
+
+                        details["data"]["offers"][index]["upsellOffers"] = upsellOffers
+                        upsellOffersPerCity[cityCode] = upsellOffers
             except Exception:
                 print(traceback.print_exc())
-                print("Failed gathering hotel or transfer offers")
-                details["data"]["offers"][index]["hotel"] = None
-                details["data"]["offers"][index]["AirportToHotelTransfer"] = None
-                details["data"]["offers"][index]["HotelToAirportTransfer"] = None
-        else:
-            for index, offer in enumerate(details["data"]["offers"]):
-                details["data"]["offers"][index]["hotel"] = None
-                details["data"]["offers"][index]["AirportToHotelTransfer"] = None
-                details["data"]["offers"][index]["HotelToAirportTransfer"] = None
-
+                #dodaj prazen upsell v vsak offer
+                for index, offer in details["data"]["offers"]:
+                    details["data"]["offers"][index]["upsellOffers"] = []
+        
 
         generatedOffer = offerGenerator.generateFlightsString({"offers": details["data"]["offers"]}, email_comment_id=email_comment_id)
         print(offerGenerator.generateOffer(details["data"]["offers"][0]))
 
+
+        print(details["data"])
         print("flight details gathered")
+        
         return({"parsedOffer": f"{travelClassText}\n\n" + generatedOffer, "details": details["data"]})
 
     else:

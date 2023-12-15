@@ -67,7 +67,7 @@ def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_cli
     print("Access key:\n", response.json())
     return response.json().get('access_token')
 
-def getHotelList(access_token, cityCode, radius):
+def getHotelList(access_token, cityCode, radius, stars):
     url = 'https://api.amadeus.com/v1/reference-data/locations/hotels/by-city'
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -77,7 +77,7 @@ def getHotelList(access_token, cityCode, radius):
         "cityCode": cityCode,
         "radius": radius,
         "radiusUnit": "KM",
-        "ratings": 4,
+        "ratings": stars,
         "hotelSource": "ALL"
     }
 
@@ -93,7 +93,7 @@ def getHotelList(access_token, cityCode, radius):
         return hotelIDs  # Return the JSON response
     else:
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
-        return None
+        return []
     
 def getOfferPrice(access_token, offerID):
     url = 'https://api.amadeus.com/v3/shopping/hotel-offers/' + offerID
@@ -152,7 +152,7 @@ def getHotelOffer(hotelDetails, verbose_checkpoint=None):
     radius = 5
     hotelOffers = []
     for i in range(5):
-        hotelsIDs = getHotelList(access_token, hotelDetails["cityCode"], radius)
+        hotelsIDs = getHotelList(access_token, hotelDetails["cityCode"], radius, hotelDetails["stars"])
         #print(hotelsIDs)
         hotelsIDs = hotelsIDs[:60]
         if not hotelsIDs:
@@ -173,23 +173,26 @@ def getHotelOffer(hotelDetails, verbose_checkpoint=None):
     if len(hotelOffers) <= 0:
         return {"price": 0, "currency": "", "checkInDate": "", "checkOutDate": "", "hotelName": ""}
     
-    for i in range(min(5, len(hotelOffers))):
-        try:
-            chosenOffer = None
-            for offer in hotelOffers:
-                for specificOffer in offer['offers']:
-                    if chosenOffer == None:
-                        chosenOffer = specificOffer
-                    elif chosenOffer["price"]["total"] > specificOffer["price"]["total"]:
-                        chosenOffer = specificOffer
+    chosenOffer = None
+    try:
+        for offer in hotelOffers:
+            for specificOffer in offer['offers']:
+                changed = False
+                if chosenOffer == None:
+                    chosenOffer = specificOffer
+                    changed = True
+                elif chosenOffer["price"]["total"] > specificOffer["price"]["total"]:
+                    chosenOffer = specificOffer
+                    changed = True
 
-            offerPrice = getOfferPrice(access_token, chosenOffer["id"])["data"]
-            hotelOffers.remove(chosenOffer)
-            i = 5
-            break
-        except Exception:
-            continue
+        offerPrice = getOfferPrice(access_token, chosenOffer["id"])["data"]
 
+    except Exception:
+        print("Error getting hotel offer price")
+
+    if not offerPrice:
+        return {"price": 0, "currency": "", "checkInDate": "", "checkOutDate": "", "hotelName": ""}
+    
     print(f"Offer price:\n {offerPrice}")
 
     currency = offerPrice["offers"][0]["price"]["currency"]
