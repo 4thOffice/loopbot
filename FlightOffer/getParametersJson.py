@@ -3,13 +3,16 @@ import json
 import sys
 import time
 import os
+
+import Auxiliary.verbose_checkpoint
+
 if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import openai
 import keys
 import flightAuxiliary
 
-def extractSearchParameters(emailText, offerCount):
+def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
     user_msg = "I want you to extract flight details and replace values in this parameter json:\n"
     #"includeNearAirportsAsOrigin": "false" //If it is excplicitly specified that departure can be from any of near airports, then set to "true", else leaveit as "false"
     user_msg += """{
@@ -57,7 +60,15 @@ def extractSearchParameters(emailText, offerCount):
         )
 
         if response.choices:
-            flight = json.loads(response.choices[0].message.content)
+            try:
+                flight = json.loads(response.choices[0].message.content)
+            except (ValueError, json.decoder.JSONDecodeError):
+                Auxiliary.verbose_checkpoint.verbose(
+                    f"Failed to extract JSON {attempt=}\n{response.choices[0].message.content=}\n{emailText=}", verbose_checkpoint
+                )
+                if attempt == 0:
+                    time.sleep(retry_interval)
+                continue
             #NDC
             search_params = {
                 "currencyCode": flight["currencyCode"],
@@ -270,3 +281,5 @@ def extractSearchParameters(emailText, offerCount):
                 time.sleep(retry_interval)  # Wait for the specified interval before retrying
             else:
                 print("Exceeded maximum attempts. No response received.")
+    Auxiliary.verbose_checkpoint.verbose(f"Failed to extract json from email summary {emailText=}",
+                                         verbose_checkpoint)
