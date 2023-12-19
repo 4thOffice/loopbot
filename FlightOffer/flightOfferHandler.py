@@ -97,7 +97,8 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
             else:
                 print("Encountered an error, trying one more time...")
                 verbose("Encountered an error, trying one more time...", verbose_checkpoint)
-                return getResponse(emailText, commentData, upsell, verbose_checkpoint=verbose_checkpoint, retries=1)
+                return getResponse(emailText, commentData, upsell, email_comment_id=email_comment_id,
+                                   verbose_checkpoint=verbose_checkpoint, retries=1)
         
         #generatedOffer = offerGenerator.generateOffer(emailText, details)
 
