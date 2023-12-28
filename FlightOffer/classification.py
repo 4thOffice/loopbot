@@ -127,8 +127,12 @@ def classifyEmail(text):
 
     user_msg = "I will give you an email. Tell me if it is a flight tender inquiry. It only counts as flight tender inquiry if person asks for a quote for a flight (hotels dont count). Emails about decision of purchasing tickets do not count as flight tender enquiry, email has to be about getting a price quote.\nOnly say yes/no:\n\n" + text
 
+    model="gpt-4"
+    if len(text) >= 2500:
+        model="gpt-3.5-turbo-16k"
+
     response = openai.chat.completions.create(
-                                            model="gpt-3.5-turbo-16k",
+                                            model=model,
                                             messages=[{"role": "user", "content": user_msg}]
                                             )
     

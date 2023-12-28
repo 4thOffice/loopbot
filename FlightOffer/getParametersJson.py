@@ -23,9 +23,9 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
         "maximumNumberOfConnections": 0,
         "checkedBags": 0 //amount of checked bags per person, leave 0 if not specified explicitly
         "includedAirlineCodes": "" //leave empty if not specified! must be in format (comma-seperated): "6X,7X,8X"
-        "travelClass": "ECONOMY", // ONLY choose ONE from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
         "flightSegments": [ //seperate flight segments that customer is asking for. Flight are usually round-trip if not specified otherwise. If customer is asking about multiple flight offers, choose ONLY one!
                 {
+                    "travelClass": "ECONOMY", // ONLY choose ONE from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
                     "originLocationCode": "LJU", //If location is not specified, think logically what it could be. Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
                     "alternativeOriginsCodes": "", //only alternative origins for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
                     "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
@@ -70,6 +70,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     time.sleep(retry_interval)
                 continue
             #NDC
+            print(flight)
             search_params = {
                 "currencyCode": flight["currencyCode"],
                 "originDestinations": [],
@@ -85,10 +86,6 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                         "maximumNumberOfConnections": max(flight["maximumNumberOfConnections"], 0)
                     },
                     "cabinRestrictions": [
-                        {
-                        "cabin": flight["travelClass"],
-                        "originDestinationIds": []
-                        }
                     ]
                     }
                 }
@@ -192,8 +189,16 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     #segment["arrivalDateTimeRange"] = {"time": flight_["exactArrivalTime"]}
                     #segment["departureDateTimeRange"]["timeWindow"] = "2H"
 
+                found = False
+                for indexCabinRestriction, cabinRestriction in enumerate(search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"]):
+                    if cabinRestriction["cabin"] == flight_["travelClass"]:
+                        search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][indexCabinRestriction]["originDestinationIds"].append(str(index+1))
+                        found = True
+                if not found:
+                    search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"].append({"cabin": flight_["travelClass"], "originDestinationIds": [str(index+1)]})
+
                 search_params["originDestinations"].append(segment)
-                search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["originDestinationIds"].append(str(index+1))
+                #search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["originDestinationIds"].append(str(index+1))
 
                 segmentDictionary = {}
                 if "earliestDepartureTime" in flight_:

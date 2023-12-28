@@ -110,6 +110,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     try:
         search_params, extraTimeframes, checkedBags, refundableTicket, changeableTicket = getParametersJson.extractSearchParameters(flightDetails, 250, verbose_checkpoint)
     except Exception as e:
+        print(f"Exception {e=} while trying to extract search parameters into json. {flightDetails=}")
         verbose(f"Exception {e=} while trying to extract search parameters into json. {flightDetails=}")
         return {"status": "error", "data": "Error with calling amadeus API"}
 

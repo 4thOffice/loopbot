@@ -60,13 +60,12 @@ def askGPT(emailText, files, imageInfo=[]):
         - number of passangers (MUST ALWAYS include in output)
         - maximum number of connections
         - requested airlines with codes
-        - travel class
         - whether near airports should be included as departure options
         - amount of checked bags per person (MUST ALWAYS include in output)
         - insurance for the risk of cancellation (say "no" if not specified otherwise)
         - changeable ticket (say "no" if not specified otherwise)
 
-    In the text which you will be given, person is asking for offers for one or more flight options that are usually round-trip if not specified otheriwse.
+    In the text which you will be given, person is asking for offers for one or more flight options that are usually round-trip if not specified otheriwse. (Keep in mind that each flight segment can have multiple connection points - you must NOT ignore them if they are specified)
     Select only one flight option and extract data for each segment of this specific flight option. There should be only 2 segments. One for outbound and one for return. Use connection points.
     For each flight segment extract the following data:
         - origin location names and IATA 3-letter codes
@@ -74,6 +73,7 @@ def askGPT(emailText, files, imageInfo=[]):
         - destination locationname and IATA 3-letter code
         - alternative destination locations names and IATA 3-letter codes (only for this specific segment)
         - included connection points names and IATA 3-letter codes
+        - travel class
         - departure date
         - exact departure time
         - earliest departure time
@@ -95,7 +95,8 @@ def askGPT(emailText, files, imageInfo=[]):
     if len(files) > 0:
         filesPromptText = "Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents (if they are any), as they all include critical information."
 
-    content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. " + filesPromptText + "\n\nProvide an answer without asking me any further questions.\n\nText to extract details from:\n\n" + emailText
+    print("filesPromptText", filesPromptText)
+    content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. " + filesPromptText + "\n\nProvide an answer without asking me any further questions. Ignore files if you didn't find any.\n\nText to extract details from:\n\n" + emailText
         #content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
     if len(imageInfo) > 0:
         content_text += "\n\nAlso take this important extra information into consideration:\n" + imageInfo

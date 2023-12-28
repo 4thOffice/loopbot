@@ -130,6 +130,7 @@ class AIregular:
             - destination locationname and IATA 3-letter code
             - alternative destination locations names and IATA 3-letter codes (only for this specific segment)
             - included connection points names and IATA 3-letter codes
+            - travel class
             - departure date
             - exact departure time
             - earliest departure time
@@ -147,7 +148,7 @@ class AIregular:
             - middle of the day: from 10:00:00 to 14:00:00
         \n\n"""
         #content_text += emailText
-        content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nText to extract details from:\n\n" + emailText
+        content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information.\n\nProvide an answer without asking me any further questions.\n\nText to extract details from:\n\n" + emailText
         content_text += "\n\nDo not forget to extract data from  images. If you cant extract any data from images, then extract only from the text which you were given."
 
         messages = [
