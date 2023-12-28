@@ -108,14 +108,53 @@ class AIregular:
 
         return answer
     
-    def processImages(self, userInput, imageFiles):
+    def processImages(self, emailText, imageFiles):
         client = OpenAI_()
+        
+        content_text = """Extract ALL flight details from the text which I will give you. Extract ALL of the following data:
+            - currency
+            - number of passangers (MUST ALWAYS include in output)
+            - maximum number of connections
+            - requested airlines with codes
+            - travel class
+            - whether near airports should be included as departure options
+            - amount of checked bags per person (MUST ALWAYS include in output)
+            - insurance for the risk of cancellation (say "no" if not specified otherwise)
+            - changeable ticket (say "no" if not specified otherwise)
+
+        In the text which you will be given, person is asking for offers for one or more flight options that are usually round-trip if not specified otheriwse.
+        Select only one flight option and extract data for each segment of this specific flight option. There should be only 2 segments. One for outbound and one for return. Use connection points.
+        For each flight segment extract the following data:
+            - origin location names and IATA 3-letter codes
+            - alternative origin locations names and IATA 3-letter codes (only for this specific segment)
+            - destination locationname and IATA 3-letter code
+            - alternative destination locations names and IATA 3-letter codes (only for this specific segment)
+            - included connection points names and IATA 3-letter codes
+            - departure date
+            - exact departure time
+            - earliest departure time
+            - latest departure time
+            - exact arrival time
+            - earliest arrival time
+            - latest arrival time
+        \n\n"""
+        
+        """
+        Timeframe definitions: 
+            - morning: from 06:00:00 to 12:00:00
+            - evening: from 18:00:00 to 23:59:59
+            - afternoon: from 12:00:00 to 18:00:00
+            - middle of the day: from 10:00:00 to 14:00:00
+        \n\n"""
+        #content_text += emailText
+        content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nText to extract details from:\n\n" + emailText
+        content_text += "\n\nDo not forget to extract data from  images. If you cant extract any data from images, then extract only from the text which you were given."
 
         messages = [
             {
             "role": "user",
             "content": [
-                {"type": "text", "text": userInput},
+                {"type": "text", "text": content_text},
             ],
             }
         ]
@@ -135,10 +174,10 @@ class AIregular:
         max_tokens=500,
         )
 
-        print(response.choices[0].message.content)
+        print("data extracted from image process:", response.choices[0].message.content)
         return response.choices[0].message.content
-
-#AIregular_ = AIregular(keys.openAI_APIKEY)
+    
+    #AIregular_ = AIregular(keys.openAI_APIKEY)
 #AIregular_.processImages("what is in these images?", ["https://i.gyazo.com/52237d1ce662e613af2950c3a351a6c8.jpg", "https://i.gyazo.com/98ca775b51faa2a19fa6d7fbf588e5e3.png"])
 #with open("Nabavno.pdf", 'rb') as file:
 #    AIregular_.returnDocAnswer(userInput="Summarize everything that is attached to this message.", textFiles=[file], imageFiles=["https://i.gyazo.com/52237d1ce662e613af2950c3a351a6c8.jpg", "https://i.gyazo.com/98ca775b51faa2a19fa6d7fbf588e5e3.png"])

@@ -53,34 +53,49 @@ def askGPT(emailText, files, imageInfo=[]):
         file=file_,
         purpose='assistants'
         ).id
-
+    
 
     content_text = """Extract ALL flight details from the text which I will give you. Extract ALL of the following data:
-    - currency
-    - number of passangers (MUST ALWAYS include in output)
-    - maximum number of connections
-    - requested airlines with codes
-    - travel class
-    - whether near airports should be included as departure options
-    - amount of checked bags per person (MUST ALWAYS include in output)
-    - insurance for the risk of cancellation (say "no" if not specified otherwise)
-    - changeable ticket (say "no" if not specified otherwise)
+        - currency
+        - number of passangers (MUST ALWAYS include in output)
+        - maximum number of connections
+        - requested airlines with codes
+        - travel class
+        - whether near airports should be included as departure options
+        - amount of checked bags per person (MUST ALWAYS include in output)
+        - insurance for the risk of cancellation (say "no" if not specified otherwise)
+        - changeable ticket (say "no" if not specified otherwise)
 
+    In the text which you will be given, person is asking for offers for one or more flight options that are usually round-trip if not specified otheriwse.
+    Select only one flight option and extract data for each segment of this specific flight option. There should be only 2 segments. One for outbound and one for return. Use connection points.
     For each flight segment extract the following data:
-    - origin location names and IATA 3-letter codes
-    - alternative origin locations names and IATA 3-letter codes (only for this specific segment)
-    - destination locationname and IATA 3-letter code
-    - alternative destination locations names and IATA 3-letter codes (only for this specific segment)
-    - included connection points names and IATA 3-letter codes
-    - departure date
-    - exact departure time
-    - earliest departure time
-    - latest departure time
-    - exact arrival time
-    - earliest arrival time
-    - latest arrival time\n\n"""
+        - origin location names and IATA 3-letter codes
+        - alternative origin locations names and IATA 3-letter codes (only for this specific segment)
+        - destination locationname and IATA 3-letter code
+        - alternative destination locations names and IATA 3-letter codes (only for this specific segment)
+        - included connection points names and IATA 3-letter codes
+        - departure date
+        - exact departure time
+        - earliest departure time
+        - latest departure time
+        - exact arrival time
+        - earliest arrival time
+        - latest arrival time
+    \n\n"""
+
+    """Timeframe definitions: 
+        - morning: from 06:00:00 to 12:00:00
+        - evening: from 18:00:00 to 23:59:59
+        - afternoon: from 12:00:00 to 18:00:00
+        - middle of the day: from 10:00:00 to 14:00:00
+    \n\n"""
     #content_text += emailText
-    content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nText to extract details from:\n\n" + emailText
+
+    filesPromptText = ""
+    if len(files) > 0:
+        filesPromptText = "Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents (if they are any), as they all include critical information."
+
+    content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. " + filesPromptText + "\n\nProvide an answer without asking me any further questions.\n\nText to extract details from:\n\n" + emailText
         #content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
     if len(imageInfo) > 0:
         content_text += "\n\nAlso take this important extra information into consideration:\n" + imageInfo
@@ -97,6 +112,7 @@ def askGPT(emailText, files, imageInfo=[]):
                 answer = runThread(assistant, thread, client)
             except exceptions.stuck as e:
                 return None
+        print("Extracted non-structured data:\n", answer)
         return answer
 
 def runThread(assistant, thread, client):
@@ -132,7 +148,7 @@ def runThread(assistant, thread, client):
     messages = client.beta.threads.messages.list(
     thread_id=thread.id
     )
-    print("Answer:\n", messages.data[0].content[0].text.value)
+    #print("Extracted non-structured data:\n", messages.data[0].content[0].text.value)
     answer = messages.data[0].content[0].text.value
 
     return answer

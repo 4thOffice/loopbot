@@ -31,7 +31,7 @@ from TransferOffer import transferSearch
 def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, email_comment_id, upsell=False, verbose_checkpoint: typing.Callable[[str], None] = None):
     print("attachments: ", attachments)
     commentData = classification.getFiles(attachments, htmlEmailtext, verbose_checkpoint)
-    emailText = "Subject: " + subject + "\n" + plainText
+    emailText = subject + "\n\n" + plainText
     return getResponse(emailText, commentData, upsell, email_comment_id, verbose_checkpoint)
 
 def getFlightOffer(cardID=None, authKey=None):
@@ -70,8 +70,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
 
         if len(filesPicture) > 0:
             print("Asking picture specialized agent - ", str(len(filesPicture)) + " files")
-            prompt = "Extract ALL flight details from the email and attached images which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information.\n\nDo not forget to extract data from images too. If you cant extract any data from the image, then extract only from email. Email:\n" + emailText
-            flightDetailsImages = AIregular_.processImages(prompt, filesPicture)
+            flightDetailsImages = AIregular_.processImages(emailText, filesPicture)
             verbose("Asking picture specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
             if len(filesText) <= 0:
                 flightDetails = flightDetailsImages
