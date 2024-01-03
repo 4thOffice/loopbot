@@ -30,7 +30,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     "alternativeOriginsCodes": "", //only alternative origins for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
                     "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
                     "alternativeDestinationsCodes": "", //only alternative destinations for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
-                    "departureDate": "2023-12-09", //must be in format: YYYY-MM-DD
+                    "departureDate": "2024-12-09", //must be in format: YYYY-MM-DD
                     "exactDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS), Connection points dont count, only final destionation points count
                     "earliestDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
                     "latestDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
@@ -41,7 +41,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                 }
         ]
 }\n\n"""
-    user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2023. Location codes must be 3-letter IATA codes. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nText to extract details from:\n"
+    user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2024. Location codes must be 3-letter IATA codes. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nText to extract details from:\n"
     user_msg += emailText
     user_msg += "\n\nIf there is a specific flight written, choose that one.\n\nOutput should be ONLY json and NO other text!"
 
