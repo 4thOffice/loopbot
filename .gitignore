@@ -58,3 +58,4 @@ FlightOffer/details
 finetuning.json
 finetuning.jsonl
 flightLogs.json
+getPriceOfferManual.py

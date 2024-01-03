@@ -12,6 +12,8 @@ import openai
 import keys
 import flightAuxiliary
 
+currentYear = datetime.datetime.utcnow().year
+
 def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
     user_msg = "I want you to extract flight details and replace values in this parameter json:\n"
     #"includeNearAirportsAsOrigin": "false" //If it is excplicitly specified that departure can be from any of near airports, then set to "true", else leaveit as "false"
@@ -30,7 +32,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     "alternativeOriginsCodes": "", //only alternative origins for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
                     "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
                     "alternativeDestinationsCodes": "", //only alternative destinations for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
-                    "departureDate": "2024-12-09", //must be in format: YYYY-MM-DD
+                    "departureDate": '""" + str(currentYear) + """-12-09', //must be in format: YYYY-MM-DD
                     "exactDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS), Connection points dont count, only final destionation points count
                     "earliestDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
                     "latestDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
@@ -41,13 +43,12 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                 }
         ]
 }\n\n"""
-    user_msg += "Change json parameter values according to the email which I will give you. If year is not specified, use 2024. Location codes must be 3-letter IATA codes. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nText to extract details from:\n"
+    user_msg += f"Change json parameter values according to the email which I will give you. If year is not specified, use {str(currentYear)}. Location codes must be 3-letter IATA codes. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nText to extract details from:\n"
     user_msg += emailText
     user_msg += "\n\nIf there is a specific flight written, choose that one.\n\nOutput should be ONLY json and NO other text!"
 
     max_attempts = 2  # Maximum number of attempts
     retry_interval = 10  # Retry interval in seconds
-
     for attempt in range(max_attempts):
         openai.api_key = keys.openAI_APIKEY
         response = openai.chat.completions.create(
