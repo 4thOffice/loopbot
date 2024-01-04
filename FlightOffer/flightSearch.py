@@ -314,6 +314,8 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     for index, offer_ in enumerate(just_offers):
         cheapestPriceOffers[index] = {"offer": offer_, "amenities": cheapestPriceOffers[index]["amenities"]}
 
+    print("cheapest price offers with amenities:\n", cheapestPriceOffers)
+
     returnData = {"status": "ok", "data": {"offers": []}}
     for cheapest_price_offer in cheapestPriceOffers:
         amenities = cheapest_price_offer["amenities"]

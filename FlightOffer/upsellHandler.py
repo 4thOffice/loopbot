@@ -1,17 +1,20 @@
 import math
+import traceback
 import requests
 import flightSearch
 from Auxiliary.verbose_checkpoint import verbose
 
 def getHigherClasses(travelClass):
     if travelClass == "ECONOMY":
-      return ["PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
+        return ["PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
     elif travelClass == "PREMIUM_ECONOMY":
-      return ["BUSINESS", "FIRST"]
+        return ["BUSINESS", "FIRST"]
     elif travelClass == "BUSINESS":
-      return ["FIRST"]
+        return ["FIRST"]
     elif travelClass == "FIRST":
-      return []
+        return []
+    else:
+        return []
 
 def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checkedBags, verbose_checkpoint=None):
     url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
@@ -64,6 +67,7 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
         print(f"All upsell offers: {len(res['data'])}")
         print(f"Upsell offers with correct amount of included checked bags ({checkedBags}): {len(offersWithAmenityCount)}")
 
+        offersWithAmenityCount = []
         if len(offersWithAmenityCount) <= 0:
             print("No upsell offers with correct amount of included checked bags found.. using non optimal upsell offers")
             for offer in res["data"]:
@@ -91,7 +95,8 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
                         for amenity in segment["amenities"]:
                             if amenity["description"] == includedAmenity:
                                 amenityFoundInSegment = True
-                                isChargeable = amenity["isChargeable"]
+                                if not isChargeable:
+                                    isChargeable = amenity["isChargeable"]
                                 break
                             
                         includedAmenities[includedAmenity]["isChargeable"] = isChargeable
@@ -107,10 +112,12 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
             for index, offer_ in enumerate(offersWithAmenityCount):
                 if offer == offer_["offer"]:
                     offersWithAmenityCount[index]["amenityCount"] = amenityCount
+                    print("offer found on index:", index)
+                    print("amenity count:", amenityCount)
                     for includedAmenity_ in includedAmenities.keys():
+                        print("amenity key:", {"amenity_description": includedAmenity_, "included": includedAmenities[includedAmenity_]["included"], "isChargeable": includedAmenities[includedAmenity_]["isChargeable"], "isRequested": includedAmenities[includedAmenity_]["isRequested"]})
                         #if includedAmenities[includedAmenity_]["included"] == True:
                         offersWithAmenityCount[index]["amenities"].append({"amenity_description": includedAmenity_, "included": includedAmenities[includedAmenity_]["included"], "isChargeable": includedAmenities[includedAmenity_]["isChargeable"], "isRequested": includedAmenities[includedAmenity_]["isRequested"]})
-    
         sorted_offers = sorted(offersWithAmenityCount, key=lambda x: x["amenityCount"], reverse=True)
 
         #if sorted_offers[0]["amenityCount"] == 0:
@@ -128,15 +135,19 @@ def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, chan
         print("offer to get upsell for:\n", offer)
 
         amenitiesToSearchFor = [{"amenity_description": "REFUNDABLE TICKET", "isRequested": False},
+                                {"amenity_description": "REFUND BEFORE DEPARTURE", "isRequested": False},
+                                {"amenity_description": "REFUND AFTER DEPARTURE", "isRequested": False},
                                 {"amenity_description": "REFUNDS ANYTIME", "isRequested": False},
+                                {"amenity_description": "CHANGE BEFORE DEPARTURE", "isRequested": False},
+                                {"amenity_description": "CHANGE AFTER DEPARTURE", "isRequested": False},
                                 {"amenity_description": "CHANGEABLE TICKET", "isRequested": False}]
         
         for index1, amenity in enumerate(amenitiesToSearchFor):
-            if (amenity["amenity_description"] == "REFUNDABLE TICKET" or amenity["amenity_description"] == "REFUNDS ANYTIME") and refundableTicket:
+            if (amenity["amenity_description"] == "REFUNDABLE TICKET" or amenity["amenity_description"] == "REFUNDS ANYTIME" or amenity["amenity_description"] == "REFUND BEFORE DEPARTURE" or amenity["amenity_description"] == "REFUND AFTER DEPARTURE") and refundableTicket:
                 amenity["isRequested"] = True
                 amenitiesToSearchFor[index1] = amenity
 
-            if amenity["amenity_description"] == "CHANGEABLE TICKET" and changeableTicket:
+            if (amenity["amenity_description"] == "CHANGEABLE TICKET" or amenity["amenity_description"] == "CHANGE BEFORE DEPARTURE" or amenity["amenity_description"] == "CHANGE AFTER DEPARTURE") and changeableTicket:
                 amenity["isRequested"] = True
                 amenitiesToSearchFor[index1] = amenity
         
@@ -151,7 +162,9 @@ def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, chan
                 try:
                     upsold_price_offer = get_price_offer(access_token, [upsold["offer"]])["data"]["flightOffers"][0]
                     offers[index] = {"offer": upsold_price_offer, "amenities": upsold['amenities']}
-                except Exception:
+                except Exception as e:
+                    traceback_str = traceback.format_exc()
+                    print(traceback_str)
                     includedAmenities = []
                     for amenity in amenitiesToSearchFor:
                         includedAmenities.append({"amenity_description": amenity["amenity_description"], "included": False, "isChargeable": False, "isRequested": amenity["isRequested"]})
@@ -171,5 +184,5 @@ def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, chan
             offers[index] = {"offer": offer, "amenities": includedAmenities}
 
         print("----------------------------")
-    
+
     return offers
