@@ -214,7 +214,7 @@ def getHotelOffer(hotelDetails, verbose_checkpoint=None):
         currency = hotelDetails["currency"]
         total = converted_total
 
-    googlePlaceID = googleAPI.get_place_id(hotelDetails["latitude"], hotelDetails["longitude"], radius, hotelName)
+    googlePlaceID = googleAPI.get_place_id(hotelDetails["latitude"], hotelDetails["longitude"], radius*1.33, hotelName)
 
     photosReferenceID = googleAPI.place_details(googlePlaceID)[:3]
 

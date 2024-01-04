@@ -58,7 +58,7 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
                         if includedBagsInSegment > 1:
                             includedBagsInSegment = 1
 
-        if includedBagsInSegment == checkedBags:
+        if includedBagsInSegment >= checkedBags:
             offersWithAmenityCount.append({"offer": offer, "amenityCount": 0, "amenities": []})
 
         print(f"All upsell offers: {len(res['data'])}")

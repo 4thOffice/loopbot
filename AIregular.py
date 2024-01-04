@@ -140,6 +140,7 @@ class AIregular:
             - latest arrival time
         \n\n"""
         
+        """ - other requests regarding time of departure/arrival (do not leave out any provided information)"""
         """
         Timeframe definitions: 
             - morning: from 06:00:00 to 12:00:00

@@ -32,7 +32,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     "alternativeOriginsCodes": "", //only alternative origins for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
                     "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
                     "alternativeDestinationsCodes": "", //only alternative destinations for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
-                    "departureDate": '""" + str(currentYear) + """-12-09', //must be in format: YYYY-MM-DD
+                    "departureDate": \"""" + str(currentYear) + """-12-09", //must be in format: YYYY-MM-DD, this value MUST be ALWAYS SET
                     "exactDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS), Connection points dont count, only final destionation points count
                     "earliestDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
                     "latestDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
@@ -45,7 +45,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
 }\n\n"""
     user_msg += f"Change json parameter values according to the email which I will give you. If year is not specified, use {str(currentYear)}. Location codes must be 3-letter IATA codes. You can change parameter values but you cant add new parameters. Do not leave any parameters empty, except if returnDate is not specified in email text, then you MUSt leave it empty.\n\nText to extract details from:\n"
     user_msg += emailText
-    user_msg += "\n\nIf there is a specific flight written, choose that one.\n\nOutput should be ONLY json and NO other text!"
+    user_msg += "\n\nIf there is a specific flight written, choose that one.\n\nOnce again, output should be ONLY json and NO other text!"
 
     max_attempts = 2  # Maximum number of attempts
     retry_interval = 10  # Retry interval in seconds
@@ -54,7 +54,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
         response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a helpful robot who extracts flight details from email and provides only a json of this data as output."},
+                {"role": "system", "content": "You are a helpful robot who extracts flight details from email and provides only a json of this data as output. Output must be ONLY JSON and no other text."},
                 {"role": "user", "content": user_msg}
             ],
             temperature=0.0

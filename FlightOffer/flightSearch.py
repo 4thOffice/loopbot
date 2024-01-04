@@ -3,6 +3,7 @@ import json
 import math
 import sys
 import time
+import traceback
 import openai
 import requests
 import os
@@ -110,8 +111,11 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     try:
         search_params, extraTimeframes, checkedBags, refundableTicket, changeableTicket = getParametersJson.extractSearchParameters(flightDetails, 250, verbose_checkpoint)
     except Exception as e:
+        traceback_msg = traceback.format_exc()
         print(f"Exception {e=} while trying to extract search parameters into json. {flightDetails=}")
-        verbose(f"Exception {e=} while trying to extract search parameters into json. {flightDetails=}")
+        print(traceback_msg) 
+        verbose(f"Exception {e=} while trying to extract search parameters into json. {flightDetails=}", verbose_checkpoint)
+        verbose(traceback_msg, verbose_checkpoint)
         return {"status": "error", "data": "Error with calling amadeus API"}
 
     travelClass = search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["cabin"]
