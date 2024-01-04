@@ -48,26 +48,25 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
             wrongTravelClass = False
             includedBagsInSegment = math.inf
             for traveler in offer["travelerPricings"]:
-                if wrongTravelClass:
-                    break
+                #if wrongTravelClass:
+                #    break
                 for segment in traveler["fareDetailsBySegment"]:
-                    if segment["cabin"] in getHigherClasses(travelClass):
-                        wrongTravelClass = True
-                        break
+                    #if segment["cabin"] in getHigherClasses(travelClass):
+                    #    wrongTravelClass = True
+                    #    break
                     if "quantity" in segment["includedCheckedBags"]:
                         if segment["includedCheckedBags"]["quantity"] <= includedBagsInSegment:
                             includedBagsInSegment = segment["includedCheckedBags"]["quantity"]
                     else:
-                        if includedBagsInSegment > 1:
-                            includedBagsInSegment = 1
+                        #if includedBagsInSegment > 1:
+                        includedBagsInSegment = 1
 
-        if includedBagsInSegment >= checkedBags:
-            offersWithAmenityCount.append({"offer": offer, "amenityCount": 0, "amenities": []})
+            if includedBagsInSegment >= checkedBags:
+                offersWithAmenityCount.append({"offer": offer, "amenityCount": 0, "amenities": []})
 
         print(f"All upsell offers: {len(res['data'])}")
         print(f"Upsell offers with correct amount of included checked bags ({checkedBags}): {len(offersWithAmenityCount)}")
 
-        offersWithAmenityCount = []
         if len(offersWithAmenityCount) <= 0:
             print("No upsell offers with correct amount of included checked bags found.. using non optimal upsell offers")
             for offer in res["data"]:

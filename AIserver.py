@@ -231,7 +231,7 @@ def get_flight_offer():
     return jsonify(flightOffer)
 
 if __name__ == '__main__':
-    userDataHandler_ = userDataHandler.UserDataHandler()
+    #userDataHandler_ = userDataHandler.UserDataHandler()
     troubleshootHandler_ = troubleshootHandler.TroubleshootHandler(keys.openAI_APIKEY)
     AIhelper_ = AIhelper.AIhelper(keys.openAI_APIKEY, userDataHandler_, troubleshootHandler_)
     AIhelperEmail_ = AIhelperEmail.AIhelperEmail(keys.openAI_APIKEY, userDataHandler_)
