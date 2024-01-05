@@ -44,28 +44,9 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
         offersWithAmenityCount = []
         #print(len(res["data"]))
 
-        for offer in res["data"]:
-            wrongTravelClass = False
-            includedBagsInSegment = math.inf
-            for traveler in offer["travelerPricings"]:
-                #if wrongTravelClass:
-                #    break
-                for segment in traveler["fareDetailsBySegment"]:
-                    #if segment["cabin"] in getHigherClasses(travelClass):
-                    #    wrongTravelClass = True
-                    #    break
-                    if "quantity" in segment["includedCheckedBags"]:
-                        if segment["includedCheckedBags"]["quantity"] <= includedBagsInSegment:
-                            includedBagsInSegment = segment["includedCheckedBags"]["quantity"]
-                    else:
-                        #if includedBagsInSegment > 1:
-                        includedBagsInSegment = 1
-
-            if includedBagsInSegment >= checkedBags:
-                offersWithAmenityCount.append({"offer": offer, "amenityCount": 0, "amenities": []})
-
+        res["data"].insert(0, flight_offers[0])
         print(f"All upsell offers: {len(res['data'])}")
-        print(f"Upsell offers with correct amount of included checked bags ({checkedBags}): {len(offersWithAmenityCount)}")
+        #print(f"Upsell offers with correct amount of included checked bags ({checkedBags}): {len(offersWithAmenityCount)}")
 
         if len(offersWithAmenityCount) <= 0:
             print("No upsell offers with correct amount of included checked bags found.. using non optimal upsell offers")
@@ -90,7 +71,7 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
                         isChargeable = False
                         if "amenities" not in segment:
                             includedAmenities[includedAmenity]["included"] = False
-                            break
+                            continue
                         for amenity in segment["amenities"]:
                             if amenity["description"] == includedAmenity:
                                 amenityFoundInSegment = True
@@ -106,6 +87,7 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
                 continue
             
             print(f"included amenities: {includedAmenities}")
+            print(offer)
             verbose(f"included amenities: {includedAmenities}", verbose_checkpoint)
             amenityCount = sum(value["included"] is True and value["isRequested"] is True for value in includedAmenities.values())
             for index, offer_ in enumerate(offersWithAmenityCount):
@@ -118,11 +100,36 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
                         #if includedAmenities[includedAmenity_]["included"] == True:
                         offersWithAmenityCount[index]["amenities"].append({"amenity_description": includedAmenity_, "included": includedAmenities[includedAmenity_]["included"], "isChargeable": includedAmenities[includedAmenity_]["isChargeable"], "isRequested": includedAmenities[includedAmenity_]["isRequested"]})
         sorted_offers = sorted(offersWithAmenityCount, key=lambda x: x["amenityCount"], reverse=True)
+        
+        new_sorted_offers = []
+        for sorted_offer in sorted_offers:
+            wrongTravelClass = False
+            includedBagsInSegment = math.inf
+            for traveler in sorted_offer["offer"]["travelerPricings"]:
+                for segment in traveler["fareDetailsBySegment"]:
+                    if "quantity" in segment["includedCheckedBags"]:
+                        if segment["includedCheckedBags"]["quantity"] <= includedBagsInSegment:
+                            includedBagsInSegment = segment["includedCheckedBags"]["quantity"]
+                    else:
+                        includedBagsInSegment = 1
+
+            if includedBagsInSegment >= checkedBags:
+                new_sorted_offers.append({"offer": sorted_offer["offer"], "amenityCount": sorted_offer["amenityCount"], "amenities": sorted_offer["amenities"]})
+
+
+        #print("----------------------------")
+        #print("Compare offers")
+        #print("new sorted offers:\n", new_sorted_offers)
+        #print("old sorted offers:\n", sorted_offers)
+        #print("----------------------------")
+
+        if len(new_sorted_offers) <= 0:
+            new_sorted_offers = sorted_offers
 
         #if sorted_offers[0]["amenityCount"] == 0:
         #    return None
         #else:
-        return sorted_offers[0]
+        return new_sorted_offers[0]
         
     else:
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')

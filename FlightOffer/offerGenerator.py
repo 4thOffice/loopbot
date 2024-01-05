@@ -87,38 +87,52 @@ def generateOffer(offerDetails):
     else:
         offerDraftText += f"(Vključena zgolj ročna prtljaga"
 
-    refundableMsgAdded = False
-    for amenity in offerDetails["amenities"]:
-        partialRefund = False
-        partialChange = False
-        if (amenity["amenity_description"] == "REFUNDABLE TICKET" or amenity["amenity_description"] == "REFUNDS ANYTIME" or amenity["amenity_description"] == "REFUND BEFORE DEPARTURE" or amenity["amenity_description"] == "REFUND AFTER DEPARTURE") and not refundableMsgAdded:
-            if amenity["amenity_description"] == "REFUND BEFORE DEPARTURE" or amenity["amenity_description"] == "REFUND AFTER DEPARTURE":
-                if not partialRefund:
-                    partialRefund = True
-                    continue
-            
-            refundableMsgAdded = True
-            if amenity["included"] == True:
-                if amenity["isChargeable"] == True:
-                    offerDraftText += ", povračilo z odpovednimi stroški"
-                else:
-                    offerDraftText += ", povračilo za odpoved je možno"
-            else:
-                offerDraftText += ", povračilo za odpoved ni možno"
+    isRefundableTicket = False
+    isRefundChargeable = False
+    isChangeableTicket = False
+    isChangeChargeable = False
 
-        if amenity["amenity_description"] == "CHANGEABLE TICKET" or amenity["amenity_description"] == "CHANGE BEFORE DEPARTURE" or amenity["amenity_description"] == "CHANGE AFTER DEPARTURE":
-            if amenity["amenity_description"] == "CHANGE BEFORE DEPARTURE" or amenity["amenity_description"] == "CHANGE AFTER DEPARTURE":
-                if not partialChange:
-                    partialChange = True
-                    continue
+    if "REFUNDABLE TICKET" in offerDetails["amenities"]:
+        isRefundableTicket = True
+        if offerDetails["amenities"]["REFUNDABLE TICKET"]["isChargeable"]:
+            isRefundChargeable = True
+
+    if "REFUNDS ANYTIME" in offerDetails["amenities"] and not isRefundableTicket:
+        isRefundableTicket = True
+        if offerDetails["amenities"]["REFUNDS ANYTIME"]["isChargeable"]:
+            isRefundChargeable = True
+
+    if "REFUND BEFORE DEPARTURE" in offerDetails["amenities"] and not isRefundableTicket:
+        isRefundableTicket = True
+        if offerDetails["amenities"]["REFUND BEFORE DEPARTURE"]["isChargeable"]:
+            isRefundChargeable = True
+
+
+    if "CHANGEABLE TICKET" in offerDetails["amenities"]:
+        isChangeableTicket = True
+        if offerDetails["amenities"]["CHANGEABLE TICKET"]["isChargeable"]:
+            isChangeChargeable = True
+
+    if "CHANGE BEFORE DEPARTURE" in offerDetails["amenities"] and "CHANGE AFTER DEPARTURE" in offerDetails["amenities"] and not isChangeableTicket:
+        isChangeableTicket = True
+        if offerDetails["amenities"]["CHANGE BEFORE DEPARTURE"]["isChargeable"] or offerDetails["amenities"]["CHANGE AFTER DEPARTURE"]["isChargeable"]:
+            isChangeChargeable = True
             
-            if amenity["included"] == True:
-                if amenity["isChargeable"] == True:
-                    offerDraftText += ", naknadne spremembe možne z doplačilom"
-                else:
-                    offerDraftText += ", naknadne spremembe možne"
-            else:
-                offerDraftText += ", naknadne spremembe niso možne"
+    if isRefundableTicket:
+        if isRefundChargeable:
+            offerDraftText += ", povračilo z odpovednimi stroški"
+        else:
+            offerDraftText += ", povračilo za odpoved je možno"
+    else:
+        offerDraftText += ", povračilo za odpoved ni možno"
+
+    if isChangeableTicket:
+        if isChangeChargeable:
+            offerDraftText += ", naknadne spremembe možne z doplačilom"
+        else:
+            offerDraftText += ", naknadne spremembe možne"
+    else:
+        offerDraftText += ", naknadne spremembe niso možne"
 
     offerDraftText += ")"
 
@@ -192,10 +206,6 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
             flights_string += f"\n{offer['checkedBags']} checked bags & carry-on included. "
         #flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
         pricePerPerson = float(offer["price"]["grandTotal"])/float(offer["passengers"])
-        
-        refundableMsgAdded = False
-        partialRefund = False
-        partialChange = False
 
         print("amenities of final offer:\n", offer["amenities"])
               
@@ -203,30 +213,33 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
         isRefundChargeable = False
         isChangeableTicket = False
         isChangeChargeable = False
-        for amenity in offer["amenities"]:
-            if (amenity["amenity_description"] == "REFUNDABLE TICKET" or amenity["amenity_description"] == "REFUNDS ANYTIME" or amenity["amenity_description"] == "REFUND BEFORE DEPARTURE" or amenity["amenity_description"] == "REFUND AFTER DEPARTURE"):
-                if amenity["amenity_description"] == "REFUND BEFORE DEPARTURE" or amenity["amenity_description"] == "REFUND AFTER DEPARTURE":
-                    if not partialRefund:
-                        if amenity["included"] == True:
-                            partialRefund = True
-                            continue
 
-                if amenity["included"] == True:
-                    isRefundableTicket = True
-                if amenity["isChargeable"] == True:
-                    isRefundChargeable = True
+        if "REFUNDABLE TICKET" in offer["amenities"]:
+            isRefundableTicket = True
+            if offer["amenities"]["REFUNDABLE TICKET"]["isChargeable"]:
+                isRefundChargeable = True
 
-            if amenity["amenity_description"] == "CHANGEABLE TICKET" or amenity["amenity_description"] == "CHANGE BEFORE DEPARTURE" or amenity["amenity_description"] == "CHANGE AFTER DEPARTURE":
-                if amenity["amenity_description"] == "CHANGE BEFORE DEPARTURE" or amenity["amenity_description"] == "CHANGE AFTER DEPARTURE":
-                    if not partialChange:
-                        if amenity["included"] == True:
-                            partialChange = True
-                            continue
+        if "REFUNDS ANYTIME" in offer["amenities"] and not isRefundableTicket:
+            isRefundableTicket = True
+            if offer["amenities"]["REFUNDS ANYTIME"]["isChargeable"]:
+                isRefundChargeable = True
 
-                if amenity["included"] == True:
-                    isChangeableTicket = True
-                if amenity["isChargeable"] == True:
-                    isChangeChargeable = True
+        if "REFUND BEFORE DEPARTURE" in offer["amenities"] and not isRefundableTicket:
+            isRefundableTicket = True
+            if offer["amenities"]["REFUND BEFORE DEPARTURE"]["isChargeable"]:
+                isRefundChargeable = True
+
+
+        if "CHANGEABLE TICKET" in offer["amenities"]:
+            isChangeableTicket = True
+            if offer["amenities"]["CHANGEABLE TICKET"]["isChargeable"]:
+                isChangeChargeable = True
+
+        if "CHANGE BEFORE DEPARTURE" in offer["amenities"] and "CHANGE AFTER DEPARTURE" in offer["amenities"] and not isChangeableTicket:
+            isChangeableTicket = True
+            if offer["amenities"]["CHANGE BEFORE DEPARTURE"]["isChargeable"] or offer["amenities"]["CHANGE AFTER DEPARTURE"]["isChargeable"]:
+                isChangeChargeable = True
+                
                 
         if isRefundableTicket:
             if isRefundChargeable:
