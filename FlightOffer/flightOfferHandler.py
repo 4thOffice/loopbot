@@ -53,9 +53,11 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
     if answer:
         filesText = []
         filesPicture = []
-        file_content = None
         print(commentData["fileUrls"])
         for fileUrl in commentData["fileUrls"]:
+            if isinstance(fileUrl, bytes):
+                filesText.append(io.BytesIO(fileUrl))
+                continue
             if fileUrl.startswith("data:"):
                 filesPicture.append(fileUrl)
                 continue
