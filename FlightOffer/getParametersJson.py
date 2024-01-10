@@ -32,7 +32,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     "alternativeOriginsCodes": "", //only alternative origins for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
                     "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
                     "alternativeDestinationsCodes": "", //only alternative destinations for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
-                    "departureDate": \"""" + str(currentYear) + """-12-09", //must be in format: YYYY-MM-DD, this value MUST be ALWAYS SET
+                    "departureDate": \"""" + str(currentYear) + """-12-09", //must be in format: YYYY-MM-DD, this value MUST be ALWAYS SET. Use """ + str(currentYear) + """ as default year if it is noo specified.
                     "exactDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS), Connection points dont count, only final destionation points count
                     "earliestDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
                     "latestDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
@@ -61,6 +61,9 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
         )
 
         if response.choices:
+            if response.choices[0].finish_reason == "length":
+                print("WARNING: Parameters json extraction agent exceeded maximum amount of tokens!")
+                Auxiliary.verbose_checkpoint.verbose("WARNING: Parameters json extraction agent exceeded maximum amount of tokens!", verbose_checkpoint)
             try:
                 flight = json.loads(response.choices[0].message.content)
             except (ValueError, json.decoder.JSONDecodeError):
@@ -71,7 +74,8 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     time.sleep(retry_interval)
                 continue
             #NDC
-            print(flight)
+            print(f"raw extracted json:\n{flight}")
+            Auxiliary.verbose_checkpoint.verbose(f"raw extracted json:\n{flight}", verbose_checkpoint)
             search_params = {
                 "currencyCode": flight["currencyCode"],
                 "originDestinations": [],
@@ -160,7 +164,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                         "date": flight_["departureDate"]
                     }
                 }
-                    
+
                 if flight_["alternativeDestinationsCodes"]:
                     segment["alternativeDestinationsCodes"] = flight_["alternativeDestinationsCodes"][:2]
 

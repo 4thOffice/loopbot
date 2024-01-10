@@ -12,6 +12,7 @@ import keys
 import apiDataHandler
 import exceptions
 from contextlib import ExitStack
+import Auxiliary.verbose_checkpoint
 
 class AiAssistantManager:
     def __init__(self, content_text, files):
@@ -45,7 +46,7 @@ class AiAssistantManager:
         for file_ in self.files:
             apiDataHandler.delete_file(file_, keys.openAI_APIKEY)
 
-def askGPT(emailText, files, imageInfo=[]):
+def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
     client = OpenAI(api_key=keys.openAI_APIKEY)
 
     for index, file_ in enumerate(files):
@@ -99,24 +100,27 @@ def askGPT(emailText, files, imageInfo=[]):
     content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. " + filesPromptText + "\n\nProvide an answer without asking me any further questions. Ignore files if you didn't find any.\n\nText to extract details from:\n\n" + emailText
         #content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
     if len(imageInfo) > 0:
-        content_text += "\n\nAlso take this important extra information into consideration:\n" + imageInfo
+        content_text += "\n\nAlso take this important extra information into consideration:\n\n" + imageInfo
 
+    print("--------------------------------------")
+    print(f"content_text_docs:\n{content_text}")
+    print("--------------------------------------")
     #content_text += "\n\nIf there is a specific flight written, say that it is a preffered option."
     
     with AiAssistantManager(content_text, files) as (assistant, thread):
         answer = None
         try:
-            answer = runThread(assistant, thread, client)
+            answer = runThread(assistant, thread, client, verbose_checkpoint)
         except exceptions.stuck as e:
             print(f"Caught an exception: {e}")
             try:
-                answer = runThread(assistant, thread, client)
+                answer = runThread(assistant, thread, client, verbose_checkpoint)
             except exceptions.stuck as e:
                 return None
         print("Extracted non-structured data:\n", answer)
         return answer
 
-def runThread(assistant, thread, client):
+def runThread(assistant, thread, client, verbose_checkpoint=None):
     assistant_id=assistant.id
 
     run = client.beta.threads.runs.create(
@@ -134,7 +138,14 @@ def runThread(assistant, thread, client):
         print(run)
         print(run.status)
 
+        if run.last_error == "rate_limit_exceeded":
+            print("WARNING: text specialized agent exceeded maximum amount of tokens!")
+            Auxiliary.verbose_checkpoint.verbose("WARNING: text specialized agent exceeded maximum amount of tokens!", verbose_checkpoint)
         if run.status == "failed":
+            return "There was an error extracting data."
+        if run.status == "expired":
+            return "There was an error extracting data."
+        if run.status == "cancelled":
             return "There was an error extracting data."
         if run.status == "completed":
             break

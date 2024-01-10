@@ -69,18 +69,21 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                 filesText.append(file_content)
 
         if len(filesPicture) > 0:
-            print("Asking picture specialized agent - ", str(len(filesPicture)) + " files")
-            flightDetailsImages = AIregular_.processImages(emailText, filesPicture)
-            verbose("Asking picture specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
             if len(filesText) <= 0:
+                flightDetailsImages = AIregular_.processImages(emailText, filesPicture, shortenedOutput=False, verbose_checkpoint=verbose_checkpoint)
                 flightDetails = flightDetailsImages
+            else:
+                print("Asking picture specialized agent - ", str(len(filesPicture)) + " files")
+                flightDetailsImages = AIregular_.processImages(emailText, filesPicture, shortenedOutput=True, verbose_checkpoint=verbose_checkpoint)
+                verbose("Asking picture specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
+
         if len(filesText) > 0 or len(filesPicture) == 0:
             print("Asking text specialized agent - ", str(len(filesText)) + " files")
             verbose("Asking text specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
             if len(filesPicture) > 0:
-                flightDetails = dataExtractor.askGPT(emailText, filesText, imageInfo=flightDetailsImages)
+                flightDetails = dataExtractor.askGPT(emailText, filesText, imageInfo=flightDetailsImages, verbose_checkpoint=verbose_checkpoint)
             else:
-                flightDetails = dataExtractor.askGPT(emailText, filesText)
+                flightDetails = dataExtractor.askGPT(emailText, filesText, verbose_checkpoint=verbose_checkpoint)
 
             if flightDetails == None:
                 return({"parsedOffer": "Error requesting offers: Timeout while asking AI to extract data.", "details": None})
