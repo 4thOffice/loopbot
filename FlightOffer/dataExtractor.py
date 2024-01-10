@@ -118,6 +118,7 @@ def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
             except exceptions.stuck as e:
                 return None
         print("Extracted non-structured data:\n", answer)
+        if verbose_checkpoint: verbose_checkpoint(f"Extracted non-structured data:\n{answer=}")
         return answer
 
 def runThread(assistant, thread, client, verbose_checkpoint=None):
