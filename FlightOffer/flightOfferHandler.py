@@ -55,16 +55,23 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
         filesPicture = []
         print(commentData["fileUrls"])
         for fileUrl in commentData["fileUrls"]:
-            if isinstance(fileUrl, bytes):
-                filesText.append(io.BytesIO(fileUrl))
-                continue
             if fileUrl.startswith("data:"):
                 filesPicture.append(fileUrl)
                 continue
-            response = requests.get(fileUrl)
-            response.raise_for_status()
-            file_content = io.BytesIO(response.content)
-            file_type = magic.from_buffer(file_content.getvalue(), mime=True)
+
+            if isinstance(fileUrl, bytes):
+                file_content = fileUrl
+                file_type = magic.from_buffer(fileUrl, mime=True)
+            elif isinstance(fileUrl, tuple):
+                # Union[Tuple[str, bytes], Tuple[str, bytes, Optional[str]]] -> filename, file_bytes, *mime_type
+                file_content = fileUrl[1]
+                file_type = fileUrl[2] if len(fileUrl) == 3 and fileUrl[2] else magic.from_buffer(fileUrl[1], mime=True)
+            else:
+                response = requests.get(fileUrl)
+                response.raise_for_status()
+                file_content = io.BytesIO(response.content)
+                file_type = magic.from_buffer(file_content.getvalue(), mime=True)
+
             if "image" in file_type:
                 filesPicture.append(fileUrl)
             else:
