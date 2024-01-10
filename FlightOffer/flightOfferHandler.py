@@ -64,7 +64,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                 file_type = magic.from_buffer(fileUrl, mime=True)
             elif isinstance(fileUrl, tuple):
                 # Union[Tuple[str, bytes], Tuple[str, bytes, Optional[str]]] -> filename, file_bytes, *mime_type
-                file_content = fileUrl[1]
+                file_content = fileUrl
                 file_type = fileUrl[2] if len(fileUrl) == 3 and fileUrl[2] else magic.from_buffer(fileUrl[1], mime=True)
             else:
                 response = requests.get(fileUrl)
