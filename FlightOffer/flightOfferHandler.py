@@ -88,7 +88,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
 
         if len(filesText) > 0 or len(filesPicture) == 0:
             print("Asking text specialized agent - ", str(len(filesText)) + " files")
-            verbose("Asking text specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
+            verbose("Asking text specialized agent with " + str(len(filesText)) + " files", verbose_checkpoint)
             if len(filesPicture) > 0:
                 flightDetails = dataExtractor.askGPT(emailText, filesText, imageInfo=flightDetailsImages, verbose_checkpoint=verbose_checkpoint)
             else:
