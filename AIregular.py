@@ -123,31 +123,35 @@ class AIregular:
                 - amount of checked bags per person (MUST ALWAYS include in output)
                 - insurance for the risk of cancellation (say "no" if not specified otherwise)
                 - changeable ticket (say "no" if not specified otherwise)
+                - list of full names of people for whom ticket reservations has to be made (only if explicitly mentioned or inferred) (only for selected flight option)
 
             In the text which you will be given, person is asking for offers for one or more flight options that are usually round-trip if not specified otheriwse.
-            Select only one flight option and extract data for each segment of this specific flight option. There should be only 2 segments. One for outbound and one for return. Use connection points.
-            For each flight segment extract the following data:
-                - origin location names and IATA 3-letter codes
-                - alternative origin locations names and IATA 3-letter codes (only for this specific segment)
-                - destination locationname and IATA 3-letter code
-                - alternative destination locations names and IATA 3-letter codes (only for this specific segment)
+            Select only one flight option and extract data for each itinerary of this specific flight option. There should be only 2 itineraries. One for outbound and one for return. Use connection points.
+            Keep in mind that outbound and return itineraries can sometimes be detected by looking at travel dates.
+            For each flight itinerary extract the following data:
+                - origin location name and IATA 3-letter codes
+                - alternative origin locations names and IATA 3-letter codes (only for this specific itinerary)
+                - destination location name and IATA 3-letter code
+                - alternative destination locations names and IATA 3-letter codes (only for this specific itinerary)
                 - included connection points names and IATA 3-letter codes
                 - travel class
                 - departure date
-                - exact departure time
-                - earliest departure time
-                - latest departure time
-                - exact arrival time
-                - earliest arrival time
-                - latest arrival time
+                - exact departure time (must be in HH:MM:SS format)
+                - exact arrival time (must be in HH:MM:SS format)
+                //Extract the following time parameters from flight timing information written in the text you will be given. You can also leave them empty if not mentioned at all. Convert each time request to to proper time parameters. For example "departure in the evening" should be earliest departure time: 18:00:00 and latest departure time: 23:59:59
+                - earliest departure time (must be in HH:MM:SS format) //earlist possible time to depart
+                - latest departure time (must be in HH:MM:SS format) //latest possible time to depart
+                - earliest arrival time (must be in HH:MM:SS format) //earlist possible time to arrive
+                - latest arrival time (must be in HH:MM:SS format) //latest possible time to arrive
+                - flight numbers for this itinerary
             \n\n"""
             
             """ - other requests regarding time of departure/arrival (do not leave out any provided information)"""
             """
             Timeframe definitions: 
-                - morning: from 06:00:00 to 12:00:00
+                - morning: from 05:00:00 to 12:00:00
                 - evening: from 18:00:00 to 23:59:59
-                - afternoon: from 12:00:00 to 18:00:00
+                - afternoon: from 12:00:00 to 23:59:59
                 - middle of the day: from 10:00:00 to 14:00:00
             \n\n"""
             #content_text += emailText
@@ -186,7 +190,7 @@ class AIregular:
         if response.choices[0].finish_reason == "length":
             print("WARNING: picture specialized agent exceeded maximum amount of tokens!")
             Auxiliary.verbose_checkpoint.verbose("WARNING: picture specialized agent exceeded maximum amount of tokens!", verbose_checkpoint)
-        print("data extracted from image process:", response.choices[0].message.content)
+        #print("data extracted from image process:", response.choices[0].message.content)
         return response.choices[0].message.content
     
     #AIregular_ = AIregular(keys.openAI_APIKEY)

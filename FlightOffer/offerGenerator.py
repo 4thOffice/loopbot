@@ -172,6 +172,7 @@ def generateOffer(offerDetails):
 def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
     flights_string = ""
 
+    flights_string
     for index, offer in enumerate(details["offers"]):
         if not usedForDraft:
             deeplink = ""

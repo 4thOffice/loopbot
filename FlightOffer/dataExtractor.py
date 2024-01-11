@@ -57,31 +57,36 @@ def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
     
 
     content_text = """Extract ALL flight details from the text which I will give you. Extract ALL of the following data:
-        - currency
-        - number of passangers (MUST ALWAYS include in output)
-        - maximum number of connections
-        - requested airlines with codes
-        - whether near airports should be included as departure options
-        - amount of checked bags per person (MUST ALWAYS include in output)
-        - insurance for the risk of cancellation (say "no" if not specified otherwise)
-        - changeable ticket (say "no" if not specified otherwise)
+            - currency
+            - number of passangers (MUST ALWAYS include in output)
+            - maximum number of connections
+            - requested airlines with codes
+            - travel class
+            - whether near airports should be included as departure options
+            - amount of checked bags per person (MUST ALWAYS include in output)
+            - insurance for the risk of cancellation (say "no" if not specified otherwise)
+            - changeable ticket (say "no" if not specified otherwise)
+            - list of full names of people for whom ticket reservations has to be made (only if explicitly mentioned or inferred) (only for selected flight option)
 
-    In the text which you will be given, person is asking for offers for one or more flight options that are usually round-trip if not specified otheriwse. (Keep in mind that each flight segment can have multiple connection points - you must NOT ignore them if they are specified)
-    Select only one flight option and extract data for each segment of this specific flight option. There should be only 2 segments. One for outbound and one for return. Use connection points.
-    For each flight segment extract the following data:
-        - origin location names and IATA 3-letter codes
-        - alternative origin locations names and IATA 3-letter codes (only for this specific segment)
-        - destination locationname and IATA 3-letter code
-        - alternative destination locations names and IATA 3-letter codes (only for this specific segment)
-        - included connection points names and IATA 3-letter codes
-        - travel class
-        - departure date
-        - exact departure time
-        - earliest departure time
-        - latest departure time
-        - exact arrival time
-        - earliest arrival time
-        - latest arrival time
+        In the text which you will be given, person is asking for offers for one or more flight options that are usually round-trip if not specified otheriwse.
+        Select only one flight option and extract data for each itinerary of this specific flight option. There should be only 2 itineraries. One for outbound and one for return. Use connection points.
+        Keep in mind that outbound and return itineraries can sometimes be detected by looking at travel dates.
+        For each flight itinerary extract the following data:
+            - origin location name and IATA 3-letter codes
+            - alternative origin locations names and IATA 3-letter codes (only for this specific itinerary)
+            - destination location name and IATA 3-letter code
+            - alternative destination locations names and IATA 3-letter codes (only for this specific itinerary)
+            - included connection points names and IATA 3-letter codes
+            - travel class
+            - departure date
+            - exact departure time (must be in HH:MM:SS format)
+            - exact arrival time (must be in HH:MM:SS format)
+            //Extract the following time parameters from flight timing information written in the text you will be given. You can also leave them empty if not mentioned at all. Convert each time request to to proper time parameters. For example "departure in the evening" should be earliest departure time: 18:00:00 and latest departure time: 23:59:59
+            - earliest departure time (must be in HH:MM:SS format) //earlist possible time to depart
+            - latest departure time (must be in HH:MM:SS format) //latest possible time to depart
+            - earliest arrival time (must be in HH:MM:SS format) //earlist possible time to arrive
+            - latest arrival time (must be in HH:MM:SS format) //latest possible time to arrive
+            - flight numbers for this itinerary
     \n\n"""
 
     """Timeframe definitions: 
@@ -117,7 +122,6 @@ def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
                 answer = runThread(assistant, thread, client, verbose_checkpoint)
             except exceptions.stuck as e:
                 return None
-        print("Extracted non-structured data:\n", answer)
         return answer
 
 def runThread(assistant, thread, client, verbose_checkpoint=None):

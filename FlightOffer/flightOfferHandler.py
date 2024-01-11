@@ -88,6 +88,8 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
             if flightDetails == None:
                 return({"parsedOffer": "Error requesting offers: Timeout while asking AI to extract data.", "details": None})
 
+        print(f"data extracted from first extraction stage:\n {flightDetails}")
+        verbose(f"data extracted from first extraction stage:\n {flightDetails}", verbose_checkpoint=verbose_checkpoint)
         intercontinentalText, travelClassText = getExtraInfo(flightDetails)
         details = flightSearch.getFlightOffer(flightDetails, verbose_checkpoint)
 
@@ -187,13 +189,21 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
         
         print("final offer details with amenities:\n", details["data"]["offers"])
         generatedOffer = offerGenerator.generateFlightsString({"offers": details["data"]["offers"]}, email_comment_id=email_comment_id)
+
+        peopleString = ""
+        if "people" in details["data"]:
+            if details["data"]["people"]:
+                peopleString += "Rezervacija za:\n"
+            for person in details["data"]["people"]:
+                peopleString += f"{person['first_name']} {person['last_name']}\n"
+
         print(offerGenerator.generateOffer(details["data"]["offers"][0]))
 
 
         print(details["data"])
         print("flight details gathered")
         
-        return({"parsedOffer": f"{travelClassText}\n\n" + generatedOffer, "details": details["data"]})
+        return({"parsedOffer": f"{peopleString}\n{travelClassText}\n\n{generatedOffer}", "details": details["data"]})
 
     else:
         print("Not a flight tender inquiry")

@@ -17,14 +17,27 @@ import offerBagHandler
 import upsellHandler
 import flightAuxiliary
 
+apiType = "personal" #personal/enterprise
+
+if apiType == "personal":
+    hostname = "production"
+else:
+    hostname = "test"
+
 amadeus = Client(
     client_id=keys.amadeus_client_id,
     client_secret=keys.amadeus_client_secret,
-    hostname='production'
+    hostname=hostname
 )
 
-def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_client_secret):
-    auth_url = 'https://api.amadeus.com/v1/security/oauth2/token'
+def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_client_secret, enterprise=True):
+    if enterprise:
+        auth_url = 'https://test.travel.api.amadeus.com/v1/security/oauth2/token'
+    else:
+        api_key=keys.amadeus_client_id_personal
+        api_secret=keys.amadeus_client_secret_personal
+        auth_url = 'https://api.amadeus.com/v1/security/oauth2/token'
+        
     response = requests.post(auth_url, data={
         'grant_type': 'client_credentials',
         'client_id': api_key,
@@ -33,10 +46,12 @@ def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_cli
     print("Access key:\n", response.json())
     return response.json().get('access_token')
 
-endpoint = 'https://api.amadeus.com/v2/shopping/flight-offers'
-
 def get_price_offer(access_token, flight_offers):
-    url = 'https://api.amadeus.com/v1/shopping/flight-offers/pricing'
+    if apiType == "personal":
+        url = 'https://api.amadeus.com/v1/shopping/flight-offers/pricing'
+    else:
+        url = 'https://test.travel.api.amadeus.com/v1/shopping/flight-offers/pricing'
+        
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/vnd.amadeus+json'
@@ -58,6 +73,7 @@ def get_price_offer(access_token, flight_offers):
     
 def get_airport_coordinates(access_token, IATA):
     print(f"IATA {IATA}")
+    access_token = get_access_token(keys.amadeus_client_id_personal, keys.amadeus_client_secret_personal, enterprise=False)
     url = 'https://api.amadeus.com/v1/reference-data/locations/A' + IATA
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -79,6 +95,12 @@ def get_airport_coordinates(access_token, IATA):
         return None
     
 def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
+    
+    if apiType == "personal":
+        endpoint = 'https://api.amadeus.com/v2/shopping/flight-offers'
+    else:
+        endpoint = 'https://test.travel.api.amadeus.com/v2/shopping/flight-offers'
+
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/vnd.amadeus+json'
@@ -109,7 +131,7 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
     
 def getFlightOffer(flightDetails, verbose_checkpoint=None):
     try:
-        search_params, extraTimeframes, checkedBags, refundableTicket, changeableTicket = getParametersJson.extractSearchParameters(flightDetails, 250, verbose_checkpoint)
+        search_params, extraTimeframes, checkedBags, refundableTicket, changeableTicket, flightNumbersPerItinerary, people = getParametersJson.extractSearchParameters(flightDetails, 250, verbose_checkpoint)
     except Exception as e:
         traceback_msg = traceback.format_exc()
         print(f"Exception {e=} while trying to extract search parameters into json. {flightDetails=}")
@@ -126,12 +148,18 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         print(f"checked bags: {checkedBags}")
         print(f"refundable ticket: {refundableTicket}")
         print(f"changeable ticket: {changeableTicket}")
+        print(f"Flight numbers per itinerary: {flightNumbersPerItinerary}")
+        verbose(f"Flight numbers per itinerary: {flightNumbersPerItinerary}", verbose_checkpoint)
         verbose(f"refundable ticket: {refundableTicket}", verbose_checkpoint)
         verbose(f"changeable ticket: {changeableTicket}", verbose_checkpoint)
         verbose(f"Search parameters: {search_params}", verbose_checkpoint)
         verbose(f"Extra timeframes: {extraTimeframes}", verbose_checkpoint)
         verbose(f"Checked bags per person: {checkedBags}", verbose_checkpoint)
-        access_token = get_access_token()
+        
+        if apiType == "personal":
+            access_token = get_access_token(enterprise=False)
+        else:
+            access_token = get_access_token()
 
         #repeat this and expand time window untill amadeus returns at least 1 flight offer
         iteration = 0
@@ -181,6 +209,31 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         verbose("no flights", verbose_checkpoint)
         return {"status": "ok", "data": None}
     
+
+    if flightNumbersPerItinerary:
+        flightOffersWithCorrectFlightNumbers = []
+        numberOfFlightNumbers = 0
+        for itineraryIndex in flightNumbersPerItinerary.keys():
+            numberOfFlightNumbers += len(flightNumbersPerItinerary[itineraryIndex]["flightNumbers"])
+
+        for flightOffer in flightOffers:
+            numberOfFlightNumbersFound = 0
+            for index, itinerary in enumerate(flightOffer['itineraries']):
+                for segment in itinerary["segments"]:
+                    if index in flightNumbersPerItinerary:
+                        for flightNumber in flightNumbersPerItinerary[index]["flightNumbers"]:
+                            if flightNumber == segment["number"]:
+                                numberOfFlightNumbersFound += 1
+
+            if numberOfFlightNumbers == numberOfFlightNumbersFound:
+                flightOffersWithCorrectFlightNumbers.append(flightOffer)
+
+        print(f"Flight offers with correct flight numbers: {flightOffersWithCorrectFlightNumbers}")
+        if len(flightOffersWithCorrectFlightNumbers) > 0:
+            flightOffers = flightOffersWithCorrectFlightNumbers
+        else:
+            print("no flight offers satisfied all flight numbers.. using not optimal flights..")
+
     cheapestFlightOffers = []
     #check which offers qualify
     for flightOffer in flightOffers:
@@ -305,7 +358,35 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
     print(f"final offers:\n{cheapestPriceOffers}")
 
-    cheapestPriceOffers = upsellHandler.getUpsellOffers(cheapestPriceOffers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, verbose_checkpoint)
+    cheapestPriceOffers = upsellHandler.getUpsellOffers(cheapestPriceOffers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, apiType, verbose_checkpoint)
+
+    cheapestPriceOffers = flightAuxiliary.get_time_difference_data(cheapestPriceOffers, extraTimeframes)
+    for i, x in enumerate(cheapestPriceOffers):
+        amenityCount = 0
+        refundFound = False
+        changeFound = False
+        for amenity_ in x["offer"]["amenities"]:
+            if amenity_["included"] and amenity_["isRequested"]:
+                if amenity_["amenity_description"] in ["REFUNDABLE TICKET", "REFUND BEFORE DEPARTURE", "REFUND AFTER DEPARTURE", "REFUNDS ANYTIME"]:
+                    if not refundFound:
+                        refundFound = True
+                        amenityCount += 1
+                elif amenity_["amenity_description"] in ["CHANGEABLE TICKET", "CHANGE BEFORE DEPARTURE", "CHANGE AFTER DEPARTURE"]:
+                    if not changeFound:
+                        changeFound = True
+                        amenityCount += 1
+                else:
+                    amenityCount += 1
+
+        #amenityCount = sum(value["included"] is True and value["isRequested"] is True for value in x["offer"]["amenities"])
+        cheapestPriceOffers[i]["amenityCount"] = amenityCount
+    
+    print("-------------------------")
+    print("SORTING BY AMENITIES")
+    print(cheapestPriceOffers)
+    print("-------------------------")
+    cheapestPriceOffers = sorted(cheapestPriceOffers, key=lambda x: (x["time_difference"], -x["amenityCount"], float(x["offer"]["offer"]["price"]["grandTotal"])))
+    cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
 
     just_offers = [item["offer"] for item in cheapestPriceOffers]
 
@@ -317,7 +398,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     print(f"final offers with amenities:\n{cheapestPriceOffers}")
     verbose(f"final offers with amenities:\n{cheapestPriceOffers}", verbose_checkpoint)
 
-    returnData = {"status": "ok", "data": {"offers": []}}
+    returnData = {"status": "ok", "data": {"offers": [], "people": people}}
     for cheapest_price_offer in cheapestPriceOffers:
         amenities = cheapest_price_offer["amenities"]
         

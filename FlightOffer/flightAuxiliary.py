@@ -43,8 +43,12 @@ def get_time_difference_data(flight_offers, extraTimeframes):
     
     closest_offers = []
     for offer in flight_offers:
+        if "offer" in offer:
+            offer_ = offer["offer"]
+        else:
+            offer_ = offer
         time_diff = 0
-        for index1, itinerary in enumerate(offer['itineraries']):
+        for index1, itinerary in enumerate(offer_['itineraries']):
             departure_time = itinerary['segments'][0]['departure']['at']
             arrival_time = itinerary['segments'][-1]['arrival']['at']
 
@@ -62,3 +66,8 @@ def get_time_difference_data(flight_offers, extraTimeframes):
         closest_offers.append({"offer": offer, "time_difference": time_diff})
 
     return closest_offers
+
+def extract_numbers(s):
+    numbers = re.findall(r'\d+', s)
+    numbers_without_zeros = [str(int(num)) for num in numbers]
+    return ''.join(numbers_without_zeros)

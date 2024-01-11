@@ -15,7 +15,7 @@ import HotelOffer.googleAPI
 amadeus = Client(
     client_id=keys.amadeus_client_id,
     client_secret=keys.amadeus_client_secret,
-    hostname='production'
+    hostname='test'
 )
 
 def convert_currency(baseCurrency, currency, api_key=keys.fixer_APIKEY):
@@ -45,7 +45,7 @@ def convert_currency(baseCurrency, currency, api_key=keys.fixer_APIKEY):
         return None
 
 
-def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_client_secret):
+def get_access_token(api_key=keys.amadeus_client_id_personal, api_secret=keys.amadeus_client_secret_personal):
     auth_url = 'https://api.amadeus.com/v1/security/oauth2/token'
     response = requests.post(auth_url, data={
         'grant_type': 'client_credentials',

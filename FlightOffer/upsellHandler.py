@@ -16,8 +16,12 @@ def getHigherClasses(travelClass):
     else:
         return []
 
-def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checkedBags, verbose_checkpoint=None):
-    url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
+def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checkedBags, apiType, verbose_checkpoint=None):
+    if apiType == "personal":
+        url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
+    else:
+        url = 'https://test.travel.api.amadeus.com/v1/shopping/flight-offers/upselling'
+
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/vnd.amadeus+json'
@@ -87,9 +91,25 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
                 continue
             
             print(f"included amenities: {includedAmenities}")
-            print(offer)
             verbose(f"included amenities: {includedAmenities}", verbose_checkpoint)
-            amenityCount = sum(value["included"] is True and value["isRequested"] is True for value in includedAmenities.values())
+
+            amenityCount = 0
+            refundFound = False
+            changeFound = False
+            for amenity_ in includedAmenities.keys():
+                if includedAmenities[amenity_]["included"] and includedAmenities[amenity_]["isRequested"]:
+                    if amenity_ in ["REFUNDABLE TICKET", "REFUND BEFORE DEPARTURE", "REFUND AFTER DEPARTURE", "REFUNDS ANYTIME"]:
+                        if not refundFound:
+                            refundFound = True
+                            amenityCount += 1
+                    elif amenity_ in ["CHANGEABLE TICKET", "CHANGE BEFORE DEPARTURE", "CHANGE AFTER DEPARTURE"]:
+                        if not changeFound:
+                            changeFound = True
+                            amenityCount += 1
+                    else:
+                        amenityCount += 1
+
+            #amenityCount = sum(value["included"] is True and value["isRequested"] is True for value in includedAmenities.values())
             for index, offer_ in enumerate(offersWithAmenityCount):
                 if offer == offer_["offer"]:
                     offersWithAmenityCount[index]["amenityCount"] = amenityCount
@@ -135,7 +155,7 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
 
-def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, verbose_checkpoint=None):
+def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, apiType, verbose_checkpoint=None):
     for index, offer in enumerate(offers):
         print("----------------------------")
         print("offer to get upsell for:\n", offer)
@@ -157,7 +177,7 @@ def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, chan
                 amenity["isRequested"] = True
                 amenitiesToSearchFor[index1] = amenity
         
-        upsold = get_upsell_offer(access_token, [offer], amenitiesToSearchFor, travelClass, checkedBags, verbose_checkpoint) #CHANGEABLE TICKET
+        upsold = get_upsell_offer(access_token, [offer], amenitiesToSearchFor, travelClass, checkedBags, apiType, verbose_checkpoint) #CHANGEABLE TICKET
 
         if upsold != None:
             print(f"UPSOLD OFFER: {upsold['offer']}")

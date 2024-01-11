@@ -25,13 +25,14 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
         "maximumNumberOfConnections": 0,
         "checkedBags": 0 //amount of checked bags per person, leave 0 if not specified explicitly
         "includedAirlineCodes": "" //leave empty if not specified! must be in format (comma-seperated): "6X,7X,8X"
-        "flightSegments": [ //seperate flight segments that customer is asking for. Flight are usually round-trip if not specified otherwise. If customer is asking about multiple flight offers, choose ONLY one!
+        "people": "" //list of full names of people for whom ticket reservations has to be made. must be in format: [{"first_name": "James", "last_name": "Canigton"}, {"first_name": "Julie", "last_name": "Winston"}]. (MUST BE IN ORDER: "First name Last name") MUST BE AN ARRAY! Leave empty if not specified!
+        "itineraries": [ //seperate flight itineraries that customer is asking for. Flights are usually round-trip if not specified otherwise. If customer is asking about multiple flight offers, choose ONLY one!
                 {
                     "travelClass": "ECONOMY", // ONLY choose ONE from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
                     "originLocationCode": "LJU", //If location is not specified, think logically what it could be. Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
-                    "alternativeOriginsCodes": "", //only alternative origins for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
+                    "alternativeOriginsCodes": "", //only alternative origins for this specific flight itinerary. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
                     "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
-                    "alternativeDestinationsCodes": "", //only alternative destinations for this specific flight segment. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
+                    "alternativeDestinationsCodes": "", //only alternative destinations for this specific flight itinerary. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
                     "departureDate": \"""" + str(currentYear) + """-12-09", //must be in format: YYYY-MM-DD, this value MUST be ALWAYS SET. Use """ + str(currentYear) + """ as default year if it is noo specified.
                     "exactDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS), Connection points dont count, only final destionation points count
                     "earliestDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
@@ -40,6 +41,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     "earliestArrivalTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
                     "latestArrivalTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS)
                     "includedConnectionPoints": "" //must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
+                    "flightNumbers": "" //flights numbers of this specific itinerary. must be in format: ["40", "1745", "325"]. MUST BE AN ARRAY! Leave empty if not specified!
                 }
         ]
 }\n\n"""
@@ -99,12 +101,12 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
             #remove unwanted flight segments
             usedOriginLocationCodes = []
             usedDestinationLocationCodes = []
-            for flightSegment in flight["flightSegments"]:
+            for flightSegment in flight["itineraries"]:
                 found = False
                 for code in usedOriginLocationCodes:
                     if code == flightSegment["originLocationCode"]:
-                        if flightSegment in flight["flightSegments"]:
-                            flight["flightSegments"].remove(flightSegment)
+                        if flightSegment in flight["itineraries"]:
+                            flight["itineraries"].remove(flightSegment)
                         found = True
                         break
                 if not found:
@@ -112,8 +114,8 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     found = False
                 for code in usedDestinationLocationCodes:
                     if code == flightSegment["destinationLocationCode"]:
-                        if flightSegment in flight["flightSegments"]:
-                            flight["flightSegments"].remove(flightSegment)
+                        if flightSegment in flight["itineraries"]:
+                            flight["itineraries"].remove(flightSegment)
                         break
                 if not found:
                     usedDestinationLocationCodes.append(flightSegment["destinationLocationCode"])
@@ -138,8 +140,19 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
             extraTimeframes = []
             previousOriginCode = ""
             previousDestinationCode = ""
-            for index, flight_ in enumerate(flight["flightSegments"]):
-                if flight_["originLocationCode"] == flight["flightSegments"][0]["originLocationCode"] and index != 0:
+            flightNumbersPerItinerary = {}
+            people = []
+
+            if flight["people"]:
+                for person in flight["people"]:
+                    first_name = person["first_name"].upper()
+                    last_name = person["last_name"].upper()
+
+                    if first_name and last_name:
+                        people.append({"first_name": first_name, "last_name": last_name})
+
+            for index, flight_ in enumerate(flight["itineraries"]):
+                if flight_["originLocationCode"] == flight["itineraries"][0]["originLocationCode"] and index != 0:
                     break
 
                 if flight_["destinationLocationCode"] == previousDestinationCode or flight_["originLocationCode"] == previousOriginCode:
@@ -165,6 +178,13 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     }
                 }
 
+                if flight_["flightNumbers"]:
+                    flightNumbers = []
+                    for flightNumber in flight_["flightNumbers"]:
+                        flightNumbers.append(flightAuxiliary.extract_numbers(flightNumber))
+                        
+                    flightNumbersPerItinerary[index] = {"flightNumbers": flightNumbers}
+                    
                 if flight_["alternativeDestinationsCodes"]:
                     segment["alternativeDestinationsCodes"] = flight_["alternativeDestinationsCodes"][:2]
 
@@ -201,7 +221,6 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                         found = True
                 if not found:
                     search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"].append({"cabin": flight_["travelClass"], "originDestinationIds": [str(index+1)]})
-
                 search_params["originDestinations"].append(segment)
                 #search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["originDestinationIds"].append(str(index+1))
 
@@ -283,8 +302,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     changeableTicket = True
                 else:
                     changeableTicket = False
-
-            return search_params, extraTimeframes, checkedbags, refundableTicket, changeableTicket
+            return search_params, extraTimeframes, checkedbags, refundableTicket, changeableTicket, flightNumbersPerItinerary, people
         else:
             if attempt < max_attempts - 1:
                 print("No response received. Retrying in {} seconds...".format(retry_interval))
