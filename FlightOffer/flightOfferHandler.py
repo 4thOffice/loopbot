@@ -53,16 +53,25 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
     if answer:
         filesText = []
         filesPicture = []
-        file_content = None
         print(commentData["fileUrls"])
         for fileUrl in commentData["fileUrls"]:
-            if fileUrl.startswith("data:"):
+            if isinstance(fileUrl, str) and fileUrl.startswith("data:"):
                 filesPicture.append(fileUrl)
                 continue
-            response = requests.get(fileUrl)
-            response.raise_for_status()
-            file_content = io.BytesIO(response.content)
-            file_type = magic.from_buffer(file_content.getvalue(), mime=True)
+
+            if isinstance(fileUrl, bytes):
+                file_content = fileUrl
+                file_type = magic.from_buffer(fileUrl, mime=True)
+            elif isinstance(fileUrl, tuple):
+                # Union[Tuple[str, bytes], Tuple[str, bytes, Optional[str]]] -> filename, file_bytes, *mime_type
+                file_content = fileUrl
+                file_type = fileUrl[2] if len(fileUrl) == 3 and fileUrl[2] else magic.from_buffer(fileUrl[1], mime=True)
+            else:
+                response = requests.get(fileUrl)
+                response.raise_for_status()
+                file_content = io.BytesIO(response.content)
+                file_type = magic.from_buffer(file_content.getvalue(), mime=True)
+
             if "image" in file_type:
                 filesPicture.append(fileUrl)
             else:
@@ -79,7 +88,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
 
         if len(filesText) > 0 or len(filesPicture) == 0:
             print("Asking text specialized agent - ", str(len(filesText)) + " files")
-            verbose("Asking text specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
+            verbose("Asking text specialized agent with " + str(len(filesText)) + " files", verbose_checkpoint)
             if len(filesPicture) > 0:
                 flightDetails = dataExtractor.askGPT(emailText, filesText, imageInfo=flightDetailsImages, verbose_checkpoint=verbose_checkpoint)
             else:
