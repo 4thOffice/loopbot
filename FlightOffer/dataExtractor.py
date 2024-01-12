@@ -72,7 +72,7 @@ def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
         Select only one flight option and extract data for each itinerary of this specific flight option. There should be only 2 itineraries. One for outbound and one for return. Use connection points.
         Keep in mind that outbound and return itineraries can sometimes be detected by looking at travel dates.
         For each flight itinerary extract the following data:
-            - origin location name and IATA 3-letter codes
+            - origin location name and IATA 3-letter code
             - alternative origin locations names and IATA 3-letter codes (only for this specific itinerary)
             - destination location name and IATA 3-letter code
             - alternative destination locations names and IATA 3-letter codes (only for this specific itinerary)

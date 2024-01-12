@@ -59,3 +59,4 @@ finetuning.json
 finetuning.jsonl
 flightLogs.json
 getPriceOfferManual.py
+manualCreateOrder.py

@@ -29,9 +29,9 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
         "itineraries": [ //seperate flight itineraries that customer is asking for. Flights are usually round-trip if not specified otherwise. If customer is asking about multiple flight offers, choose ONLY one!
                 {
                     "travelClass": "ECONOMY", // ONLY choose ONE from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
-                    "originLocationCode": "LJU", //If location is not specified, think logically what it could be. Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
+                    "originLocationCode": "LJU", //If location is not specified, think logically what it could be. Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! Location IATA code MUST be valid! This parameter must NOT be empty!
                     "alternativeOriginsCodes": "", //only alternative origins for this specific flight itinerary. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
-                    "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! This parameter must NOT be empty!
+                    "destinationLocationCode": "PAR", //Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! Location IATA code MUST be valid! This parameter must NOT be empty!
                     "alternativeDestinationsCodes": "", //only alternative destinations for this specific flight itinerary. must be in format: ["LON", "MUC"]. MUST BE AN ARRAY! Leave empty if not specified!
                     "departureDate": \"""" + str(currentYear) + """-12-09", //must be in format: YYYY-MM-DD, this value MUST be ALWAYS SET. Use """ + str(currentYear) + """ as default year if it is noo specified.
                     "exactDepartureTime": "" //leave empty if not specified! format must be: ('00:00:00' to '23:59:59) (HH:MM:SS), Connection points dont count, only final destionation points count
