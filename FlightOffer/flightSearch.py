@@ -385,7 +385,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
     print("SORTING BY AMENITIES")
     print(cheapestPriceOffers)
     print("-------------------------")
-    cheapestPriceOffers = sorted(cheapestPriceOffers, key=lambda x: (x["time_difference"], -x["amenityCount"], float(x["offer"]["offer"]["price"]["grandTotal"])))
+    cheapestPriceOffers = sorted(cheapestPriceOffers, key=lambda x: (-x["amenityCount"]))
     cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
 
     just_offers = [item["offer"] for item in cheapestPriceOffers]
