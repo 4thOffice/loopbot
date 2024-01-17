@@ -5,6 +5,7 @@ import typing
 import os
 import sys
 import requests
+from Auxiliary.generateErrorID import generate_error_id
 import classification
 import dataExtractor
 import magic
@@ -29,10 +30,21 @@ from TransferOffer import transferSearch
 
 
 def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, email_comment_id, upsell=False, verbose_checkpoint: typing.Callable[[str], None] = None):
-    print("attachments: ", attachments)
-    commentData = classification.getFiles(attachments, htmlEmailtext, verbose_checkpoint)
-    emailText = subject + "\n\n" + plainText
-    return getResponse(emailText, commentData, upsell, email_comment_id, verbose_checkpoint)
+    try:
+        print("attachments: ", attachments)
+        commentData = classification.getFiles(attachments, htmlEmailtext, verbose_checkpoint)
+        emailText = subject + "\n\n" + plainText
+        response = getResponse(emailText, commentData, upsell, email_comment_id, verbose_checkpoint)
+    except Exception as e:
+        traceback_msg = traceback.format_exc()
+        error_id = generate_error_id()
+        print(f"Error ID: {error_id}")
+        print(traceback_msg) 
+        verbose(f"Error ID: {error_id}", verbose_checkpoint)
+        verbose(traceback_msg, verbose_checkpoint)
+        response = {"parsedOffer": ("Error requesting offers - Error ID: " + error_id), "details": None}
+    
+    return response
 
 def getFlightOffer(cardID=None, authKey=None):
     print(cardID)
@@ -42,7 +54,16 @@ def getFlightOffer(cardID=None, authKey=None):
 
     emailText = classification.getCommentContent(commentData["id"], authKey)
     
-    return getResponse(emailText, commentData, False)
+    try:
+        response = getResponse(emailText, commentData, False)
+    except Exception as e:
+        traceback_msg = traceback.format_exc()
+        error_id = generate_error_id()
+        print(f"Error ID: {error_id}")
+        print(traceback_msg)
+        response = {"parsedOffer": ("Error requesting offers - Error ID: " + error_id), "details": None}
+
+    return response
 
 
 def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_checkpoint=None, retries=0):
@@ -154,6 +175,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                                 print("HOTEL SUCCESSFUL")
                             except Exception:
                                 print(traceback.print_exc())
+                                verbose(traceback.print_exc(), verbose_checkpoint=verbose_checkpoint)
                                 continue
                             
                             transferStartTime = ""
@@ -182,6 +204,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                             except Exception:
                                 print("Failed gathering transfer offers")
                                 print(traceback.print_exc())
+                                verbose(traceback.print_exc(), verbose_checkpoint=verbose_checkpoint)
 
                             upsellOffer = {"hotelDetails": hotelDetails, "AirportToHotelTransferDetails": AirportToHotelTransferDetails, "HotelToAirportTransferDetails": HotelToAirportTransferDetails}
                             upsellOffers.append(upsellOffer)
@@ -190,6 +213,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                         upsellOffersPerCity[cityCode] = upsellOffers
             except Exception:
                 print(traceback.print_exc())
+                verbose(traceback.print_exc(), verbose_checkpoint=verbose_checkpoint)
                 #dodaj prazen upsell v vsak offer
                 for index, offer in (details["data"]["offers"]):
                     details["data"]["offers"][index]["upsellOffers"] = []

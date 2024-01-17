@@ -128,6 +128,7 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
             return {"status": "ok", "details": responseJson}
     except ResponseError as error:
         print(error)
+        verbose(f"Error getting flight offers {error}", verbose_checkpoint=verbose_checkpoint)
         return responseJson
     
 def getFlightOffer(flightDetails, verbose_checkpoint=None):
