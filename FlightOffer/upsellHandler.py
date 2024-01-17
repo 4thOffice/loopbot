@@ -67,9 +67,10 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
                 if wrongTravelClass:
                     break
                 for segment in traveler["fareDetailsBySegment"]:
-                    if segment["cabin"] in getHigherClasses(travelClass):
-                        wrongTravelClass = True
-                        break
+                    if "cabin" in segment:
+                        if segment["cabin"] in getHigherClasses(travelClass):
+                            wrongTravelClass = True
+                            break
                     for includedAmenity in includedAmenities:
                         amenityFoundInSegment = False
                         isChargeable = False

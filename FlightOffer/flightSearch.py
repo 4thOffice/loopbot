@@ -11,6 +11,7 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import keys
 from Auxiliary.verbose_checkpoint import verbose
+from Auxiliary.generateErrorID import generate_error_id
 from amadeus import Client, ResponseError
 import getParametersJson
 import offerBagHandler
@@ -134,11 +135,12 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         search_params, extraTimeframes, checkedBags, refundableTicket, changeableTicket, flightNumbersPerItinerary, people = getParametersJson.extractSearchParameters(flightDetails, 250, verbose_checkpoint)
     except Exception as e:
         traceback_msg = traceback.format_exc()
-        print(f"Exception {e=} while trying to extract search parameters into json. {flightDetails=}")
+        error_id = generate_error_id()
+        print(f"Exception {e=} while trying to extract search parameters into json. Error ID: {error_id} {flightDetails=}")
         print(traceback_msg) 
-        verbose(f"Exception {e=} while trying to extract search parameters into json. {flightDetails=}", verbose_checkpoint)
+        verbose(f"Exception {e=} while trying to extract search parameters into json. Error ID: {error_id} {flightDetails=}", verbose_checkpoint)
         verbose(traceback_msg, verbose_checkpoint)
-        return {"status": "error", "data": "Error with calling amadeus API"}
+        return {"status": "error", "data": ("Error with calling amadeus API - Error ID: " + generate_error_id())}
 
     travelClass = search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["cabin"]
 
@@ -167,8 +169,8 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         while iteration < 4 and not flightsFound:
             flightOffers = get_flight_offers(access_token, search_params, verbose_checkpoint)
             if flightOffers["status"] == "error":
-                print("error 1")
-                verbose("error 1", verbose_checkpoint)
+                print("Error with getting flights")
+                verbose("Error with getting flights", verbose_checkpoint)
                 return {"status": "error", "data": flightOffers["details"]}
             elif flightOffers["status"] == "ok":
                 flightOffers = flightOffers["details"]["data"]
@@ -194,13 +196,15 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
             else:
                 flightsFound = True
 
-    except ResponseError as error:
-        print("error 4")
-        verbose("error 4", verbose_checkpoint)
-        print(error)
-        verbose(error, verbose_checkpoint)
+    except Exception as e:
+        traceback_msg = traceback.format_exc()
+        error_id = generate_error_id()
+        print(f"Error ID: {error_id}")
+        print(traceback_msg)
+        verbose(f"Error ID: {error_id}", verbose_checkpoint)
+        verbose(traceback_msg, verbose_checkpoint)
         time.sleep(0.5)
-        return {"status": "error", "data": "Unknown error occured"}
+        return {"status": "error", "data": ("Error ID: " + error_id)}
     #print(flightOffers)
 
     #if amadeus returned no flight offers

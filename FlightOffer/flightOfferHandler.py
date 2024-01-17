@@ -95,7 +95,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                 flightDetails = dataExtractor.askGPT(emailText, filesText, verbose_checkpoint=verbose_checkpoint)
 
             if flightDetails == None:
-                return({"parsedOffer": "Error requesting offers: Timeout while asking AI to extract data.", "details": None})
+                return({"parsedOffer": "Error requesting offers - Timeout while asking AI to extract data.", "details": None})
 
         print(f"data extracted from first extraction stage:\n {flightDetails}")
         verbose(f"data extracted from first extraction stage:\n {flightDetails}", verbose_checkpoint=verbose_checkpoint)
@@ -106,7 +106,9 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
             return({"parsedOffer": f"{travelClassText}\n\nNo flights found", "details": None})
         elif details["status"] == "error":
             if retries > 0:
-                return({"parsedOffer": f"{travelClassText}\n\n" + "Error requesting offers: " + details["data"], "details": None})
+                print(f"Error requesting offers - {details['data']}")
+                verbose(f"Error requesting offers - {details['data']}", verbose_checkpoint)
+                return({"parsedOffer": f"{travelClassText}\n\n" + "Error requesting offers - " + details["data"], "details": None})
             else:
                 print("Encountered an error, trying one more time...")
                 verbose("Encountered an error, trying one more time...", verbose_checkpoint)
@@ -195,24 +197,24 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
             for index, offer in enumerate(details["data"]["offers"]):
                 details["data"]["offers"][index]["upsellOffers"] = []
         
-        
         print("final offer details with amenities:\n", details["data"]["offers"])
         generatedOffer = offerGenerator.generateFlightsString({"offers": details["data"]["offers"]}, email_comment_id=email_comment_id)
 
         peopleString = ""
         if "people" in details["data"]:
             if details["data"]["people"]:
-                peopleString += "Rezervacija za:\n"
+                peopleString += "Reservation for:\n"
             for person in details["data"]["people"]:
                 peopleString += f"{person['first_name']} {person['last_name']}\n"
+            if details["data"]["people"]:
+                peopleString += "\n"
 
         print(offerGenerator.generateOffer(details["data"]["offers"][0]))
-
 
         print(details["data"])
         print("flight details gathered")
         
-        return({"parsedOffer": f"{peopleString}\n{travelClassText}\n\n{generatedOffer}", "details": details["data"]})
+        return({"parsedOffer": f"{peopleString}{travelClassText}\n\n{generatedOffer}", "details": details["data"]})
 
     else:
         print("Not a flight tender inquiry")
