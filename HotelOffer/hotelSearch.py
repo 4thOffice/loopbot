@@ -189,6 +189,7 @@ def getHotelOffer(hotelDetails, verbose_checkpoint=None):
 
     except Exception:
         print("Error getting hotel offer price")
+        verbose("Error getting hotel offer price", verbose_checkpoint=verbose_checkpoint)
 
     if not offerPrice:
         return {"price": 0, "currency": "", "checkInDate": "", "checkOutDate": "", "hotelName": ""}

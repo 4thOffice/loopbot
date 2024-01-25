@@ -77,6 +77,10 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                 continue
             #NDC
             print(f"raw extracted json:\n{flight}")
+
+            if not flight["maximumNumberOfConnections"]:
+                flight["maximumNumberOfConnections"] = 0
+                
             Auxiliary.verbose_checkpoint.verbose(f"raw extracted json:\n{flight}", verbose_checkpoint)
             search_params = {
                 "currencyCode": flight["currencyCode"],
