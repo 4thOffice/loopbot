@@ -13,6 +13,7 @@ import apiDataHandler
 import exceptions
 from contextlib import ExitStack
 import Auxiliary.verbose_checkpoint
+from datetime import datetime
 
 class AiAssistantManager:
     def __init__(self, content_text, files):
@@ -55,8 +56,10 @@ def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
         purpose='assistants'
         ).id
     
-
-    content_text = """Extract ALL flight details from the text which I will give you. Extract ALL of the following data:
+    current_date_time = datetime.now()
+    formatted_current_date = current_date_time.strftime("%dth of %B %Y")
+    
+    content_text = f"""Extract ALL flight details from the text which I will give you. You should also know that current date is {formatted_current_date}. Extract ALL of the following data:
             - currency
             - number of passangers (MUST ALWAYS include in output)
             - maximum number of connections

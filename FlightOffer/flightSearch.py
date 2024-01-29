@@ -310,7 +310,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         try:
             price_offers = get_price_offer(access_token, cheapestFlightOffers)["data"]["flightOffers"]
         except:
-            return {"status": "error", "data": "Error with getting final price offer"}
+            return {"status": "error", "data": "Flight fully booked."}
         
         cheapestPriceOffers = flightAuxiliary.get_time_difference_data(price_offers, extraTimeframes)
         cheapestPriceOffers = sorted(cheapestPriceOffers, key=lambda x: (x["time_difference"], float(x["offer"]["price"]["grandTotal"])))

@@ -14,6 +14,7 @@ import os
 import FlightOffer.apiDataHandler as apiDataHandler
 import keys
 import Auxiliary.verbose_checkpoint
+from datetime import datetime
 
 class AIregular:
     def __init__(self, openAI_APIKEY):
@@ -112,8 +113,11 @@ class AIregular:
     def processImages(self, emailText, imageFiles, shortenedOutput=False, verbose_checkpoint=None):
         client = OpenAI_()
         
+        current_date_time = datetime.now()
+        formatted_current_date = current_date_time.strftime("%dth of %B %Y")
+
         if not shortenedOutput:
-            content_text = """Extract ALL flight details from the text which I will give you. Extract ALL of the following data:
+            content_text = f"""Extract ALL flight details from the text which I will give you. You should also know that current date is {formatted_current_date}. Extract ALL of the following data:
                 - currency
                 - number of passangers (MUST ALWAYS include in output)
                 - maximum number of connections
