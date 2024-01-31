@@ -47,7 +47,7 @@ def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_cli
     print("Access key:\n", response.json())
     return response.json().get('access_token')
 
-def get_price_offer(access_token, flight_offers):
+def get_price_offer(access_token, ama_Client_Ref, flight_offers):
     if apiType == "personal":
         url = 'https://api.amadeus.com/v1/shopping/flight-offers/pricing'
     else:
@@ -55,12 +55,14 @@ def get_price_offer(access_token, flight_offers):
         
     headers = {
         'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/vnd.amadeus+json'
+        'Content-Type': 'application/vnd.amadeus+json',
+        'ama-Client-Ref': ama_Client_Ref
     }
     payload = {
         'data': {
             'type': 'flight-offers-pricing',
-            'flightOffers': flight_offers
+            'flightOffers': flight_offers,
+            'ama-Client-Ref': ama_Client_Ref
         }
     }
 
@@ -95,8 +97,7 @@ def get_airport_coordinates(access_token, IATA):
         print(f'Failed to retrieve airport information: {response.status_code} - {response.text}')
         return None
     
-def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
-    
+def get_flight_offers(access_token, search_params, ama_Client_Ref, verbose_checkpoint=None):
     if apiType == "personal":
         endpoint = 'https://api.amadeus.com/v2/shopping/flight-offers'
     else:
@@ -104,7 +105,8 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
 
     headers = {
         'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/vnd.amadeus+json'
+        'Content-Type': 'application/vnd.amadeus+json',
+        'ama-Client-Ref': ama_Client_Ref
     }
     try:
         response = requests.post(endpoint, headers=headers, data=json.dumps(search_params))
@@ -131,7 +133,7 @@ def get_flight_offers(access_token, search_params, verbose_checkpoint=None):
         verbose(f"Error getting flight offers {error}", verbose_checkpoint=verbose_checkpoint)
         return responseJson
     
-def getFlightOffer(flightDetails, verbose_checkpoint=None):
+def getFlightOffer(flightDetails, ama_Client_Ref, verbose_checkpoint=None):
     try:
         search_params, extraTimeframes, checkedBags, refundableTicket, changeableTicket, flightNumbersPerItinerary, people = getParametersJson.extractSearchParameters(flightDetails, 250, verbose_checkpoint)
     except Exception as e:
@@ -168,7 +170,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         iteration = 0
         flightsFound = False
         while iteration < 4 and not flightsFound:
-            flightOffers = get_flight_offers(access_token, search_params, verbose_checkpoint)
+            flightOffers = get_flight_offers(access_token, search_params, ama_Client_Ref, verbose_checkpoint)
             if flightOffers["status"] == "error":
                 print("Error with getting flights")
                 verbose("Error with getting flights", verbose_checkpoint)
@@ -308,7 +310,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         print("get price offers for:\n", cheapestFlightOffers)
         verbose(f"get price offers for:\n{cheapestFlightOffers}", verbose_checkpoint)
         try:
-            price_offers = get_price_offer(access_token, cheapestFlightOffers)["data"]["flightOffers"]
+            price_offers = get_price_offer(access_token, ama_Client_Ref, cheapestFlightOffers)["data"]["flightOffers"]
         except:
             return {"status": "error", "data": "Flight fully booked."}
         
@@ -363,7 +365,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
         cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
     print(f"final offers:\n{cheapestPriceOffers}")
 
-    cheapestPriceOffers = upsellHandler.getUpsellOffers(cheapestPriceOffers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, apiType, verbose_checkpoint)
+    cheapestPriceOffers = upsellHandler.getUpsellOffers(cheapestPriceOffers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, apiType, ama_Client_Ref, verbose_checkpoint)
 
     cheapestPriceOffers = flightAuxiliary.get_time_difference_data(cheapestPriceOffers, extraTimeframes)
     for i, x in enumerate(cheapestPriceOffers):
@@ -395,7 +397,7 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
 
     just_offers = [item["offer"] for item in cheapestPriceOffers]
 
-    just_offers = offerBagHandler.addBags(just_offers, checkedBags, get_price_offer, access_token, verbose_checkpoint)
+    just_offers = offerBagHandler.addBags(just_offers, checkedBags, get_price_offer, access_token, ama_Client_Ref, verbose_checkpoint)
 
     for index, offer_ in enumerate(just_offers):
         cheapestPriceOffers[index] = {"offer": offer_, "amenities": cheapestPriceOffers[index]["amenities"]}
@@ -439,5 +441,5 @@ def getFlightOffer(flightDetails, verbose_checkpoint=None):
                 checkedBags += cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]["chargeableCheckedBags"]["quantity"]
 
         returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities_dict, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode})
-    
+        
     return returnData

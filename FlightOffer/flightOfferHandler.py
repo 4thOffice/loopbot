@@ -17,6 +17,7 @@ if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
 import AIregular
 import keys
 import traceback
+import uuid
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
 hotel_offer_path = os.path.join(current_directory, 'HotelOffer')
@@ -121,7 +122,8 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
         print(f"data extracted from first extraction stage:\n {flightDetails}")
         verbose(f"data extracted from first extraction stage:\n {flightDetails}", verbose_checkpoint=verbose_checkpoint)
         intercontinentalText, travelClassText = getExtraInfo(flightDetails)
-        details = flightSearch.getFlightOffer(flightDetails, verbose_checkpoint)
+        ama_Client_Ref = str(uuid.uuid4())
+        details = flightSearch.getFlightOffer(flightDetails, ama_Client_Ref, verbose_checkpoint)
 
         if details["status"] == "ok" and details["data"] is None:
             return({"parsedOffer": f"{travelClassText}\n\nNo flights found", "details": None})

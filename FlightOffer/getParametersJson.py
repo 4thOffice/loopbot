@@ -87,7 +87,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                 "originDestinations": [],
                 "travelers": [],
                 "sources": [
-                    "GDS"
+                    "GDS", "NDC", "EAC", "LTC", "PYTON"
                 ],
                 "searchCriteria": {
                     "maxFlightOffers": offerCount,

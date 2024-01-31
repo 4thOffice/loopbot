@@ -1,6 +1,6 @@
 from Auxiliary.verbose_checkpoint import verbose
 
-def addBags(offers, checkedBags, get_price_offer, access_token, verbose_checkpoint):
+def addBags(offers, checkedBags, get_price_offer, access_token, ama_Client_Ref, verbose_checkpoint):
     for index, offer in enumerate(offers):
         bagsAdded = False
         oldPrice = offer["price"]["grandTotal"]
@@ -17,7 +17,7 @@ def addBags(offers, checkedBags, get_price_offer, access_token, verbose_checkpoi
         
         if bagsAdded:
             try:
-                priceOfferWithbags = get_price_offer(access_token, [offer])["data"]["flightOffers"][0]
+                priceOfferWithbags = get_price_offer(access_token, ama_Client_Ref, [offer])["data"]["flightOffers"][0]
             except Exception:
                 verbose(f"Offer {index}: error fetching price for offer with additional checked bags", verbose_checkpoint)
                 print(f"Offer {index}: error fetching price for offer with additional checked bags")

@@ -156,7 +156,7 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
 
-def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, apiType, verbose_checkpoint=None):
+def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, apiType, ama_Client_Ref, verbose_checkpoint=None):
     for index, offer in enumerate(offers):
         print("----------------------------")
         print("offer to get upsell for:\n", offer)
@@ -187,7 +187,7 @@ def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, chan
         
             if len(upsold["amenities"]) > 0:
                 try:
-                    upsold_price_offer = get_price_offer(access_token, [upsold["offer"]])["data"]["flightOffers"][0]
+                    upsold_price_offer = get_price_offer(access_token, ama_Client_Ref, [upsold["offer"]])["data"]["flightOffers"][0]
                     offers[index] = {"offer": upsold_price_offer, "amenities": upsold['amenities']}
                 except Exception as e:
                     traceback_str = traceback.format_exc()
