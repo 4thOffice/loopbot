@@ -17,6 +17,7 @@ import getParametersJson
 import offerBagHandler
 import upsellHandler
 import flightAuxiliary
+from timeframeExpander import expandTimeframes
 
 apiType = "personal" #personal/enterprise
 
@@ -241,42 +242,56 @@ def getFlightOffer(flightDetails, ama_Client_Ref, verbose_checkpoint=None):
         else:
             print("no flight offers satisfied all flight numbers.. using not optimal flights..")
 
-    cheapestFlightOffers = []
-    #check which offers qualify
-    for flightOffer in flightOffers:
-        timeframesSatisfied = True
-        for index, itinerary in enumerate(flightOffer['itineraries']):
-            departure_time = itinerary['segments'][0]['departure']['at']
-            arrival_time = itinerary['segments'][-1]['arrival']['at']
+    expanding = True
+    iteration = 0
+    while expanding:
+        if iteration > 0:
+            extraTimeframes, end = expandTimeframes(extraTimeframes)
+            print(f"Expanded timeframes, iteration {iteration}: {extraTimeframes}")
+            verbose(f"Expanded timeframes, iteration {iteration}", verbose_checkpoint)
+            if end:
+                expanding = False
 
-            departure_time = datetime.datetime.fromisoformat(departure_time).time()
-            arrival_time = datetime.datetime.fromisoformat(arrival_time).time()
+        cheapestFlightOffers = []
+        #check which offers qualify
+        for flightOffer in flightOffers:
+            timeframesSatisfied = True
+            for index, itinerary in enumerate(flightOffer['itineraries']):
+                departure_time = itinerary['segments'][0]['departure']['at']
+                arrival_time = itinerary['segments'][-1]['arrival']['at']
 
-            if "earliestDepartureTime" in extraTimeframes[index] and extraTimeframes[index]["earliestDepartureTime"] != "":
-                if departure_time < datetime.datetime.strptime(extraTimeframes[index]["earliestDepartureTime"], '%H:%M:%S').time():
-                    timeframesSatisfied = False
-                    break
-            if "latestDepartureTime" in extraTimeframes[index] and extraTimeframes[index]["latestDepartureTime"] != "":
-                if departure_time > datetime.datetime.strptime(extraTimeframes[index]["latestDepartureTime"], '%H:%M:%S').time():
-                    timeframesSatisfied = False
-                    break
-            if "earliestArrivalTime" in extraTimeframes[index] and extraTimeframes[index]["earliestArrivalTime"] != "":
-                if arrival_time < datetime.datetime.strptime(extraTimeframes[index]["earliestArrivalTime"], '%H:%M:%S').time():
-                    timeframesSatisfied = False
-                    break
-            if "latestArrivalTime" in extraTimeframes[index] and extraTimeframes[index]["latestArrivalTime"] != "":
-                if arrival_time > datetime.datetime.strptime(extraTimeframes[index]["latestArrivalTime"], '%H:%M:%S').time():
-                    timeframesSatisfied = False
-                    break
+                departure_time = datetime.datetime.fromisoformat(departure_time).time()
+                arrival_time = datetime.datetime.fromisoformat(arrival_time).time()
 
-        if timeframesSatisfied:
-            cheapestFlightOffers.append(flightOffer)
-            print("satisfied all timeframes")
+                if "earliestDepartureTime" in extraTimeframes[index] and extraTimeframes[index]["earliestDepartureTime"] != "":
+                    if departure_time < datetime.datetime.strptime(extraTimeframes[index]["earliestDepartureTime"], '%H:%M:%S').time():
+                        timeframesSatisfied = False
+                        break
+                if "latestDepartureTime" in extraTimeframes[index] and extraTimeframes[index]["latestDepartureTime"] != "":
+                    if departure_time > datetime.datetime.strptime(extraTimeframes[index]["latestDepartureTime"], '%H:%M:%S').time():
+                        timeframesSatisfied = False
+                        break
+                if "earliestArrivalTime" in extraTimeframes[index] and extraTimeframes[index]["earliestArrivalTime"] != "":
+                    if arrival_time < datetime.datetime.strptime(extraTimeframes[index]["earliestArrivalTime"], '%H:%M:%S').time():
+                        timeframesSatisfied = False
+                        break
+                if "latestArrivalTime" in extraTimeframes[index] and extraTimeframes[index]["latestArrivalTime"] != "":
+                    if arrival_time > datetime.datetime.strptime(extraTimeframes[index]["latestArrivalTime"], '%H:%M:%S').time():
+                        timeframesSatisfied = False
+                        break
 
-    if len(cheapestFlightOffers) <= 0:
-        cheapestFlightOffers = flightOffers
-        print("no flight offers satisfied all timeframes.. using not optimal flights..")
-        verbose("no flight offers satisfied all timeframes.. using not optimal flights..", verbose_checkpoint)
+            if timeframesSatisfied:
+                cheapestFlightOffers.append(flightOffer)
+                print("satisfied all timeframes")
+
+        if len(cheapestFlightOffers) <= 0:
+            cheapestFlightOffers = flightOffers
+            print("no flight offers satisfied all timeframes.. using not optimal flights..")
+            verbose("no flight offers satisfied all timeframes.. using not optimal flights..", verbose_checkpoint)
+        else:
+            expanding = False
+
+        iteration += 1
 
     flightOffers = cheapestFlightOffers
 
