@@ -52,25 +52,23 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
         print(f"All upsell offers: {len(res['data'])}")
         #print(f"Upsell offers with correct amount of included checked bags ({checkedBags}): {len(offersWithAmenityCount)}")
 
-        if len(offersWithAmenityCount) <= 0:
-            print("No upsell offers with correct amount of included checked bags found.. using non optimal upsell offers")
-            for offer in res["data"]:
-                offersWithAmenityCount.append({"offer": offer, "amenityCount": 0, "amenities": []})
+        #for offer in res["data"]:
+        #    offersWithAmenityCount.append({"offer": offer, "amenityCount": 0, "amenities": []})
 
         for offer in res["data"]:
             includedAmenities = {}
             wrongTravelClass = False
+            wrongTravelClassNumber = 0
             for amenity in amenities:
                 includedAmenities[amenity["amenity_description"]] = {"included": True, "isChargeable": False, "isRequested": amenity["isRequested"]}
   
             for traveler in offer["travelerPricings"]:
-                if wrongTravelClass:
-                    break
                 for segment in traveler["fareDetailsBySegment"]:
                     if "cabin" in segment:
                         if segment["cabin"] in getHigherClasses(travelClass):
-                            wrongTravelClass = True
-                            break
+                            #wrongTravelClass = True
+                            wrongTravelClassNumber += 1
+                            #break
                     for includedAmenity in includedAmenities:
                         amenityFoundInSegment = False
                         isChargeable = False
@@ -88,9 +86,16 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
                         if not amenityFoundInSegment:
                             includedAmenities[includedAmenity]["included"] = False
 
+                if wrongTravelClassNumber > int(len(traveler["fareDetailsBySegment"])/2):
+                    print("DISCARDED")
+                    wrongTravelClass = True
+                    break
+
             if wrongTravelClass:
                 continue
             
+            offersWithAmenityCount.append({"offer": offer, "amenityCount": 0, "amenities": []})
+
             print(f"included amenities: {includedAmenities}")
             verbose(f"included amenities: {includedAmenities}", verbose_checkpoint)
 
@@ -124,7 +129,6 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
         
         new_sorted_offers = []
         for sorted_offer in sorted_offers:
-            wrongTravelClass = False
             includedBagsInSegment = math.inf
             for traveler in sorted_offer["offer"]["travelerPricings"]:
                 for segment in traveler["fareDetailsBySegment"]:
@@ -136,7 +140,7 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
 
             if includedBagsInSegment >= checkedBags:
                 new_sorted_offers.append({"offer": sorted_offer["offer"], "amenityCount": sorted_offer["amenityCount"], "amenities": sorted_offer["amenities"]})
-
+                print("selected offer with included CHECKED BAGS:", includedBagsInSegment)
 
         #print("----------------------------")
         #print("Compare offers")

@@ -286,8 +286,8 @@ def getFlightOffer(flightDetails, ama_Client_Ref, verbose_checkpoint=None):
 
         if len(cheapestFlightOffers) <= 0:
             cheapestFlightOffers = flightOffers
-            print("no flight offers satisfied all timeframes.. using not optimal flights..")
-            verbose("no flight offers satisfied all timeframes.. using not optimal flights..", verbose_checkpoint)
+            print("no flight offers satisfied all timeframes..")
+            verbose("no flight offers satisfied all timeframes..", verbose_checkpoint)
         else:
             expanding = False
 

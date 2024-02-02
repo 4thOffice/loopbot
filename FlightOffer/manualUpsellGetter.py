@@ -6,9 +6,8 @@ sys.path.append("../")
 import keys
 
 def get_access_token(api_key=keys.amadeus_client_id_personal, api_secret=keys.amadeus_client_secret_personal):
-    api_key=keys.amadeus_client_id_personal
-    api_secret=keys.amadeus_client_secret_personal
     auth_url = 'https://api.amadeus.com/v1/security/oauth2/token'
+    #auth_url = 'https://test.travel.api.amadeus.com/v1/security/oauth2/token'
 
     response = requests.post(auth_url, data={
         'grant_type': 'client_credentials',
@@ -31,6 +30,7 @@ def getHigherClasses(travelClass):
 
 def get_upsell_offer(access_token, flight_offers, amenities, travelClass):
     url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
+    #url = 'https://test.travel.api.amadeus.com/v1/shopping/flight-offers/upselling'
 
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -65,16 +65,19 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass):
         for offer in res["data"]:
             includedAmenities = {}
             wrongTravelClass = False
+            wrongTravelClassNumber = 0
             for amenity in amenities:
                 includedAmenities[amenity] = {"included": True, "isChargeable": False}
   
             for traveler in offer["travelerPricings"]:
-                if wrongTravelClass:
-                    break
+                #if wrongTravelClass:
+                    #break
                 for segment in traveler["fareDetailsBySegment"]:
                     if segment["cabin"] in getHigherClasses(travelClass):
-                        wrongTravelClass = True
-                        break
+                        #wrongTravelClass = True
+                        print("Wrong travel class")
+                        wrongTravelClassNumber += 1
+                        #break
                     for includedAmenity in includedAmenities:
                         amenityFoundInSegment = False
                         isChargeable = False
@@ -90,8 +93,12 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass):
                         includedAmenities[includedAmenity]["isChargeable"] = isChargeable
                         if not amenityFoundInSegment:
                             includedAmenities[includedAmenity]["included"] = False
+                if wrongTravelClassNumber > int(len(traveler["fareDetailsBySegment"])/2):
+                    wrongTravelClass = True
+                    break
 
             if wrongTravelClass:
+                print("DISCARDED")
                 continue
             
             print(includedAmenities)
@@ -132,7 +139,8 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass):
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
     
-offer = {'type': 'flight-offer', 'id': '4', 'source': 'GDS', 'instantTicketingRequired': False, 'nonHomogeneous': False, 'paymentCardRequired': False, 'lastTicketingDate': '2024-02-02', 'itineraries': [{'segments': [{'departure': {'iataCode': 'VIE', 'terminal': '3', 'at': '2024-03-09T09:35:00'}, 'arrival': {'iataCode': 'AGP', 'at': '2024-03-09T12:55:00'}, 'carrierCode': 'OS', 'number': '385', 'aircraft': {'code': '320'}, 'operating': {'carrierCode': 'OS'}, 'duration': 'PT3H20M', 'id': '11', 'numberOfStops': 0, 'co2Emissions': [{'weight': 165, 'weightUnit': 'KG', 'cabin': 'ECONOMY'}]}]}, {'segments': [{'departure': {'iataCode': 'AGP', 'at': '2024-03-16T13:40:00'}, 'arrival': {'iataCode': 'VIE', 'terminal': '3', 'at': '2024-03-16T16:50:00'}, 'carrierCode': 'OS', 'number': '386', 'aircraft': {'code': '320'}, 'operating': {'carrierCode': 'OS'}, 'duration': 'PT3H10M', 'id': '62', 'numberOfStops': 0, 'co2Emissions': [{'weight': 165, 'weightUnit': 'KG', 'cabin': 'ECONOMY'}]}]}], 'price': {'currency': 'EUR', 'total': '1213.47', 'base': '894.00', 'fees': [{'amount': '0.00', 'type': 'SUPPLIER'}, {'amount': '0.00', 'type': 'TICKETING'}, {'amount': '0.00', 'type': 'FORM_OF_PAYMENT'}], 'grandTotal': '1213.47', 'billingCurrency': 'EUR'}, 'pricingOptions': {'fareType': ['PUBLISHED'], 'includedCheckedBagsOnly': True}, 'validatingAirlineCodes': ['OS'], 'travelerPricings': [{'travelerId': '1', 'fareOption': 'STANDARD', 'travelerType': 'ADULT', 'price': {'currency': 'EUR', 'total': '404.49', 'base': '298.00', 'taxes': [{'amount': '10.28', 'code': 'AT'}, {'amount': '12.00', 'code': 'QD'}, {'amount': '3.27', 'code': 'QV'}, {'amount': '34.00', 'code': 'YQ'}, {'amount': '0.63', 'code': 'OG'}, {'amount': '17.50', 'code': 'YR'}, {'amount': '6.42', 'code': 'JD'}, {'amount': '22.39', 'code': 'ZY'}], 'refundableTaxes': '54.99'}, 'fareDetailsBySegment': [{'segmentId': '11', 'cabin': 'ECONOMY', 'fareBasis': 'SEUCLSP4', 'brandedFare': 'CLASSIC', 'class': 'S', 'includedCheckedBags': {'quantity': 1}}, {'segmentId': '62', 'cabin': 'ECONOMY', 'fareBasis': 'SEUCLSP4', 'brandedFare': 'CLASSIC', 'class': 'S', 'includedCheckedBags': {'quantity': 1}}]}, {'travelerId': '2', 'fareOption': 'STANDARD', 'travelerType': 'ADULT', 'price': {'currency': 'EUR', 'total': '404.49', 'base': '298.00', 'taxes': [{'amount': '10.28', 'code': 'AT'}, {'amount': '12.00', 'code': 'QD'}, {'amount': '3.27', 'code': 'QV'}, {'amount': '34.00', 'code': 'YQ'}, {'amount': '0.63', 'code': 'OG'}, {'amount': '17.50', 'code': 'YR'}, {'amount': '6.42', 'code': 'JD'}, {'amount': '22.39', 'code': 'ZY'}], 'refundableTaxes': '54.99'}, 'fareDetailsBySegment': [{'segmentId': '11', 'cabin': 'ECONOMY', 'fareBasis': 'SEUCLSP4', 'brandedFare': 'CLASSIC', 'class': 'S', 'includedCheckedBags': {'quantity': 1}}, {'segmentId': '62', 'cabin': 'ECONOMY', 'fareBasis': 'SEUCLSP4', 'brandedFare': 'CLASSIC', 'class': 'S', 'includedCheckedBags': {'quantity': 1}}]}, {'travelerId': '3', 'fareOption': 'STANDARD', 'travelerType': 'ADULT', 'price': {'currency': 'EUR', 'total': '404.49', 'base': '298.00', 'taxes': [{'amount': '10.28', 'code': 'AT'}, {'amount': '12.00', 'code': 'QD'}, {'amount': '3.27', 'code': 'QV'}, {'amount': '34.00', 'code': 'YQ'}, {'amount': '0.63', 'code': 'OG'}, {'amount': '17.50', 'code': 'YR'}, {'amount': '6.42', 'code': 'JD'}, {'amount': '22.39', 'code': 'ZY'}], 'refundableTaxes': '54.99'}, 'fareDetailsBySegment': [{'segmentId': '11', 'cabin': 'ECONOMY', 'fareBasis': 'SEUCLSP4', 'brandedFare': 'CLASSIC', 'class': 'S', 'includedCheckedBags': {'quantity': 1}}, {'segmentId': '62', 'cabin': 'ECONOMY', 'fareBasis': 'SEUCLSP4', 'brandedFare': 'CLASSIC', 'class': 'S', 'includedCheckedBags': {'quantity': 1}}]}]}
+#offer =  {'type': 'flight-offer', 'id': '1', 'source': 'NDC', 'sourceReference': 'eJyNzDEOAiEQBdATfZmBgVnKNauJNqurvQEWEgujhSbGwrOrN7B/eanYxf2JaitI0FH0mqWCeVYIxQ6xaIK6FnyYiZisWfZmNb3G87Q/XFb7hvfjuttMuG0Pw4n7k7ikWjwhEieIdPZ7BItWZu87DdE2/3PjGs76pDVlxKoEcczIsTB8rBI4u0aSzc78KTFuwKYfjoY/0/c32Q==', 'instantTicketingRequired': False, 'nonHomogeneous': False, 'oneWay': False, 'lastTicketingDate': '2024-02-01', 'lastTicketingDateTime': '2024-02-01T23:59:00', 'itineraries': [{'duration': 'PT2H35M', 'segments': [{'departure': {'iataCode': 'VCE', 'at': '2024-02-19T08:20:00'}, 'arrival': {'iataCode': 'LHR', 'terminal': '5', 'at': '2024-02-19T09:55:00'}, 'carrierCode': 'BA', 'number': '597', 'aircraft': {'code': '319'}, 'operating': {'carrierCode': 'BA'}, 'duration': 'PT2H35M', 'id': '19', 'numberOfStops': 0, 'blacklistedInEU': False}]}, {'duration': 'PT2H30M', 'segments': [{'departure': {'iataCode': 'LHR', 'terminal': '5', 'at': '2024-02-23T17:35:00'}, 'arrival': {'iataCode': 'VCE', 'at': '2024-02-23T21:05:00'}, 'carrierCode': 'BA', 'number': '596', 'aircraft': {'code': '32N'}, 'operating': {'carrierCode': 'BA'}, 'duration': 'PT2H30M', 'id': '34', 'numberOfStops': 0, 'blacklistedInEU': False}]}], 'price': {'currency': 'EUR', 'total': '153.44', 'base': '73.00', 'fees': [{'amount': '0.00', 'type': 'SUPPLIER'}, {'amount': '0.00', 'type': 'TICKETING'}], 'grandTotal': '153.44'}, 'pricingOptions': {'fareType': ['PUBLISHED'], 'includedCheckedBagsOnly': False}, 'travelerPricings': [{'travelerId': '1', 'fareOption': 'STANDARD', 'travelerType': 'ADULT', 'price': {'currency': 'EUR', 'total': '153.44', 'base': '73.00'}, 'fareDetailsBySegment': [{'segmentId': '19', 'cabin': 'ECONOMY', 'fareBasis': 'NZLZ0H', 'class': 'N', 'includedCheckedBags': {'quantity': 0}}, {'segmentId': '34', 'cabin': 'ECONOMY', 'fareBasis': 'OULZ0H', 'class': 'O', 'includedCheckedBags': {'quantity': 0}}]}], "validatingAirlineCodes": ["BA"]}
+offer =  {'type': 'flight-offer', 'id': '15', 'source': 'GDS', 'instantTicketingRequired': False, 'nonHomogeneous': False, 'paymentCardRequired': False, 'lastTicketingDate': '2024-02-04', 'itineraries': [{'segments': [{'departure': {'iataCode': 'GRZ', 'at': '2024-06-14T09:40:00'}, 'arrival': {'iataCode': 'MUC', 'terminal': '2', 'at': '2024-06-14T10:30:00'}, 'carrierCode': 'LH', 'number': '2341', 'aircraft': {'code': 'E95'}, 'operating': {'carrierCode': 'LH'}, 'duration': 'PT50M', 'id': '19', 'numberOfStops': 0, 'co2Emissions': [{'weight': 68, 'weightUnit': 'KG', 'cabin': 'ECONOMY'}]}, {'departure': {'iataCode': 'MUC', 'terminal': '2', 'at': '2024-06-14T11:30:00'}, 'arrival': {'iataCode': 'ORD', 'terminal': '5', 'at': '2024-06-14T14:00:00'}, 'carrierCode': 'LH', 'number': '9268', 'aircraft': {'code': '787'}, 'operating': {'carrierCode': 'UA'}, 'duration': 'PT9H30M', 'id': '20', 'numberOfStops': 0, 'co2Emissions': [{'weight': 383, 'weightUnit': 'KG', 'cabin': 'ECONOMY'}]}, {'departure': {'iataCode': 'ORD', 'terminal': '1', 'at': '2024-06-14T20:00:00'}, 'arrival': {'iataCode': 'MEM', 'at': '2024-06-14T21:54:00'}, 'carrierCode': 'LH', 'number': '8820', 'aircraft': {'code': '73G'}, 'operating': {'carrierCode': 'UA'}, 'duration': 'PT1H54M', 'id': '21', 'numberOfStops': 0, 'co2Emissions': [{'weight': 113, 'weightUnit': 'KG', 'cabin': 'ECONOMY'}]}]}, {'segments': [{'departure': {'iataCode': 'MEM', 'at': '2024-06-24T16:55:00'}, 'arrival': {'iataCode': 'ORD', 'terminal': '2', 'at': '2024-06-24T18:50:00'}, 'carrierCode': 'LH', 'number': '7551', 'aircraft': {'code': 'CR7'}, 'operating': {'carrierCode': 'UA'}, 'duration': 'PT1H55M', 'id': '79', 'numberOfStops': 0, 'co2Emissions': [{'weight': 114, 'weightUnit': 'KG', 'cabin': 'ECONOMY'}]}, {'departure': {'iataCode': 'ORD', 'terminal': '1', 'at': '2024-06-24T22:30:00'}, 'arrival': {'iataCode': 'FRA', 'terminal': '1', 'at': '2024-06-25T14:05:00'}, 'carrierCode': 'LH', 'number': '433', 'aircraft': {'code': '343'}, 'operating': {'carrierCode': 'LH'}, 'duration': 'PT8H35M', 'id': '80', 'numberOfStops': 0, 'co2Emissions': [{'weight': 376, 'weightUnit': 'KG', 'cabin': 'ECONOMY'}]}, {'departure': {'iataCode': 'FRA', 'terminal': '1', 'at': '2024-06-25T16:40:00'}, 'arrival': {'iataCode': 'GRZ', 'at': '2024-06-25T18:00:00'}, 'carrierCode': 'LH', 'number': '6928', 'aircraft': {'code': 'E95'}, 'operating': {'carrierCode': 'EN'}, 'duration': 'PT1H20M', 'id': '81', 'numberOfStops': 0, 'co2Emissions': [{'weight': 86, 'weightUnit': 'KG', 'cabin': 'ECONOMY'}]}]}], 'price': {'currency': 'EUR', 'total': '927.97', 'base': '522.00', 'fees': [{'amount': '0.00', 'type': 'SUPPLIER'}, {'amount': '0.00', 'type': 'TICKETING'}, {'amount': '0.00', 'type': 'FORM_OF_PAYMENT'}], 'grandTotal': '927.97', 'billingCurrency': 'EUR'}, 'pricingOptions': {'fareType': ['PUBLISHED'], 'includedCheckedBagsOnly': False}, 'validatingAirlineCodes': ['LH'], 'travelerPricings': [{'travelerId': '1', 'fareOption': 'STANDARD', 'travelerType': 'ADULT', 'price': {'currency': 'EUR', 'total': '927.97', 'base': '522.00', 'taxes': [{'amount': '10.00', 'code': 'DE'}, {'amount': '6.46', 'code': 'XY'}, {'amount': '3.54', 'code': 'XA'}, {'amount': '6.44', 'code': 'YC'}, {'amount': '4.16', 'code': 'XF'}, {'amount': '44.40', 'code': 'RA'}, {'amount': '18.81', 'code': 'AT'}, {'amount': '12.00', 'code': 'QD'}, {'amount': '211.00', 'code': 'YQ'}, {'amount': '10.34', 'code': 'AY'}, {'amount': '17.50', 'code': 'YR'}, {'amount': '40.98', 'code': 'US'}, {'amount': '20.34', 'code': 'ZY'}], 'refundableTaxes': '132.33'}, 'fareDetailsBySegment': [{'segmentId': '19', 'cabin': 'ECONOMY', 'fareBasis': 'TMPMF8BQ', 'brandedFare': 'ECOLIGHT', 'class': 'T', 'includedCheckedBags': {'quantity': 0}}, {'segmentId': '20', 'cabin': 'ECONOMY', 'fareBasis': 'TMPMF8BQ', 'brandedFare': 'ECOLIGHT', 'class': 'T', 'includedCheckedBags': {'quantity': 0}}, {'segmentId': '21', 'cabin': 'ECONOMY', 'fareBasis': 'TMPMF8BQ', 'brandedFare': 'ECOLIGHT', 'class': 'T', 'includedCheckedBags': {'quantity': 0}}, {'segmentId': '79', 'cabin': 'ECONOMY', 'fareBasis': 'SMPMD8BQ', 'brandedFare': 'ECOLIGHT', 'class': 'S', 'includedCheckedBags': {'quantity': 0}}, {'segmentId': '80', 'cabin': 'ECONOMY', 'fareBasis': 'SMPMD8BQ', 'brandedFare': 'ECOLIGHT', 'class': 'S', 'includedCheckedBags': {'quantity': 0}}, {'segmentId': '81', 'cabin': 'ECONOMY', 'fareBasis': 'SMPMD8BQ', 'brandedFare': 'ECOLIGHT', 'class': 'S', 'includedCheckedBags': {'quantity': 0}}]}]}
 
 upsold = get_upsell_offer(get_access_token(), offer, ["REFUNDABLE TICKET", "CHANGEABLE TICKET", "REFUNDS ANYTIME"], "ECONOMY")
 
