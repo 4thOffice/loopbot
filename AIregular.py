@@ -117,7 +117,7 @@ class AIregular:
         formatted_current_date = current_date_time.strftime("%dth of %B %Y")
 
         if not shortenedOutput:
-            content_text = f"""Extract ALL flight details from the text which I will give you. You should also know that current date is {formatted_current_date}. Extract ALL of the following data:
+            content_text = f"""Extract ALL flight details from the text which I will give you. Extract ALL of the following data:
                 - currency
                 - number of passangers (MUST ALWAYS include in output)
                 - maximum number of connections
@@ -140,9 +140,9 @@ class AIregular:
                 - included connection points names and IATA 3-letter codes
                 - travel class
                 - departure date
-                - exact departure time (must be in HH:MM:SS format) if not specified, just say so
-                - exact arrival time (must be in HH:MM:SS format) if not specified, just say so
-                //Extract the following time parameters from flight timing information written in the text you will be given. You can also leave them empty if not mentioned at all. Convert each time request to to proper time parameters. For example "departure in the evening" should be earliest departure time: 18:00:00 and latest departure time: 23:59:59 or for example "departure in the morning" should be earliest departure time: 06:00:00 and latest departure time: 12:00:00
+                - exact departure time (must be in HH:MM:SS format)
+                - exact arrival time (must be in HH:MM:SS format)
+                //Extract the following time parameters from flight timing information written in the text you will be given. You can also leave them empty if not mentioned at all. Convert each time request to to proper time parameters. For example "departure in the evening" should be earliest departure time: 18:00:00 and latest departure time: 23:59:59
                 - earliest departure time (must be in HH:MM:SS format) //earlist possible time to depart
                 - latest departure time (must be in HH:MM:SS format) //latest possible time to depart
                 - earliest arrival time (must be in HH:MM:SS format) //earlist possible time to arrive
