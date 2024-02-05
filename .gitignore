@@ -61,3 +61,4 @@ flightLogs.json
 getPriceOfferManual.py
 manualCreateOrder.py
 search.py
+manualUpsellGetter.py

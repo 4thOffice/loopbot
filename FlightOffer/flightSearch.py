@@ -134,17 +134,14 @@ def get_flight_offers(access_token, search_params, ama_Client_Ref, verbose_check
         verbose(f"Error getting flight offers {error}", verbose_checkpoint=verbose_checkpoint)
         return responseJson
     
-def getFlightOffer(flightDetails, ama_Client_Ref, verbose_checkpoint=None):
-    try:
-        search_params, extraTimeframes, checkedBags, refundableTicket, changeableTicket, flightNumbersPerItinerary, people = getParametersJson.extractSearchParameters(flightDetails, 250, verbose_checkpoint)
-    except Exception as e:
-        traceback_msg = traceback.format_exc()
-        error_id = generate_error_id()
-        print(f"Exception {e=} while trying to extract search parameters into json. Error ID: {error_id} {flightDetails=}")
-        print(traceback_msg) 
-        verbose(f"Exception {e=} while trying to extract search parameters into json. Error ID: {error_id} {flightDetails=}", verbose_checkpoint)
-        verbose(traceback_msg, verbose_checkpoint)
-        return {"status": "error", "data": ("Error with calling amadeus API - Error ID: " + generate_error_id())}
+def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=None):
+    search_params = structuredFlightDetails["search_params"]
+    extraTimeframes = structuredFlightDetails["extraTimeframes"]
+    checkedBags = structuredFlightDetails["checkedbags"]
+    refundableTicket = structuredFlightDetails["refundableTicket"]
+    changeableTicket = structuredFlightDetails["changeableTicket"]
+    flightNumbersPerItinerary = structuredFlightDetails["flightNumbersPerItinerary"]
+    people = structuredFlightDetails["people"]
 
     travelClass = search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["cabin"]
 
@@ -236,10 +233,12 @@ def getFlightOffer(flightDetails, ama_Client_Ref, verbose_checkpoint=None):
             if numberOfFlightNumbers == numberOfFlightNumbersFound:
                 flightOffersWithCorrectFlightNumbers.append(flightOffer)
 
+        verbose(f"Flight offers with correct flight numbers: {flightOffersWithCorrectFlightNumbers}", verbose_checkpoint)
         print(f"Flight offers with correct flight numbers: {flightOffersWithCorrectFlightNumbers}")
         if len(flightOffersWithCorrectFlightNumbers) > 0:
             flightOffers = flightOffersWithCorrectFlightNumbers
         else:
+            verbose("no flight offers satisfied all flight numbers.. using not optimal flights..", verbose_checkpoint)
             print("no flight offers satisfied all flight numbers.. using not optimal flights..")
 
     expanding = True
@@ -289,6 +288,8 @@ def getFlightOffer(flightDetails, ama_Client_Ref, verbose_checkpoint=None):
             print("no flight offers satisfied all timeframes..")
             verbose("no flight offers satisfied all timeframes..", verbose_checkpoint)
         else:
+            print(f"Flights that satisfied timeframes:\n{cheapestFlightOffers}")
+            verbose(f"Flights that satisfied timeframes:\n{cheapestFlightOffers}", verbose_checkpoint)
             expanding = False
 
         iteration += 1

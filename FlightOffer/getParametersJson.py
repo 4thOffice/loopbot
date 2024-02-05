@@ -90,6 +90,9 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     "GDS", "NDC", "EAC", "LTC", "PYTON"
                 ],
                 "searchCriteria": {
+                    #"additionalInformation":{
+                    #    "fareRules": True
+                    #},
                     "maxFlightOffers": offerCount,
                     "flightFilters": {
                     "crossBorderAllowed": True,
@@ -306,7 +309,8 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     changeableTicket = True
                 else:
                     changeableTicket = False
-            return search_params, extraTimeframes, checkedbags, refundableTicket, changeableTicket, flightNumbersPerItinerary, people
+
+            return {"search_params": search_params, "extraTimeframes": extraTimeframes, "checkedbags": checkedbags, "refundableTicket": refundableTicket, "changeableTicket": changeableTicket, "flightNumbersPerItinerary": flightNumbersPerItinerary, "people": people}
         else:
             if attempt < max_attempts - 1:
                 print("No response received. Retrying in {} seconds...".format(retry_interval))
