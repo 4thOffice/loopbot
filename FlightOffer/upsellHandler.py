@@ -182,8 +182,11 @@ def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, chan
                 amenity["isRequested"] = True
                 amenitiesToSearchFor[index1] = amenity
 
-        upsold = get_upsell_offer(access_token, [offer], amenitiesToSearchFor, travelClass, checkedBags, apiType, verbose_checkpoint) #CHANGEABLE TICKET
-
+        if offer["source"] == "GDS" or offer["source"] == "NDC" or offer["source"] == "PYTON":
+            upsold = get_upsell_offer(access_token, [offer], amenitiesToSearchFor, travelClass, checkedBags, apiType, verbose_checkpoint) #CHANGEABLE TICKET
+        else:
+            upsold = None
+            
         if upsold != None:
             print(f"UPSOLD OFFER: {upsold['offer']}")
             print(f"AMENITIES OF UPSOLD OFFER: {upsold['amenities']}")
