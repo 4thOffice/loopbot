@@ -14,6 +14,7 @@ def getMiniRulesInfo(offer, refundableTicket, changeableTicket):
          }]
     
     if "fareRules" in offer:
+        print("Fare rules:\n", offer["fareRules"])
         for rule in offer["fareRules"]["rules"]:
             for amenity in amenities:
                 if rule["category"] == amenity["amenity_description"]:

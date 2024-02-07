@@ -326,10 +326,14 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
         print("length 1:", len(cheapestFlightOffers))
         print("get price offers for:\n", cheapestFlightOffers)
         verbose(f"get price offers for:\n{cheapestFlightOffers}", verbose_checkpoint)
-        try:
-            price_offers = get_price_offer(access_token, ama_Client_Ref, cheapestFlightOffers)["data"]["flightOffers"]
-        except:
-            return {"status": "error", "data": "Flight fully booked."}
+
+        price_offers = []
+        for offer in cheapestFlightOffers:
+            try:
+                price_offer = get_price_offer(access_token, ama_Client_Ref, [offer])["data"]["flightOffers"][0]
+                price_offers.append(price_offer)
+            except:
+                return {"status": "error", "data": "Error with getting current price for the offer."}
         
         cheapestPriceOffers = flightAuxiliary.get_time_difference_data(price_offers, extraTimeframes)
         cheapestPriceOffers = sorted(cheapestPriceOffers, key=lambda x: (x["time_difference"], float(x["offer"]["price"]["grandTotal"])))
@@ -392,8 +396,6 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
         
         cheapestPriceOffers[index] = upsold
 
-    print("BEFORE GET TIME DIFFERENCE\n", cheapestPriceOffers)
-
     cheapestPriceOffers = flightAuxiliary.get_time_difference_data(cheapestPriceOffers, extraTimeframes)
     for i, x in enumerate(cheapestPriceOffers):
         amenityCount = 0
@@ -454,7 +456,12 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
                         else:
                             travelClass = "ECONOMY"
                         break
-                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": segment["duration"], "flightNumber": segment["number"], "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex, "travelClass": travelClass})
+                
+                if "duration" in segment:
+                    duration = segment["duration"]
+                else:
+                    duration = None
+                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": duration, "flightNumber": segment["number"], "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex, "travelClass": travelClass})
         
         includedBags = 0
         if "quantity" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
@@ -467,6 +474,6 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
             if "chargeableCheckedBags" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]:
                 checkedBags += cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]["chargeableCheckedBags"]["quantity"]
 
-        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["billingCurrency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities_dict, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode})
+        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["currency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities_dict, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode})
         
     return returnData

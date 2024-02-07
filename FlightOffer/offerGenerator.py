@@ -54,7 +54,6 @@ def generateFlightTable(offerDetails):
     flightTable = ""
     for flight in offerDetails["flights"]:
         departure_date = iso_to_custom_date(flight["departure"]["at"])
-        duration = iso_to_hours_minutes(flight["duration"])
         flight_number = flight["carrierCode"] + " " + flight["flightNumber"]
         origin = flight["departure"]["iataCode"]
         destination = flight["arrival"]["iataCode"]
@@ -62,7 +61,13 @@ def generateFlightTable(offerDetails):
         departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
         cabin = flight["travelClass"]
         
-        flightTable += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({cabin}) ({duration})\n"
+        durationString = ""
+        duration = flight["duration"]
+        if duration is not None:
+            duration = iso_to_hours_minutes(flight["duration"])
+            durationString += f"({duration})"
+        
+        flightTable += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({cabin}) {durationString}\n"
 
     return flightTable
 
@@ -187,7 +192,6 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
                 flights_string += f"\n\n\nAlternative offer 2: {deeplink}\n"
         for flight in offer["flights"]:
             departure_date = iso_to_custom_date(flight["departure"]["at"])
-            duration = iso_to_hours_minutes(flight["duration"])
             flight_number = flight["carrierCode"] + " " + flight["flightNumber"]
             origin = flight["departure"]["iataCode"]
             destination = flight["arrival"]["iataCode"]
@@ -198,7 +202,13 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
             if cabin.lower() == "economy":
                 cabinString = ""
 
-            flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration}) {cabinString}\n"
+            durationString = ""
+            duration = flight["duration"]
+            if duration is not None:
+                duration = iso_to_hours_minutes(flight["duration"])
+                durationString += f" ({duration})"
+
+            flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time}{durationString} {cabinString}\n"
         if offer['checkedBags'] == 0:
             flights_string += "\nOnly carry-on included. "
         elif offer['checkedBags'] == 1:
