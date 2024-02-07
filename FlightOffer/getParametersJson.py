@@ -90,9 +90,9 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     "GDS", "NDC", "EAC", "LTC", "PYTON"
                 ],
                 "searchCriteria": {
-                    #"additionalInformation":{
-                    #    "fareRules": True
-                    #},
+                    "additionalInformation":{
+                        "fareRules": True
+                    },
                     "maxFlightOffers": offerCount,
                     "flightFilters": {
                     "crossBorderAllowed": True,

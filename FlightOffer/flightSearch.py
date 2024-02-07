@@ -17,9 +17,10 @@ import getParametersJson
 import offerBagHandler
 import upsellHandler
 import flightAuxiliary
+from miniRulesInfo import getMiniRulesInfo, convertMiniRulesAmenities
 from timeframeExpander import expandTimeframes
 
-apiType = "personal" #personal/enterprise
+apiType = "enterprise" #personal/enterprise
 
 if apiType == "personal":
     hostname = "production"
@@ -34,7 +35,7 @@ amadeus = Client(
 
 def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_client_secret, enterprise=True):
     if enterprise:
-        auth_url = 'https://test.travel.api.amadeus.com/v1/security/oauth2/token'
+        auth_url = 'https://travel.api.amadeus.com/v1/security/oauth2/token'
     else:
         api_key=keys.amadeus_client_id_personal
         api_secret=keys.amadeus_client_secret_personal
@@ -52,7 +53,7 @@ def get_price_offer(access_token, ama_Client_Ref, flight_offers):
     if apiType == "personal":
         url = 'https://api.amadeus.com/v1/shopping/flight-offers/pricing'
     else:
-        url = 'https://test.travel.api.amadeus.com/v1/shopping/flight-offers/pricing'
+        url = 'https://travel.api.amadeus.com/v1/shopping/flight-offers/pricing'
         
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -102,7 +103,7 @@ def get_flight_offers(access_token, search_params, ama_Client_Ref, verbose_check
     if apiType == "personal":
         endpoint = 'https://api.amadeus.com/v2/shopping/flight-offers'
     else:
-        endpoint = 'https://test.travel.api.amadeus.com/v2/shopping/flight-offers'
+        endpoint = 'https://travel.api.amadeus.com/v2/shopping/flight-offers'
 
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -380,8 +381,18 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
         cheapestPriceOffers = sorted(offersBySegment, key=lambda x: float(x["numberOfSegments"]))
         cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
     print(f"final offers:\n{cheapestPriceOffers}")
+    
+    for index, offer in enumerate(cheapestPriceOffers):
+        source = offer["source"]
+        if (source == "GDS" or source == "NDC") and "fareRules" in offer:
+            rulesInfoOffer = getMiniRulesInfo(offer, refundableTicket, changeableTicket)
+            upsold = convertMiniRulesAmenities(rulesInfoOffer)
+        else: 
+            upsold = upsellHandler.getUpsellOffers([offer], get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, apiType, ama_Client_Ref, verbose_checkpoint)[0]
+        
+        cheapestPriceOffers[index] = upsold
 
-    cheapestPriceOffers = upsellHandler.getUpsellOffers(cheapestPriceOffers, get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, apiType, ama_Client_Ref, verbose_checkpoint)
+    print("BEFORE GET TIME DIFFERENCE\n", cheapestPriceOffers)
 
     cheapestPriceOffers = flightAuxiliary.get_time_difference_data(cheapestPriceOffers, extraTimeframes)
     for i, x in enumerate(cheapestPriceOffers):

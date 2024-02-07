@@ -20,7 +20,7 @@ def get_upsell_offer(access_token, flight_offers, amenities, travelClass, checke
     if apiType == "personal":
         url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
     else:
-        url = 'https://test.travel.api.amadeus.com/v1/shopping/flight-offers/upselling'
+        url = 'https://travel.api.amadeus.com/v1/shopping/flight-offers/upselling'
 
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -181,7 +181,7 @@ def getUpsellOffers(offers, get_price_offer, travelClass, refundableTicket, chan
             if (amenity["amenity_description"] == "CHANGEABLE TICKET" or amenity["amenity_description"] == "CHANGE BEFORE DEPARTURE" or amenity["amenity_description"] == "CHANGE AFTER DEPARTURE") and changeableTicket:
                 amenity["isRequested"] = True
                 amenitiesToSearchFor[index1] = amenity
-        
+
         upsold = get_upsell_offer(access_token, [offer], amenitiesToSearchFor, travelClass, checkedBags, apiType, verbose_checkpoint) #CHANGEABLE TICKET
 
         if upsold != None:
