@@ -460,7 +460,7 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
                 if "duration" in segment:
                     duration = segment["duration"]
                 else:
-                    duration = None
+                    duration = flightAuxiliary.getDuration(segment["departure"]["at"], segment["arrival"]["at"])
                 flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": duration, "flightNumber": segment["number"], "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex, "travelClass": travelClass})
         
         includedBags = 0

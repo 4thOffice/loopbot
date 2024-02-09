@@ -71,3 +71,17 @@ def extract_numbers(s):
     numbers = re.findall(r'\d+', s)
     numbers_without_zeros = [str(int(num)) for num in numbers]
     return ''.join(numbers_without_zeros)
+
+
+def getDuration(time_stamp1, time_stamp2):
+    dt1 = datetime.fromisoformat(time_stamp1)
+    dt2 = datetime.fromisoformat(time_stamp2)
+
+    time_difference = dt2 - dt1
+
+    total_hours = time_difference.total_seconds() / 3600
+
+    duration = f"PT{int(total_hours):02d}H{time_difference.seconds//3600:02d}M"
+    duration = duration.replace("0", "")
+
+    return duration
