@@ -74,8 +74,8 @@ def extract_numbers(s):
 
 
 def getDuration(time_stamp1, time_stamp2):
-    dt1 = datetime.fromisoformat(time_stamp1)
-    dt2 = datetime.fromisoformat(time_stamp2)
+    dt1 = datetime.datetime.fromisoformat(time_stamp1)
+    dt2 = datetime.datetime.fromisoformat(time_stamp2)
 
     time_difference = dt2 - dt1
 
