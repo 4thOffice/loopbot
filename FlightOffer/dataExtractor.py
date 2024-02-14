@@ -21,7 +21,7 @@ class AiAssistantManager:
         self.files = files
 
     def __enter__(self):
-        client = OpenAI(api_key=keys.openAI_APIKEY)
+        client = OpenAI(api_key=keys.openAI_APIKEY, timeout=60)
 
         self.textFileAssistant = client.beta.assistants.create(
         instructions="You are a helpful robot who extracts flight details from email.",
@@ -48,7 +48,7 @@ class AiAssistantManager:
             apiDataHandler.delete_file(file_, keys.openAI_APIKEY)
 
 def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
-    client = OpenAI(api_key=keys.openAI_APIKEY)
+    client = OpenAI(api_key=keys.openAI_APIKEY, timeout=60)
 
     for index, file_ in enumerate(files):
         files[index] = client.files.create(
