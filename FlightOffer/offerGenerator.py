@@ -175,16 +175,12 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
     flights_string
     for index, offer in enumerate(details["offers"]):
         if not usedForDraft:
-            deeplink = ""
-            if email_comment_id:
-                print("deeplink offer", offer)
-                deeplink = getDeepLink(offer, email_comment_id)
             if index == 0:
-                flights_string += f"Featured offer: {deeplink}\n"
+                flights_string += f"Featured offer:\n"
             elif index == 1:
-                flights_string += f"\n\n\nAlternative offer 1: {deeplink}\n"
+                flights_string += f"\n\n\nAlternative offer 1:\n"
             elif index == 2:
-                flights_string += f"\n\n\nAlternative offer 2: {deeplink}\n"
+                flights_string += f"\n\n\nAlternative offer 2:\n"
         for flight in offer["flights"]:
             departure_date = iso_to_custom_date(flight["departure"]["at"])
             flight_number = flight["carrierCode"] + " " + flight["flightNumber"]
@@ -262,5 +258,12 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
         
         if usedForDraft and index == 0:
             break
-
+    
+    print(details["offers"])
+    deeplink = ""
+    if email_comment_id:
+        print("deeplink offer", offer)
+        deeplink = getDeepLink(details["offers"], email_comment_id)
+    flights_string += f"\n\n{deeplink}"
+    
     return flights_string
