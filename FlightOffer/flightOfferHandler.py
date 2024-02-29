@@ -247,7 +247,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                 details["data"]["offers"][index]["upsellOffers"] = []
         
         print("final offer details with amenities:\n", details["data"]["offers"])
-        generatedOffer = offerGenerator.generateFlightsString({"offers": details["data"]["offers"]}, email_comment_id=email_comment_id)
+        generatedOffer = offerGenerator.generateFlightsString({"offers": details["data"]["offers"]}, email_comment_id=email_comment_id, verbose_checkpoint=verbose_checkpoint)
 
         peopleString = ""
         if "people" in details["data"]:

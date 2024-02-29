@@ -6,7 +6,7 @@ import sys
 import os
 
 import Auxiliary.compressed_json
-
+from Auxiliary.verbose_checkpoint import verbose
 if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import keys
@@ -168,10 +168,9 @@ def generateOffer(offerDetails):
 
     return offerDraftText
 
-def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
+def generateFlightsString(details, usedForDraft=False, email_comment_id=None, verbose_checkpoint=None):
     flights_string = ""
 
-    flights_string
     for index, offer in enumerate(details["offers"]):
         if not usedForDraft:
             if index == 0:
@@ -257,11 +256,11 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
         
         if usedForDraft and index == 0:
             break
-    
+
     print(details["offers"])
+    verbose("json dump details:\n" + json.dumps(details["offers"]), verbose_checkpoint)
     deeplink = ""
     if email_comment_id:
-        print("deeplink offer", offer)
         deeplink = getDeepLink(details["offers"], email_comment_id)
     flights_string += f"\n\n{deeplink}"
     
