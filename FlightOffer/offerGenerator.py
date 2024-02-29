@@ -259,7 +259,7 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None, ve
             break
 
     print(details["offers"])
-    verbose("json dump details:\n" + json.dumps(details["offers"]), verbose_checkpoint)
+    # verbose("json dump details:\n" + json.dumps(details["offers"]), verbose_checkpoint)
     deeplink = ""
     if email_comment_id:
         deeplink = getDeepLink(details["offers"], email_comment_id)
