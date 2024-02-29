@@ -14,8 +14,7 @@ from urllib.parse import urlencode, quote
 
 def getDeepLink(flightDetails, email_comment_id=None):
     if email_comment_id:
-        flightDetails = dict(flightDetails)  # shallow copy
-        flightDetails["email_comment_id"] = email_comment_id
+        flightDetails = dict(email_comment_id=email_comment_id, offer=flightDetails)  # shallow copy
     command = f"/travelai createoffer {Auxiliary.compressed_json.encode_json_to_string(flightDetails)}"
     deeplink = bb_code_link(send_chat_deeplink(command), "Prepare draft")
     return deeplink
