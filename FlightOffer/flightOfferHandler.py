@@ -200,7 +200,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                                 print("HOTEL SUCCESSFUL")
                             except Exception:
                                 print(traceback.print_exc())
-                                verbose(traceback.print_exc(), verbose_checkpoint=verbose_checkpoint)
+                                verbose(traceback.format_exc(), verbose_checkpoint=verbose_checkpoint)
                                 continue
                             
                             transferStartTime = ""
@@ -229,7 +229,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                             except Exception:
                                 print("Failed gathering transfer offers")
                                 print(traceback.print_exc())
-                                verbose(traceback.print_exc(), verbose_checkpoint=verbose_checkpoint)
+                                verbose(traceback.format_exc(), verbose_checkpoint=verbose_checkpoint)
 
                             upsellOffer = {"hotelDetails": hotelDetails, "AirportToHotelTransferDetails": AirportToHotelTransferDetails, "HotelToAirportTransferDetails": HotelToAirportTransferDetails}
                             upsellOffers.append(upsellOffer)
