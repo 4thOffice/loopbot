@@ -237,7 +237,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                         details["data"]["offers"][index]["upsellOffers"] = upsellOffers
                         upsellOffersPerCity[cityCode] = upsellOffers
             except Exception:
-                print(traceback.print_exc())
+                traceback.print_exc()
                 verbose(f'{details["data"]["offers"]=}\n{traceback.format_exc()}', verbose_checkpoint=verbose_checkpoint)
                 #dodaj prazen upsell v vsak offer
                 for index, offer in enumerate(details["data"]["offers"]):
