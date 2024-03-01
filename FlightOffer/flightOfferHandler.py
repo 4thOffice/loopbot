@@ -200,7 +200,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                                 print("HOTEL SUCCESSFUL")
                             except Exception:
                                 print(traceback.print_exc())
-                                verbose(traceback.print_exc(), verbose_checkpoint=verbose_checkpoint)
+                                verbose(traceback.format_exc(), verbose_checkpoint=verbose_checkpoint)
                                 continue
                             
                             transferStartTime = ""
@@ -229,7 +229,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                             except Exception:
                                 print("Failed gathering transfer offers")
                                 print(traceback.print_exc())
-                                verbose(traceback.print_exc(), verbose_checkpoint=verbose_checkpoint)
+                                verbose(traceback.format_exc(), verbose_checkpoint=verbose_checkpoint)
 
                             upsellOffer = {"hotelDetails": hotelDetails, "AirportToHotelTransferDetails": AirportToHotelTransferDetails, "HotelToAirportTransferDetails": HotelToAirportTransferDetails}
                             upsellOffers.append(upsellOffer)
@@ -237,10 +237,10 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                         details["data"]["offers"][index]["upsellOffers"] = upsellOffers
                         upsellOffersPerCity[cityCode] = upsellOffers
             except Exception:
-                print(traceback.print_exc())
-                verbose(traceback.print_exc(), verbose_checkpoint=verbose_checkpoint)
+                traceback.print_exc()
+                verbose(f'{details["data"]["offers"]=}\n{traceback.format_exc()}', verbose_checkpoint=verbose_checkpoint)
                 #dodaj prazen upsell v vsak offer
-                for index, offer in (details["data"]["offers"]):
+                for index, offer in enumerate(details["data"]["offers"]):
                     details["data"]["offers"][index]["upsellOffers"] = []
         else:
             for index, offer in enumerate(details["data"]["offers"]):
