@@ -195,71 +195,73 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
             duration = iso_to_hours_minutes(flight["duration"])
 
             flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration}) {cabinString}\n"
-        if offer['checkedBags'] == 0:
-            flights_string += "\nOnly carry-on included. "
-        elif offer['checkedBags'] == 1:
-            flights_string += f"\n{offer['checkedBags']} checked bag & carry-on included. "
-        elif offer['checkedBags'] > 1:
-            flights_string += f"\n{offer['checkedBags']} checked bags & carry-on included. "
-        #flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
-        pricePerPerson = float(offer["price"]["grandTotal"])/float(offer["passengers"])
+        
+        for fare in offer["fares"]:
+            if fare['checkedBags'] == 0:
+                flights_string += "\nOnly carry-on included. "
+            elif fare['checkedBags'] == 1:
+                flights_string += f"\n{fare['checkedBags']} checked bag & carry-on included. "
+            elif fare['checkedBags'] > 1:
+                flights_string += f"\n{fare['checkedBags']} checked bags & carry-on included. "
+            #flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
+            pricePerPerson = float(fare["price"]["grandTotal"])/float(offer["passengers"])
 
-        print("amenities of final offer:\n", offer["amenities"])
+            print("amenities of final offer:\n", fare["amenities"])
               
-        isRefundableTicket = False
-        isRefundChargeable = False
-        isChangeableTicket = False
-        isChangeChargeable = False
+            isRefundableTicket = False
+            isRefundChargeable = False
+            isChangeableTicket = False
+            isChangeChargeable = False
 
-        if "REFUNDABLE TICKET" in offer["amenities"]:
-            isRefundableTicket = True
-            if offer["amenities"]["REFUNDABLE TICKET"]["isChargeable"]:
-                isRefundChargeable = True
+            if "REFUNDABLE TICKET" in fare["amenities"]:
+                isRefundableTicket = True
+                if fare["amenities"]["REFUNDABLE TICKET"]["isChargeable"]:
+                    isRefundChargeable = True
 
-        if "REFUNDS ANYTIME" in offer["amenities"] and not isRefundableTicket:
-            isRefundableTicket = True
-            if offer["amenities"]["REFUNDS ANYTIME"]["isChargeable"]:
-                isRefundChargeable = True
+            if "REFUNDS ANYTIME" in fare["amenities"] and not isRefundableTicket:
+                isRefundableTicket = True
+                if fare["amenities"]["REFUNDS ANYTIME"]["isChargeable"]:
+                    isRefundChargeable = True
 
-        if "REFUND BEFORE DEPARTURE" in offer["amenities"] and not isRefundableTicket:
-            isRefundableTicket = True
-            if offer["amenities"]["REFUND BEFORE DEPARTURE"]["isChargeable"]:
-                isRefundChargeable = True
+            if "REFUND BEFORE DEPARTURE" in fare["amenities"] and not isRefundableTicket:
+                isRefundableTicket = True
+                if fare["amenities"]["REFUND BEFORE DEPARTURE"]["isChargeable"]:
+                    isRefundChargeable = True
 
 
-        if "CHANGEABLE TICKET" in offer["amenities"]:
-            isChangeableTicket = True
-            if offer["amenities"]["CHANGEABLE TICKET"]["isChargeable"]:
-                isChangeChargeable = True
+            if "CHANGEABLE TICKET" in fare["amenities"]:
+                isChangeableTicket = True
+                if fare["amenities"]["CHANGEABLE TICKET"]["isChargeable"]:
+                    isChangeChargeable = True
 
-        if "CHANGE BEFORE DEPARTURE" in offer["amenities"] and "CHANGE AFTER DEPARTURE" in offer["amenities"] and not isChangeableTicket:
-            isChangeableTicket = True
-            if offer["amenities"]["CHANGE BEFORE DEPARTURE"]["isChargeable"] or offer["amenities"]["CHANGE AFTER DEPARTURE"]["isChargeable"]:
-                isChangeChargeable = True
-                
-                
-        if isRefundableTicket:
-            if isRefundChargeable:
-                flights_string += "Refundable with a fee, "
+            if "CHANGE BEFORE DEPARTURE" in fare["amenities"] and "CHANGE AFTER DEPARTURE" in fare["amenities"] and not isChangeableTicket:
+                isChangeableTicket = True
+                if fare["amenities"]["CHANGE BEFORE DEPARTURE"]["isChargeable"] or fare["amenities"]["CHANGE AFTER DEPARTURE"]["isChargeable"]:
+                    isChangeChargeable = True
+                    
+                    
+            if isRefundableTicket:
+                if isRefundChargeable:
+                    flights_string += "Refundable with a fee, "
+                else:
+                    flights_string += "Refundable, "
             else:
-                flights_string += "Refundable, "
-        else:
-            flights_string += "Non-refundable, "
-        
-        if isChangeableTicket:
-            if isChangeChargeable:
-                flights_string += "changeable with a fee ticket"
+                flights_string += "Non-refundable, "
+            
+            if isChangeableTicket:
+                if isChangeChargeable:
+                    flights_string += "changeable with a fee ticket"
+                else:
+                    flights_string += "changeable ticket"
             else:
-                flights_string += "changeable ticket"
-        else:
-            flights_string += "non-changeable ticket"
+                flights_string += "non-changeable ticket"
 
-        flights_string += "\nPrice: " + str(pricePerPerson) + " " + offer["price"]["billingCurrency"] + "/person"
-        
-        if usedForDraft and index == 0:
-            break
+            flights_string += "\nPrice: " + str(pricePerPerson) + " " + fare["price"]["billingCurrency"] + "/person"
+            
+            if usedForDraft and index == 0:
+                break
     
-    print(details["offers"])
+    print("deeplink content:\n", details["offers"])
     deeplink = ""
     if email_comment_id:
         print("deeplink offer", offer)

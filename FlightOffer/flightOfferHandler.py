@@ -258,7 +258,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
             if details["data"]["people"]:
                 peopleString += "\n"
 
-        print(offerGenerator.generateOffer(details["data"]["offers"][0]))
+        #print(offerGenerator.generateOffer(details["data"]["offers"][0]))
 
         print(details["data"])
         print("flight details gathered")

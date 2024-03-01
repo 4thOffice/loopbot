@@ -93,6 +93,9 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                     "additionalInformation":{
                         "fareRules": True
                     },
+                    "pricingOptions": { 
+                        "includedCheckedBagsOnly": False 
+                    },
                     "maxFlightOffers": offerCount,
                     "flightFilters": {
                     "crossBorderAllowed": True,

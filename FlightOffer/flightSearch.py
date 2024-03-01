@@ -386,69 +386,25 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
         cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
     print(f"final offers:\n{cheapestPriceOffers}")
     
+    #######################
     for index, offer in enumerate(cheapestPriceOffers):
-        source = offer["source"]
-        if (source == "GDS" or source == "NDC") and "fareRules" in offer:
-            rulesInfoOffer = getMiniRulesInfo(offer, refundableTicket, changeableTicket)
-            upsold = convertMiniRulesAmenities(rulesInfoOffer)
-        else: 
-            upsold = upsellHandler.getUpsellOffers([offer], get_price_offer, travelClass, refundableTicket, changeableTicket, checkedBags, access_token, apiType, ama_Client_Ref, verbose_checkpoint)[0]
+        fares = upsellHandler.getUpsellOffer(offer, get_price_offer, travelClass, access_token, apiType, ama_Client_Ref, verbose_checkpoint)
         
-        cheapestPriceOffers[index] = upsold
+        cheapestPriceOffers[index] = fares
 
-    cheapestPriceOffers = flightAuxiliary.get_time_difference_data(cheapestPriceOffers, extraTimeframes)
-    for i, x in enumerate(cheapestPriceOffers):
-        amenityCount = 0
-        refundFound = False
-        changeFound = False
-        for amenity_ in x["offer"]["amenities"]:
-            if amenity_["included"] and amenity_["isRequested"]:
-                if amenity_["amenity_description"] in ["REFUNDABLE TICKET", "REFUND BEFORE DEPARTURE", "REFUND AFTER DEPARTURE", "REFUNDS ANYTIME"]:
-                    if not refundFound:
-                        refundFound = True
-                        amenityCount += 1
-                elif amenity_["amenity_description"] in ["CHANGEABLE TICKET", "CHANGE BEFORE DEPARTURE", "CHANGE AFTER DEPARTURE"]:
-                    if not changeFound:
-                        changeFound = True
-                        amenityCount += 1
-                else:
-                    amenityCount += 1
-
-        #amenityCount = sum(value["included"] is True and value["isRequested"] is True for value in x["offer"]["amenities"])
-        cheapestPriceOffers[i]["amenityCount"] = amenityCount
-    
-    print("-------------------------")
-    print("SORTING BY AMENITIES")
-    print(cheapestPriceOffers)
-    print("-------------------------")
-    cheapestPriceOffers = sorted(cheapestPriceOffers, key=lambda x: (-x["amenityCount"]))
-    cheapestPriceOffers = [offer["offer"] for offer in cheapestPriceOffers]
-
-    just_offers = [item["offer"] for item in cheapestPriceOffers]
-
-    just_offers = offerBagHandler.addBags(just_offers, checkedBags, get_price_offer, access_token, ama_Client_Ref, verbose_checkpoint)
-
-    for index, offer_ in enumerate(just_offers):
-        cheapestPriceOffers[index] = {"offer": offer_, "amenities": cheapestPriceOffers[index]["amenities"]}
+    #just_offers = offerBagHandler.addBags(just_offers, checkedBags, get_price_offer, access_token, ama_Client_Ref, verbose_checkpoint)
 
     print(f"final offers with amenities:\n{cheapestPriceOffers}")
     verbose(f"final offers with amenities:\n{cheapestPriceOffers}", verbose_checkpoint)
 
     returnData = {"status": "ok", "data": {"offers": [], "people": people}}
     for cheapest_price_offer in cheapestPriceOffers:
-        amenities = cheapest_price_offer["amenities"]
-        
-        amenities_dict = {}
-        for amenity in amenities:
-            if amenity["included"]:
-                amenities_dict[amenity["amenity_description"]] = {"isChargeable": amenity["isChargeable"], "isRequested": amenity["isRequested"]}
-
-        geoCode, cityCode, airportName = get_airport_coordinates(access_token, cheapest_price_offer["offer"]["itineraries"][0]["segments"][-1]["arrival"]["iataCode"])
+        geoCode, cityCode, airportName = get_airport_coordinates(access_token, cheapest_price_offer[0]["fare"]["itineraries"][0]["segments"][-1]["arrival"]["iataCode"])
         
         flights = []
-        for iteraryIndex, iterary in enumerate(cheapest_price_offer["offer"]["itineraries"]):
+        for iteraryIndex, iterary in enumerate(cheapest_price_offer[0]["fare"]["itineraries"]):
             for segment in iterary["segments"]:
-                for detailsBySegment in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"]:
+                for detailsBySegment in cheapest_price_offer[0]["fare"]["travelerPricings"][0]["fareDetailsBySegment"]:
                     if detailsBySegment["segmentId"] == segment["id"]:
                         print("detailsBySegment", detailsBySegment)
                         if "cabin" in detailsBySegment:
@@ -463,17 +419,22 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
                     duration = flightAuxiliary.getDuration(segment["departure"]["at"], segment["arrival"]["at"])
                 flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": duration, "flightNumber": segment["number"], "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex, "travelClass": travelClass})
         
-        includedBags = 0
-        if "quantity" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
-            includedBags = cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]["quantity"]
-        elif "weight" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
-            includedBags = 1
-            
-        checkedBags = includedBags
-        if "additionalServices" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]:
-            if "chargeableCheckedBags" in cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]:
-                checkedBags += cheapest_price_offer["offer"]["travelerPricings"][0]["fareDetailsBySegment"][0]["additionalServices"]["chargeableCheckedBags"]["quantity"]
+        fares = []
+        for fareOffer in cheapest_price_offer:
+            fare = {}
+            fare["amenities"] = fareOffer["amenities"]
+            fare["price"] = {"grandTotal": fareOffer["fare"]["price"]["grandTotal"], "billingCurrency": fareOffer["fare"]["price"]["currency"]}
 
-        returnData["data"]["offers"].append({"price": {"grandTotal": cheapest_price_offer["offer"]["price"]["grandTotal"], "billingCurrency": cheapest_price_offer["offer"]["price"]["currency"]}, "passengers": len(cheapest_price_offer["offer"]["travelerPricings"]), "checkedBags": checkedBags, "amenities": amenities_dict, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode})
+            includedBags = 0
+            if "quantity" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
+                includedBags = fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]["quantity"]
+            elif "weight" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
+                includedBags = 1
+
+            fare["checkedBags"] = includedBags
+            fares.append(fare)
+            
+
+        returnData["data"]["offers"].append({"passengers": len(cheapest_price_offer[0]["fare"]["travelerPricings"]), "fares": fares, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode})
         
     return returnData
