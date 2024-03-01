@@ -186,7 +186,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
                         checkoutDate = offer["flights"][-1]["departure"]["at"]
                         checkoutDate = datetime.datetime.strptime(checkoutDate, '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
                         adults = int(offer["passengers"])
-                        currency = offer["price"]["billingCurrency"]
+                        currency = offer["fares"][0]["price"]["billingCurrency"]
                         airportGooglePlaceID = googleAPI.get_place_id(geoCode["latitude"], geoCode["longitude"], 10, airportName)
                         
                         upsellOffers = []
