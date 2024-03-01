@@ -36,7 +36,7 @@ class AIregular:
         return answer
     
     def returnDocAnswer(self, userInput, textFiles=[], imageFiles=[]):
-        client = OpenAI_()
+        client = OpenAI_(timeout=60)
 
         for index, file_ in enumerate(textFiles):
             textFiles[index] = client.files.create(
@@ -111,7 +111,7 @@ class AIregular:
         return answer
     
     def processImages(self, emailText, imageFiles, shortenedOutput=False, verbose_checkpoint=None):
-        client = OpenAI_()
+        client = OpenAI_(timeout=120)
         
         current_date_time = datetime.now()
         formatted_current_date = current_date_time.strftime("%dth of %B %Y")
