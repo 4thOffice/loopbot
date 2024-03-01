@@ -6,15 +6,15 @@ import sys
 import os
 
 import Auxiliary.compressed_json
-
+from Auxiliary.verbose_checkpoint import verbose
 if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import keys
 from urllib.parse import urlencode, quote
 
 def getDeepLink(flightDetails, email_comment_id=None):
+    flightDetails = dict(flight_offers=flightDetails)
     if email_comment_id:
-        flightDetails = dict(flightDetails)  # shallow copy
         flightDetails["email_comment_id"] = email_comment_id
     command = f"/travelai createoffer {Auxiliary.compressed_json.encode_json_to_string(flightDetails)}"
     deeplink = bb_code_link(send_chat_deeplink(command), "Prepare draft")
@@ -169,10 +169,9 @@ def generateOffer(offerDetails):
 
     return offerDraftText
 
-def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
+def generateFlightsString(details, usedForDraft=False, email_comment_id=None, verbose_checkpoint=None):
     flights_string = ""
 
-    flights_string
     for index, offer in enumerate(details["offers"]):
         if not usedForDraft:
             if index == 0:
@@ -264,7 +263,6 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None):
     print("deeplink content:\n", details["offers"])
     deeplink = ""
     if email_comment_id:
-        print("deeplink offer", offer)
         deeplink = getDeepLink(details["offers"], email_comment_id)
     flights_string += f"\n\n{deeplink}"
     
