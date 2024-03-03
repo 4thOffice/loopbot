@@ -1,5 +1,7 @@
+import contextlib
 import os
 import time
+import httpx
 from openai import OpenAI as OpenAI_
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import (
@@ -15,6 +17,11 @@ import FlightOffer.apiDataHandler as apiDataHandler
 import keys
 import Auxiliary.verbose_checkpoint
 from datetime import datetime
+
+@contextlib.contextmanager
+def get_open_ai_client(api_key=None, timeout=60):
+    with httpx.Client(timeout=60) as client:
+        yield OpenAI_(api_key=api_key, http_client=client)
 
 class AIregular:
     def __init__(self, openAI_APIKEY):
@@ -36,83 +43,80 @@ class AIregular:
         return answer
     
     def returnDocAnswer(self, userInput, textFiles=[], imageFiles=[]):
-        client = OpenAI_(timeout=60)
+        with get_open_ai_client(api_key=self.openAI_APIKEY) as client:
+            for index, file_ in enumerate(textFiles):
+                textFiles[index] = client.files.create(
+                file=file_,
+                purpose='assistants'
+                ).id
 
-        for index, file_ in enumerate(textFiles):
-            textFiles[index] = client.files.create(
-            file=file_,
-            purpose='assistants'
-            ).id
-
-        fileAssistant = client.beta.assistants.create(
-        instructions="You are a helpful robot.",
-        model="gpt-4-1106-preview",
-        tools=[{"type": "retrieval"}],
-        file_ids=[]
-        )
-
-        if len(imageFiles) > 0:
-            output_vision = self.processImages(userInput, imageFiles)
-            if len(textFiles) <= 0:
-                return output_vision
-            
-        if len(textFiles) > 0:
-            content_text = "Answer the following prompt based on text documents attached to this message.\nPrompt: " + userInput
-            if len(imageFiles) > 0:
-                content_text += "\n\nAditional important information from attached files you dont have direct access to, which you should take into consideration when coming up with an answer:\n" + output_vision
-        else:
-            content_text = userInput
-            if len(imageFiles) > 0:
-                content_text += "\n\nAditional important information from attached files you dont have direct access to, which you should take into consideration when coming up with an answer:\n" + output_vision
-
-        thread = client.beta.threads.create(
-        messages=[
-            {
-            "role": "user",
-            "content": content_text,
-            "file_ids": textFiles
-            }
-        ]
-        )
-
-        assistant_id=fileAssistant.id
-
-        run = client.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id=assistant_id
-        )
-
-        while True:
-            time.sleep(3)
-            run = client.beta.threads.runs.retrieve(
-            thread_id=thread.id,
-            run_id=run.id
+            fileAssistant = client.beta.assistants.create(
+            instructions="You are a helpful robot.",
+            model="gpt-4-1106-preview",
+            tools=[{"type": "retrieval"}],
+            file_ids=[]
             )
-            print(run)
-            print(run.status)
 
-            if run.status == "failed":
-                return "There was an error extracting data."
-            if run.status == "completed":
-                break
-        
-        print("Done")
+            if len(imageFiles) > 0:
+                output_vision = self.processImages(userInput, imageFiles)
+                if len(textFiles) <= 0:
+                    return output_vision
+                
+            if len(textFiles) > 0:
+                content_text = "Answer the following prompt based on text documents attached to this message.\nPrompt: " + userInput
+                if len(imageFiles) > 0:
+                    content_text += "\n\nAditional important information from attached files you dont have direct access to, which you should take into consideration when coming up with an answer:\n" + output_vision
+            else:
+                content_text = userInput
+                if len(imageFiles) > 0:
+                    content_text += "\n\nAditional important information from attached files you dont have direct access to, which you should take into consideration when coming up with an answer:\n" + output_vision
 
-        messages = client.beta.threads.messages.list(
-        thread_id=thread.id
-        )
-        print("Answer:\n", messages.data[0].content[0].text.value)
-        answer = messages.data[0].content[0].text.value
-        apiDataHandler.delete_assistant(fileAssistant.id, keys.openAI_APIKEY)
+            thread = client.beta.threads.create(
+            messages=[
+                {
+                "role": "user",
+                "content": content_text,
+                "file_ids": textFiles
+                }
+            ]
+            )
 
-        for file_ in textFiles:
-            apiDataHandler.delete_file(file_, keys.openAI_APIKEY)
+            assistant_id=fileAssistant.id
+
+            run = client.beta.threads.runs.create(
+            thread_id=thread.id,
+            assistant_id=assistant_id
+            )
+
+            while True:
+                time.sleep(3)
+                run = client.beta.threads.runs.retrieve(
+                thread_id=thread.id,
+                run_id=run.id
+                )
+                print(run)
+                print(run.status)
+
+                if run.status == "failed":
+                    return "There was an error extracting data."
+                if run.status == "completed":
+                    break
+            
+            print("Done")
+
+            messages = client.beta.threads.messages.list(
+            thread_id=thread.id
+            )
+            print("Answer:\n", messages.data[0].content[0].text.value)
+            answer = messages.data[0].content[0].text.value
+            apiDataHandler.delete_assistant(fileAssistant.id, keys.openAI_APIKEY)
+
+            for file_ in textFiles:
+                apiDataHandler.delete_file(file_, keys.openAI_APIKEY)
 
         return answer
     
     def processImages(self, emailText, imageFiles, shortenedOutput=False, verbose_checkpoint=None):
-        client = OpenAI_(timeout=120)
-        
         current_date_time = datetime.now()
         formatted_current_date = current_date_time.strftime("%dth of %B %Y")
 
@@ -185,16 +189,18 @@ class AIregular:
             }
             messages[0]["content"].append(img)
 
-        response = client.chat.completions.create(
-        model="gpt-4-vision-preview",
-        messages=messages,
-        max_tokens=4096,
-        )
+        with get_open_ai_client(api_key=self.openAI_APIKEY, timeout=120) as client:
+            response = client.chat.completions.create(
+            model="gpt-4-vision-preview",
+            messages=messages,
+            max_tokens=4096,
+            )
 
         if response.choices[0].finish_reason == "length":
             print("WARNING: picture specialized agent exceeded maximum amount of tokens!")
             Auxiliary.verbose_checkpoint.verbose("WARNING: picture specialized agent exceeded maximum amount of tokens!", verbose_checkpoint)
         #print("data extracted from image process:", response.choices[0].message.content)
+        
         return response.choices[0].message.content
     
     #AIregular_ = AIregular(keys.openAI_APIKEY)
