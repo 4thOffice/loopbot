@@ -98,7 +98,7 @@ def getUpsellOffer(offer, get_price_offer, travelClass, access_token, apiType, a
             if not fares:
                 verbose("No basic, classic, flex offers found. Adding the default offer to fares list...", verbose_checkpoint)
                 print("No basic, classic, flex offers found. Adding the default offer to fares list...")
-                fares.append(offer)
+                fares.append({"fare": offer, "amenities": {}})
 
     else:
         fares = []
