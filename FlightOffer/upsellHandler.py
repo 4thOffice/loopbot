@@ -47,7 +47,13 @@ def getFareByDetail(upsell_offers, checkedBags, refundable, changeable):
         try:
             for travelerPricing in offer["travelerPricings"]:
                 for segment in travelerPricing["fareDetailsBySegment"]:
-                    if segment["includedCheckedBags"]["quantity"] != checkedBags:
+                    if "quantity" in segment["includedCheckedBags"]:
+                        if segment["includedCheckedBags"]["quantity"] != checkedBags:
+                            raise ExitLoop
+                    elif "weight" in segment["includedCheckedBags"]:
+                        if checkedBags != 1:
+                            raise ExitLoop
+                    else:
                         raise ExitLoop
                     refundabilityStage = 0
                     changeabilityStage = 0
