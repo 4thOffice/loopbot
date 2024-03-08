@@ -114,6 +114,11 @@ def generateOffer(offerDetails):
             if fare["amenities"]["CHANGEABLE TICKET"]["isChargeable"]:
                 isChangeChargeable = True
 
+        if "CHANGE ANYTIME" in fare["amenities"]:
+            isChangeableTicket = True
+            if fare["amenities"]["CHANGE ANYTIME"]["isChargeable"]:
+                isChangeChargeable = True
+
         if "CHANGE BEFORE DEPARTURE" in fare["amenities"] and "CHANGE AFTER DEPARTURE" in fare["amenities"] and not isChangeableTicket:
             isChangeableTicket = True
             if fare["amenities"]["CHANGE BEFORE DEPARTURE"]["isChargeable"] or fare["amenities"]["CHANGE AFTER DEPARTURE"]["isChargeable"]:
@@ -232,6 +237,11 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None, ve
             if "CHANGEABLE TICKET" in fare["amenities"]:
                 isChangeableTicket = True
                 if fare["amenities"]["CHANGEABLE TICKET"]["isChargeable"]:
+                    isChangeChargeable = True
+
+            if "CHANGE ANYTIME" in fare["amenities"]:
+                isChangeableTicket = True
+                if fare["amenities"]["CHANGE ANYTIME"]["isChargeable"]:
                     isChangeChargeable = True
 
             if "CHANGE BEFORE DEPARTURE" in fare["amenities"] and "CHANGE AFTER DEPARTURE" in fare["amenities"] and not isChangeableTicket:
