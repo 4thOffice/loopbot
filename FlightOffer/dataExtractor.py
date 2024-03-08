@@ -29,22 +29,38 @@ class AiAssistantManager:
 
     def __enter__(self):
         with get_open_ai_client(api_key=keys.openAI_APIKEY) as client:
-            self.textFileAssistant = client.beta.assistants.create(
-            instructions="You are a helpful robot who extracts flight details from email.",
-            model="gpt-4-1106-preview",
-            tools=[{"type": "retrieval"}],
-            file_ids=[]
-            )
 
-            self.thread = client.beta.threads.create(
-            messages=[
-                {
-                "role": "user",
-                "content": self.content_text,
-                "file_ids": self.files
-                }
-            ]
-            )
+            if len(self.files) > 0:
+                self.textFileAssistant = client.beta.assistants.create(
+                instructions="You are a helpful robot who extracts flight details from text.",
+                model="gpt-4-1106-preview",
+                tools=[{"type": "retrieval"}],
+                file_ids=[]
+                )
+
+                self.thread = client.beta.threads.create(
+                messages=[
+                    {
+                    "role": "user",
+                    "content": self.content_text,
+                    "file_ids": self.files
+                    }
+                ]
+                )
+            else:
+                self.textFileAssistant = client.beta.assistants.create(
+                instructions="You are a helpful robot who extracts flight details from text.",
+                model="gpt-4-1106-preview"
+                )
+
+                self.thread = client.beta.threads.create(
+                messages=[
+                    {
+                    "role": "user",
+                    "content": self.content_text
+                    }
+                ]
+                )
         
         return self.textFileAssistant, self.thread
 
