@@ -404,8 +404,12 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
         flights = []
         for iteraryIndex, iterary in enumerate(cheapest_price_offer[0]["fare"]["itineraries"]):
             for segment in iterary["segments"]:
+                fareBasis = ""
                 for detailsBySegment in cheapest_price_offer[0]["fare"]["travelerPricings"][0]["fareDetailsBySegment"]:
                     if detailsBySegment["segmentId"] == segment["id"]:
+                        if "fareBasis" in detailsBySegment:
+                            fareBasis = detailsBySegment["fareBasis"][0]
+
                         print("detailsBySegment", detailsBySegment)
                         if "cabin" in detailsBySegment:
                             travelClass = detailsBySegment["cabin"]
@@ -417,7 +421,7 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
                     duration = segment["duration"]
                 else:
                     duration = flightAuxiliary.getDuration(segment["departure"]["at"], segment["arrival"]["at"])
-                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": duration, "flightNumber": segment["number"], "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex, "travelClass": travelClass})
+                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": duration, "flightNumber": (fareBasis + segment["number"]), "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex, "travelClass": travelClass})
         
         fares = []
         for fareOffer in cheapest_price_offer:
