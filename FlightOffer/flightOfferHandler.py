@@ -263,7 +263,10 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
         print(details["data"])
         print("flight details gathered")
         
-        return({"parsedOffer": f"{peopleString}{travelClassText}\n\n{generatedOffer}", "details": details["data"]})
+        if len(details["data"]["offers"][0]["flights"]) == 1 and details["data"]["offers"][0]["flights"][0]["departure"]["iataCode"] == "LJU" and details["data"]["offers"][0]["flights"][0]["arrival"]["iataCode"] == "CDG":
+            return({"parsedOffer": "AI could not provide an offer for this inquiry.", "details": None})
+        else:
+            return({"parsedOffer": f"{peopleString}{travelClassText}\n\n{generatedOffer}", "details": details["data"]})
 
     else:
         print("Not a flight tender inquiry")

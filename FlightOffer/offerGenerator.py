@@ -35,7 +35,7 @@ def bb_code_link(link, content, preview: bool = None):
     
 def iso_to_custom_date(iso_date):
     parsed_date = datetime.fromisoformat(iso_date)
-    return parsed_date.strftime("%d%b").upper()
+    return parsed_date.strftime("%d%b%Y").upper()
 
 # Function to calculate duration in hours and minutes from ISO duration string
 def iso_to_hours_minutes(iso_duration):
