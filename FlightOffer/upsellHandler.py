@@ -42,9 +42,9 @@ def get_upsell_offer(access_token, flight_offers, apiType, verbose_checkpoint=No
         return None
 
 def getFareByDetail(upsell_offers, checkedBags, refundable, changeable):
-    amenities = {}
     for offer in upsell_offers:
         try:
+            amenities = {}
             for travelerPricing in offer["travelerPricings"]:
                 for segment in travelerPricing["fareDetailsBySegment"]:
                     if "quantity" in segment["includedCheckedBags"]:
