@@ -124,6 +124,7 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
 def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_checkpoint=None, retries=0):
     answer = classification.classifyEmail(emailText)
     print("raw email text:", emailText)
+    verbose(f"raw email text:\n{emailText}", verbose_checkpoint)
 
     AIregular_ = AIregular.AIregular(keys.openAI_APIKEY)
     if answer:
