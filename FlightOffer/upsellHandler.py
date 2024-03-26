@@ -41,12 +41,15 @@ def get_upsell_offer(access_token, flight_offers, apiType, verbose_checkpoint=No
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
 
-def getFareByDetail(upsell_offers, checkedBags, refundable, changeable):
+def getFareByDetail(upsell_offers, checkedBags, refundable, changeable, travelClass="ECONOMY"):
     for offer in upsell_offers:
         try:
             amenities = {}
             for travelerPricing in offer["travelerPricings"]:
                 for segment in travelerPricing["fareDetailsBySegment"]:
+                    if "cabin" in segment and travelClass == "BUSINESS":
+                        if segment["cabin"] != "BUSINESS":
+                            raise ExitLoop
                     if "quantity" in segment["includedCheckedBags"]:
                         if segment["includedCheckedBags"]["quantity"] != checkedBags:
                             raise ExitLoop
@@ -89,17 +92,23 @@ def getUpsellOffer(offer, get_price_offer, travelClass, access_token, apiType, a
             print("No upsell offers found. Adding the default offer to fares list...")
             fares.append({"fare": offer, "amenities": {}})
         else:
-            basic = getFareByDetail(upsell_offers, 0, refundable=False, changeable=False)
-            classic = getFareByDetail(upsell_offers, 1, refundable=False, changeable=True)
-            flex = getFareByDetail(upsell_offers, 1, refundable=True, changeable=True)
-            
-            fares = []
-            if basic:
-                fares.append(basic)
-            if classic:
-                fares.append(classic)
-            if flex:
-                fares.append(flex)
+            if travelClass == "BUSINESS":
+                business = getFareByDetail(upsell_offers, 0, refundable=False, changeable=False, travelClass=travelClass)
+                fares = []
+                if business:
+                    fares = [business]
+            else:
+                basic = getFareByDetail(upsell_offers, 0, refundable=False, changeable=False)
+                classic = getFareByDetail(upsell_offers, 1, refundable=False, changeable=True)
+                flex = getFareByDetail(upsell_offers, 1, refundable=True, changeable=True)
+                
+                fares = []
+                if basic:
+                    fares.append(basic)
+                if classic:
+                    fares.append(classic)
+                if flex:
+                    fares.append(flex)
 
             if not fares:
                 verbose("No basic, classic, flex offers found. Adding the default offer to fares list...", verbose_checkpoint)

@@ -152,10 +152,12 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
         print(f"checked bags: {checkedBags}")
         print(f"refundable ticket: {refundableTicket}")
         print(f"changeable ticket: {changeableTicket}")
+        print(f"travel class: {travelClass}")
         print(f"Flight numbers per itinerary: {flightNumbersPerItinerary}")
         verbose(f"Flight numbers per itinerary: {flightNumbersPerItinerary}", verbose_checkpoint)
         verbose(f"refundable ticket: {refundableTicket}", verbose_checkpoint)
         verbose(f"changeable ticket: {changeableTicket}", verbose_checkpoint)
+        verbose(f"travel class: {travelClass}", verbose_checkpoint)
         verbose(f"Search parameters: {search_params}", verbose_checkpoint)
         verbose(f"Extra timeframes: {extraTimeframes}", verbose_checkpoint)
         verbose(f"Checked bags per person: {checkedBags}", verbose_checkpoint)
@@ -215,6 +217,7 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
         verbose("no flights", verbose_checkpoint)
         return {"status": "ok", "data": None}
     
+    #originalFlightOffers = flightOffers
 
     if flightNumbersPerItinerary:
         flightOffersWithCorrectFlightNumbers = []
@@ -390,6 +393,8 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
     for index, offer in enumerate(cheapestPriceOffers):
         fares = upsellHandler.getUpsellOffer(offer, get_price_offer, travelClass, access_token, apiType, ama_Client_Ref, verbose_checkpoint)
         
+        #sameFlights = flightAuxiliary.getSameFlights(offer, originalFlightOffers)
+        #print("same flights:\n", sameFlights)
         cheapestPriceOffers[index] = fares
 
     #just_offers = offerBagHandler.addBags(just_offers, checkedBags, get_price_offer, access_token, ama_Client_Ref, verbose_checkpoint)
@@ -409,7 +414,7 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
                     if detailsBySegment["segmentId"] == segment["id"]:
                         if "fareBasis" in detailsBySegment:
                             fareBasis = detailsBySegment["fareBasis"][0]
-
+                            
                         print("detailsBySegment", detailsBySegment)
                         if "cabin" in detailsBySegment:
                             travelClass = detailsBySegment["cabin"]
