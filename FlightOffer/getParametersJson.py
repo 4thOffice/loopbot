@@ -87,12 +87,15 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                 "originDestinations": [],
                 "travelers": [],
                 "sources": [
-                    "GDS", "NDC", "EAC", "LTC"
+                    "GDS", "NDC", "EAC", "LTC", "PYTON"
+                    #"PYTON"
                 ],
                 "searchCriteria": {
                     "additionalInformation":{
-                        "fareRules": True
+                        "fareRules": True,
+                        #"brandedFares": True
                     },
+                    #"allowAlternativeFareOptions": True,
                     "pricingOptions": { 
                         "includedCheckedBagsOnly": False 
                     },
