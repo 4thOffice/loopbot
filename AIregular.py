@@ -198,6 +198,7 @@ class AIregular:
         #print("data extracted from image process:", response.choices[0].message.content)
         
         print("RAW CHATGPT OUTPUT FOR IMAGES:\n", response.choices[0].message.content)
+        Auxiliary.verbose_checkpoint.verbose(f"RAW CHATGPT OUTPUT FOR IMAGES:\n{response.choices[0].message.content}", verbose_checkpoint)
         return response.choices[0].message.content
     
     #AIregular_ = AIregular(keys.openAI_APIKEY)

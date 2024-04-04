@@ -192,6 +192,7 @@ def runThread(assistant, thread, client, verbose_checkpoint=None):
     #print("Extracted non-structured data:\n", messages.data[0].content[0].text.value)
     answer = messages.data[0].content[0].text.value
     print("RAW CHATGPT OUTPUT FOR DOCS:\n", answer)
+    Auxiliary.verbose_checkpoint.verbose(f"RAW CHATGPT OUTPUT FOR DOCS:\n{answer}", verbose_checkpoint)
     return answer
 
 def extractCities(emailText):
