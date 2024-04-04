@@ -168,9 +168,6 @@ class AIregular:
         else:
             content_text = "Extract ALL flight details from the images which I will give you.\nExtract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and absolutely ALL other flight information.\n\nProvide an answer without asking me any further questions. It is completely possible that images do not have any flight information, in that case, just summarize the image text."
 
-        print("--------------------------------------")
-        print(f"content_text:\n{content_text}")
-        print("--------------------------------------")
         messages = [
             {
             "role": "user",
@@ -192,8 +189,7 @@ class AIregular:
         with get_open_ai_client(api_key=self.openAI_APIKEY, timeout=120) as client:
             response = client.chat.completions.create(
             model="gpt-4-vision-preview",
-            messages=messages,
-            max_tokens=4096,
+            messages=messages
             )
 
         if response.choices[0].finish_reason == "length":
@@ -201,6 +197,7 @@ class AIregular:
             Auxiliary.verbose_checkpoint.verbose("WARNING: picture specialized agent exceeded maximum amount of tokens!", verbose_checkpoint)
         #print("data extracted from image process:", response.choices[0].message.content)
         
+        print("RAW CHATGPT OUTPUT FOR IMAGES:\n", response.choices[0].message.content)
         return response.choices[0].message.content
     
     #AIregular_ = AIregular(keys.openAI_APIKEY)

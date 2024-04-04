@@ -33,7 +33,7 @@ class AiAssistantManager:
             if len(self.files) > 0:
                 self.textFileAssistant = client.beta.assistants.create(
                 instructions="You are a helpful robot who extracts flight details from text.",
-                model="gpt-4-1106-preview",
+                model="gpt-4-turbo-preview",
                 tools=[{"type": "retrieval"}],
                 file_ids=[]
                 )
@@ -50,7 +50,7 @@ class AiAssistantManager:
             else:
                 self.textFileAssistant = client.beta.assistants.create(
                 instructions="You are a helpful robot who extracts flight details from text.",
-                model="gpt-4-1106-preview"
+                model="gpt-4-turbo-preview"
                 )
 
                 self.thread = client.beta.threads.create(
@@ -146,6 +146,7 @@ def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
                     answer = runThread(assistant, thread, client, verbose_checkpoint)
                 except exceptions.stuck as e:
                     return None
+                
             return answer
 
 def runThread(assistant, thread, client, verbose_checkpoint=None):
@@ -190,7 +191,7 @@ def runThread(assistant, thread, client, verbose_checkpoint=None):
     )
     #print("Extracted non-structured data:\n", messages.data[0].content[0].text.value)
     answer = messages.data[0].content[0].text.value
-
+    print("RAW CHATGPT OUTPUT FOR DOCS:\n", answer)
     return answer
 
 def extractCities(emailText):
