@@ -96,13 +96,13 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
             filesText.append(file_content)
 
     if len(filesPicture) > 0:
+        print("Asking picture specialized agent - ", str(len(filesPicture)) + " files")
+        verbose("Asking picture specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
         if len(filesText) <= 0:
             flightDetailsImages = AIregular_.processImages(emailText, filesPicture, shortenedOutput=False, verbose_checkpoint=verbose_checkpoint)
             flightDetails = flightDetailsImages
         else:
-            print("Asking picture specialized agent - ", str(len(filesPicture)) + " files")
             flightDetailsImages = AIregular_.processImages(emailText, filesPicture, shortenedOutput=True, verbose_checkpoint=verbose_checkpoint)
-            verbose("Asking picture specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
 
     if len(filesText) > 0 or len(filesPicture) == 0:
         print("Asking text specialized agent - ", str(len(filesText)) + " files")
