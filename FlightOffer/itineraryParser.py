@@ -72,7 +72,7 @@ def parse_flight_info(text):
     else:
         return None
 
-def parse_text(text):
+def parse_offer_text(text):
     flights = []
     for line in text.split('\n'):
         print(f".{line}.")
@@ -98,5 +98,5 @@ if __name__ == "__main__":
     8  AF1426 K 21APR 7 CDGVCE HK2  0900 2F 0940 1120   *1A/E*
     """
 
-    parsed_data = parse_text(text)
+    parsed_data = parse_offer_text(text)
     print(parsed_data)
