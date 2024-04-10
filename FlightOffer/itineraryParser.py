@@ -86,7 +86,7 @@ def parse_offer_text(text):
 
             duration = calculate_time_difference(flight["departure_time"], flight["arrival_time"])
             flights.append({"departure": {"iataCode": flight["source"], "at": format_departure_time(flight['date'], flight["departure_time"], 0)}, "arrival": {"iataCode": flight["destination"], "at": format_departure_time(flight['date'], flight["arrival_time"], days_offset)}, "flightNumber": flight["flight_number"], "carrierCode": flight["airline_code"], "duration": duration, "iteraryNumber": None, "travelClass": None})
-    return {"offers": {"passengers": None, "fares": [], "flights": flights, "geoCode": {}, "airportName": None, "cityCode": None, "upsellOffers": []}}
+    return {"offers": [{"passengers": None, "fares": [], "flights": flights, "geoCode": {}, "airportName": None, "cityCode": None, "upsellOffers": []}]}
 
 if __name__ == "__main__":
     text = """
