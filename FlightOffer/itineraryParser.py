@@ -119,7 +119,7 @@ def parse_flight_info(text):
     else:
         return None
 
-def parse_offer_text(text):
+def parse_specific_offer_text(text):
     flights = []
     for line in text.split('\n'):
         print(f".{line}.")
@@ -136,14 +136,14 @@ def parse_offer_text(text):
     return {"passengers": None, "fares": [], "flights": flights, "geoCode": {}, "airportName": None, "cityCode": None, "upsellOffers": []}
 
 
-def get_offer_data(text):
+def parse_offer_text(text):
     offers = {"offers": []}
     #itineraries = split_itineraries(text)
     itineraries = re.split(r'split|---', text)
     for itinerary in itineraries:
         print("=========")
         print(itinerary)
-        offer = parse_offer_text(itinerary)
+        offer = parse_specific_offer_text(itinerary)
         if offer["flights"]:
             offers["offers"].append(offer)
 
@@ -166,5 +166,5 @@ split 1.OZBOT/ZAN MR
 3  LO 617 S 11MAY 6 WAWZAR HK1          1445 1625   *1A/E*
     """
 
-    parsed_data = get_offer_data(text)
+    parsed_data = parse_offer_text(text)
     print(parsed_data)
