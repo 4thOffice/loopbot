@@ -1,5 +1,51 @@
 import re
 from datetime import datetime, timedelta
+import math
+
+def check_if_anything_after(text, specific_line_number):
+    for line_number, line in enumerate(text.split('\n')):
+        if line_number > specific_line_number:
+            if line.strip():  # Check if the line has any non-whitespace characters
+                return True  # There is text after the specific line
+    return False  # No text found after the specific line
+
+
+def split_itineraries(text):
+    itineraries = []
+    current_itinerary = []
+
+    last_number = math.inf
+    for line_number, line in enumerate(text.split('\n')):
+        if line.strip():  # Check if the line is not empty
+            match = re.match(r'(\d+)', line)  # Find the full first number
+            if match:
+                first_number = int(match.group(1))  # Extract the first number
+                print("first number:", first_number)
+                print("last number:", last_number)
+                if first_number <= last_number:  # If it's the start of a new itinerary
+                    itineraries.append('\n'.join(current_itinerary))
+                    print("added")
+                    print('\n'.join(current_itinerary))
+                    current_itinerary = [line]
+                    last_number = first_number
+                elif not check_if_anything_after(text, line_number):
+                    current_itinerary.append(line)
+                    itineraries.append('\n'.join(current_itinerary))
+                    print("added")
+                    print('\n'.join(current_itinerary))
+                    current_itinerary = [line]
+                    last_number = first_number
+                else:
+                    current_itinerary.append(line)
+            else:
+                if current_itinerary:  # If there is an itinerary being built, add the line to it
+                    current_itinerary.append(line)
+
+    # Add the last itinerary
+    if current_itinerary:
+        itineraries.append('\n'.join(current_itinerary))
+
+    return itineraries
 
 # Function to parse the given string time format "HHMM+X" where "+X" is optional
 def time_from_string(time_str):
@@ -87,17 +133,38 @@ def parse_offer_text(text):
 
             duration = calculate_time_difference(flight["departure_time"], flight["arrival_time"])
             flights.append({"departure": {"iataCode": flight["source"].upper(), "at": format_departure_time(flight['date'].upper(), flight["departure_time"], 0)}, "arrival": {"iataCode": flight["destination"].upper(), "at": format_departure_time(flight['date'].upper(), flight["arrival_time"], days_offset)}, "flightNumber": flight["flight_number"], "carrierCode": flight["airline_code"].upper(), "duration": duration, "iteraryNumber": None, "travelClass": None})
-    return {"offers": [{"passengers": None, "fares": [], "flights": flights, "geoCode": {}, "airportName": None, "cityCode": None, "upsellOffers": []}]}
+    return {"passengers": None, "fares": [], "flights": flights, "geoCode": {}, "airportName": None, "cityCode": None, "upsellOffers": []}
+
+
+def get_offer_data(text):
+    offers = {"offers": []}
+    #itineraries = split_itineraries(text)
+    itineraries = re.split(r'split|---', text)
+    for itinerary in itineraries:
+        print("=========")
+        print(itinerary)
+        offer = parse_offer_text(itinerary)
+        if offer["flights"]:
+            offers["offers"].append(offer)
+
+    return offers
 
 if __name__ == "__main__":
     text = """
-3  DL9267 X 14APR 7 VCEAMS HK2          1140 1340   *1A/E*
-  4  DL 165 X 14APR 7 AMSMSP HK2          1520 1735   *1A/E*
-  5  DL1411 X 14APR 7 MSPYWG HK2       1  2157 2325   *1A/E*
-  6  AF8715 K 20APR 6 YWGMSP HK2  1150    1230 1402   *1A/E*
-  7  AF3574 K 20APR 6 MSPCDG HK2  1550 1  1630 0755+1 *1A/E*
-  8  AF1426 K 21APR 7 CDGVCE HK2  0900 2F 0940 1120   *1A/E*
+1.OZBOT/ZAN MR
+2  LO 618 L 07MAY 2 LJUWAW HK1          1705 1835   *1A/E* 1 
+3  LO 617 S 11MAY 6 WAWLJU HK1          1445 1625   *1A/E*
+
+split 1.OZBOT/ZAN MR
+2  LO 618 L 07MAY 2 LJUWAW HK1          1705 1835   *1A/E* 2
+3  LO 617 S 11MAY 6 WAWLJU HK1          1445 1625   *1A/E*
+
+---
+
+1.OZBOT/ZAN MR
+2  LO 618 L 07MAY 2 LJUWAW HK1          1705 1835   *1A/E* 3
+3  LO 617 S 11MAY 6 WAWZAR HK1          1445 1625   *1A/E*
     """
 
-    parsed_data = parse_offer_text(text)
+    parsed_data = get_offer_data(text)
     print(parsed_data)
