@@ -435,10 +435,13 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
             fare["price"] = {"grandTotal": fareOffer["fare"]["price"]["grandTotal"], "billingCurrency": fareOffer["fare"]["price"]["currency"]}
 
             includedBags = 0
-            if "quantity" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
-                includedBags = fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]["quantity"]
-            elif "weight" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
-                includedBags = 1
+            if "includedCheckedBags" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]:
+                if "quantity" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
+                    includedBags = fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]["quantity"]
+                elif "weight" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
+                    includedBags = 1
+            else:
+                includedBags = 0
 
             fare["checkedBags"] = includedBags
             fares.append(fare)
