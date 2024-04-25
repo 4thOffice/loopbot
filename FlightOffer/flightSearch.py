@@ -19,6 +19,8 @@ import upsellHandler
 import flightAuxiliary
 from miniRulesInfo import getMiniRulesInfo, convertMiniRulesAmenities
 from timeframeExpander import expandTimeframes
+from offersFetcher import fetchOffers
+import copy
 
 apiType = "enterprise" #personal/enterprise
 
@@ -99,42 +101,6 @@ def get_airport_coordinates(access_token, IATA):
         print(f'Failed to retrieve airport information: {response.status_code} - {response.text}')
         return None
     
-def get_flight_offers(access_token, search_params, ama_Client_Ref, verbose_checkpoint=None):
-    if apiType == "personal":
-        endpoint = 'https://api.amadeus.com/v2/shopping/flight-offers'
-    else:
-        endpoint = 'https://travel.api.amadeus.com/v2/shopping/flight-offers'
-
-    headers = {
-        'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/vnd.amadeus+json',
-        'ama-Client-Ref': ama_Client_Ref
-    }
-    try:
-        response = requests.post(endpoint, headers=headers, data=json.dumps(search_params))
-        #response = requests.get(endpoint, headers=headers, params=search_params)
-        responseJson = response.json()
-        if "errors" in responseJson:
-            combined_detail = ""
-            print(f"Error with fetching flight offers: {responseJson}")
-            verbose(f"Error with fetching flight offers: {responseJson}", verbose_checkpoint)
-            for error in responseJson["errors"]:
-                if "detail" in error:
-                    combined_detail += "\n" + error['detail']
-                else:
-                    combined_detail += "\nSYSTEM ERROR HAS OCCURRED"
-            return {"status": "error", "details": combined_detail}
-        else:
-            print(responseJson)
-            print("initial flight offers length: ", len(responseJson["data"]))
-            verbose(f"initial flight offers:\n{responseJson}", verbose_checkpoint)
-            verbose(("initial flight offers length: ", len(responseJson["data"])), verbose_checkpoint)
-            return {"status": "ok", "details": responseJson}
-    except ResponseError as error:
-        print(error)
-        verbose(f"Error getting flight offers {error}", verbose_checkpoint=verbose_checkpoint)
-        return responseJson
-    
 def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=None):
     search_params = structuredFlightDetails["search_params"]
     extraTimeframes = structuredFlightDetails["extraTimeframes"]
@@ -146,78 +112,54 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
 
     travelClass = search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["cabin"]
 
-    try:
-        print(f"Search parameters: {search_params}")
-        print(f"Extra timeframes: {extraTimeframes}")
-        print(f"checked bags: {checkedBags}")
-        print(f"refundable ticket: {refundableTicket}")
-        print(f"changeable ticket: {changeableTicket}")
-        print(f"travel class: {travelClass}")
-        print(f"Flight numbers per itinerary: {flightNumbersPerItinerary}")
-        verbose(f"Flight numbers per itinerary: {flightNumbersPerItinerary}", verbose_checkpoint)
-        verbose(f"refundable ticket: {refundableTicket}", verbose_checkpoint)
-        verbose(f"changeable ticket: {changeableTicket}", verbose_checkpoint)
-        verbose(f"travel class: {travelClass}", verbose_checkpoint)
-        verbose(f"Search parameters: {search_params}", verbose_checkpoint)
-        verbose(f"Extra timeframes: {extraTimeframes}", verbose_checkpoint)
-        verbose(f"Checked bags per person: {checkedBags}", verbose_checkpoint)
-        
-        if apiType == "personal":
-            access_token = get_access_token(enterprise=False)
-        else:
-            access_token = get_access_token()
-
-        #repeat this and expand time window untill amadeus returns at least 1 flight offer
-        iteration = 0
-        flightsFound = False
-        while iteration < 4 and not flightsFound:
-            flightOffers = get_flight_offers(access_token, search_params, ama_Client_Ref, verbose_checkpoint)
-            if flightOffers["status"] == "error":
-                print("Error with getting flights")
-                verbose("Error with getting flights", verbose_checkpoint)
-                return {"status": "error", "data": flightOffers["details"]}
-            elif flightOffers["status"] == "ok":
-                flightOffers = flightOffers["details"]["data"]
+    print(f"Search parameters: {search_params}")
+    verbose(f"Search parameters: {search_params}", verbose_checkpoint)
+    
+    if apiType == "personal":
+        access_token = get_access_token(enterprise=False)
+    else:
+        access_token = get_access_token()
+    
+    flightOffers = []
+    index = 0
+    for source in ["GDS", "NDC", "EAC", "LTC", "PYTON"]:
+        search_params["sources"] = [source]
+        try:
+            print("Looking for flight offers in:", source)
+            fetchedOffers = fetchOffers(copy.deepcopy(search_params), extraTimeframes, checkedBags, refundableTicket, changeableTicket, travelClass, flightNumbersPerItinerary, access_token, ama_Client_Ref, apiType, verbose_checkpoint=verbose_checkpoint)
+            print("flight offers length: ", len(fetchedOffers))
+            verbose(("flight offers length: ", len(fetchedOffers)), verbose_checkpoint)
+            flightOffers += fetchedOffers
+        except Exception as e:
+            traceback_msg = traceback.format_exc()
+            error_id = generate_error_id()
+            print(f"Error ID: {error_id}")
+            print(traceback_msg)
+            verbose(f"Error ID: {error_id}", verbose_checkpoint)
+            verbose(traceback_msg, verbose_checkpoint)
             time.sleep(0.5)
+            return {"status": "error", "data": ("Error ID: " + error_id)}
+    
+    print("initial flight offers:\n", len(flightOffers))
+    print(flightOffers)
 
-            if len(flightOffers) <= 0:
-                print("No flights found.. expanding time window by 2 hours")
-                verbose("No flights found.. expanding time window by 2 hours", verbose_checkpoint)
-                if iteration == 0:
-                    for originDestination in search_params['originDestinations']:
-                        if "time" in originDestination["departureDateTimeRange"]:
-                            del originDestination["originRadius"]
-                            del originDestination["destinationRadius"]
-                            originDestination["departureDateTimeRange"]["timeWindow"] = "4H"
-                else:        
-                    for originDestination in search_params['originDestinations']:
-                        if "time" in originDestination["departureDateTimeRange"]:
-                            current_time_window = originDestination['departureDateTimeRange']['timeWindow']
-                            new_time_window = int(current_time_window[:-1]) + 2
-                            new_time_window = f"{new_time_window}H"
-                            originDestination['departureDateTimeRange']['timeWindow'] = new_time_window
-                iteration += 1
-            else:
-                flightsFound = True
+    originalFlightOffers = list(flightOffers)
+    for flightOffer in flightOffers:
+        sameFlights = flightAuxiliary.getSameFlights(flightOffer, originalFlightOffers, returnSelf=True)
+        if sameFlights:
+            lowestPrice = sorted(sameFlights, key=lambda x: (float(x["price"]["grandTotal"])))[0]
+            #remove everything but lowest price offer
+            for flightOffer1 in flightOffers:
+                if flightOffer1 in sameFlights and flightOffer1 != lowestPrice:
+                    flightOffers.remove(flightOffer1)
 
-    except Exception as e:
-        traceback_msg = traceback.format_exc()
-        error_id = generate_error_id()
-        print(f"Error ID: {error_id}")
-        print(traceback_msg)
-        verbose(f"Error ID: {error_id}", verbose_checkpoint)
-        verbose(traceback_msg, verbose_checkpoint)
-        time.sleep(0.5)
-        return {"status": "error", "data": ("Error ID: " + error_id)}
-    #print(flightOffers)
-
+    print("removed duplicates:\n", len(flightOffers), flightOffers)
     #if amadeus returned no flight offers
     if len(flightOffers) <= 0:
         print("no flights")
         verbose("no flights", verbose_checkpoint)
         return {"status": "ok", "data": None}
-    
-    #originalFlightOffers = flightOffers
+
 
     if flightNumbersPerItinerary:
         flightOffersWithCorrectFlightNumbers = []
@@ -393,8 +335,17 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
     for index, offer in enumerate(cheapestPriceOffers):
         fares = upsellHandler.getUpsellOffer(offer, get_price_offer, travelClass, access_token, apiType, ama_Client_Ref, verbose_checkpoint)
         
-        #sameFlights = flightAuxiliary.getSameFlights(offer, originalFlightOffers)
-        #print("same flights:\n", sameFlights)
+        sameFlights = flightAuxiliary.getSameFlights(offer, originalFlightOffers)
+        print("offer to search same flights for:\n", offer)
+        print("same flights:\n", sameFlights)
+        if sameFlights:
+            for sameFlight in [sameFlights[0]]:
+                fares += upsellHandler.getUpsellOffer(sameFlight, get_price_offer, travelClass, access_token, apiType, ama_Client_Ref, verbose_checkpoint)
+        
+        if len(fares) > 1:
+            if not fares[0]["amenities"] and not fares[1]["amenities"]:
+                fares.pop(1)
+
         cheapestPriceOffers[index] = fares
 
     #just_offers = offerBagHandler.addBags(just_offers, checkedBags, get_price_offer, access_token, ama_Client_Ref, verbose_checkpoint)

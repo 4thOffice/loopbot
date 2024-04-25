@@ -2,6 +2,9 @@
 import datetime
 import re
 
+class ExitLoop(Exception):
+    pass
+
 def is_valid_time_format(time_string):
     pattern = r'^\d{2}:\d{2}:\d{2}$'  # HH:MM:SS format pattern
     return re.match(pattern, time_string) is not None
@@ -85,3 +88,35 @@ def getDuration(time_stamp1, time_stamp2):
     duration = duration.replace("0", "")
 
     return duration
+
+def getSameFlights(offer, flightOffers, returnSelf=False):
+    sameFlights = []
+    flightNumbers = []
+    for itinerary in offer["itineraries"]:
+        for segment in itinerary["segments"]:
+            flightNumbers.append(segment["number"])
+
+    #print("same flights numbers to search:", flightNumbers)
+    for flightOffer in flightOffers:
+        if flightOffer["source"] == offer["source"] and not returnSelf:
+            continue
+        segmentNumber = 0
+        try:
+            for itinerary in flightOffer["itineraries"]:
+                for segment in itinerary["segments"]:
+                    if len(flightNumbers) >= segmentNumber + 1:
+                        if not segment["number"] == flightNumbers[segmentNumber]:
+                            #print("CANCEL1")
+                            raise ExitLoop
+                    else:
+                        #print("CANCEL2")
+                        raise ExitLoop
+                    #print(segment["number"])
+                    segmentNumber += 1
+        except ExitLoop:
+            continue
+        
+        #print("FOUND")
+        sameFlights.append(flightOffer)
+
+    return sameFlights

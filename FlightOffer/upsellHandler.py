@@ -83,7 +83,7 @@ def getUpsellOffer(offer, get_price_offer, travelClass, access_token, apiType, a
     print("----------------------------")
     print("offer to get fares for:\n", offer)
 
-    if offer["source"] == "GDS" or offer["source"] == "NDC" or offer["source"] == "PYTON":
+    if offer["source"] == "GDS" or offer["source"] == "PYTON":
         upsell_offers = get_upsell_offer(access_token, [offer], apiType, verbose_checkpoint)
 
         if upsell_offers == None:
@@ -117,8 +117,8 @@ def getUpsellOffer(offer, get_price_offer, travelClass, access_token, apiType, a
 
     else:
         fares = []
-        verbose("Upsells not supported on LTC/EAC. Adding the default offer to fares list...", verbose_checkpoint)
-        print("Upsells not supported on LTC/EAC. Adding the default offer to fares list...")
+        verbose("Upsells not supported on LTC/EAC/NDC. Adding the default offer to fares list...", verbose_checkpoint)
+        print("Upsells not supported on LTC/EAC/NDC. Adding the default offer to fares list...")
         fares.append({"fare": offer, "amenities": {}})
 
     return fares
