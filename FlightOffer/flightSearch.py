@@ -140,6 +140,8 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
             time.sleep(0.5)
             return {"status": "error", "data": ("Error ID: " + error_id)}
     
+    verbose(("initial flight offers length:", len(flightOffers)), verbose_checkpoint)
+    verbose(("initial flight offers:\n", flightOffers), verbose_checkpoint)
     print("initial flight offers:\n", len(flightOffers))
     print(flightOffers)
 
