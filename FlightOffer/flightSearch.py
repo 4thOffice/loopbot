@@ -114,6 +114,9 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
 
     print(f"Search parameters: {search_params}")
     verbose(f"Search parameters: {search_params}", verbose_checkpoint)
+
+    print(f"Extra timeframes: {extraTimeframes}")
+    verbose(f"Extra timeframes: {extraTimeframes}", verbose_checkpoint)
     
     if apiType == "personal":
         access_token = get_access_token(enterprise=False)
