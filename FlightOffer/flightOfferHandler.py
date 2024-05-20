@@ -71,6 +71,7 @@ def getFlightOffer(cardID=None, authKey=None):
 def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=None):
     filesText = []
     filesPicture = []
+
     print(commentData["fileUrls"])
     for fileUrl in commentData["fileUrls"]:
         if isinstance(fileUrl, str) and fileUrl.startswith("data:"):
@@ -91,29 +92,17 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
             file_type = magic.from_buffer(file_content.getvalue(), mime=True)
 
         if "image" in file_type:
-            filesPicture.append(fileUrl)
+            response = requests.get(fileUrl)
+            response.raise_for_status()
+            file_content = io.BytesIO(response.content)
+            filesPicture.append(file_content)
         else:
             filesText.append(file_content)
 
-    if len(filesPicture) > 0:
-        print("Asking picture specialized agent - ", str(len(filesPicture)) + " files")
-        verbose("Asking picture specialized agent with " + str(len(filesPicture)) + " files", verbose_checkpoint)
-        if len(filesText) <= 0:
-            flightDetailsImages = AIregular_.processImages(emailText, filesPicture, shortenedOutput=False, verbose_checkpoint=verbose_checkpoint)
-            flightDetails = flightDetailsImages
-        else:
-            flightDetailsImages = AIregular_.processImages(emailText, filesPicture, shortenedOutput=True, verbose_checkpoint=verbose_checkpoint)
+    flightDetails = dataExtractor.askGPT(emailText, filesText, filesPicture, verbose_checkpoint=verbose_checkpoint)
 
-    if len(filesText) > 0 or len(filesPicture) == 0:
-        print("Asking text specialized agent - ", str(len(filesText)) + " files")
-        verbose("Asking text specialized agent with " + str(len(filesText)) + " files", verbose_checkpoint)
-        if len(filesPicture) > 0:
-            flightDetails = dataExtractor.askGPT(emailText, filesText, imageInfo=flightDetailsImages, verbose_checkpoint=verbose_checkpoint)
-        else:
-            flightDetails = dataExtractor.askGPT(emailText, filesText, verbose_checkpoint=verbose_checkpoint)
-
-        if flightDetails == None:
-            raise Timeout()
+    if flightDetails == None:
+        raise Timeout()
 
     print(f"data extracted from first extraction stage:\n {flightDetails}")
     verbose(f"data extracted from first extraction stage:\n {flightDetails}", verbose_checkpoint=verbose_checkpoint)

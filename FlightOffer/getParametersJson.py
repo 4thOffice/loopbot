@@ -26,7 +26,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
         "checkedBags": 0 //amount of checked bags per person, leave 0 if not specified explicitly
         "includedAirlineCodes": "" //leave empty if not specified! must be in format (comma-seperated): "6X,7X,8X"
         "people": "" //list of full names of people for whom ticket reservations has to be made. must be in format: [{"first_name": "James", "last_name": "Canigton"}, {"first_name": "Julie", "last_name": "Winston"}]. (MUST BE IN ORDER: "First name Last name") MUST BE AN ARRAY! Leave empty if not specified!
-        "itineraries": [ //seperate flight itineraries that customer is asking for. Flights are usually round-trip if not specified otherwise. If customer is asking about multiple flight offers, choose ONLY one!
+        "itineraries": [ //seperate flight itineraries that customer is asking for. Flights are usually round-trip if not specified otherwise (outbound + return). If customer is asking about multiple flight offers, choose ONLY one!
                 {
                     "travelClass": "ECONOMY", // ONLY choose ONE from these options and no other: ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]
                     "originLocationCode": "LJU", //If location is not specified, think logically what it could be. Location codes must be EXACTLY 3-letter IATA codes! Exactly 3 letters! Location IATA code MUST be valid! This parameter must NOT be empty!
@@ -54,7 +54,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
     for attempt in range(max_attempts):
         openai.api_key = keys.openAI_APIKEY
         response = openai.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are a helpful robot who extracts flight details from email and provides only a json of this data as output. Output must be ONLY JSON and no other text."},
                 {"role": "user", "content": user_msg}
@@ -67,7 +67,11 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                 print("WARNING: Parameters json extraction agent exceeded maximum amount of tokens!")
                 Auxiliary.verbose_checkpoint.verbose("WARNING: Parameters json extraction agent exceeded maximum amount of tokens!", verbose_checkpoint)
             try:
-                flight = json.loads(response.choices[0].message.content)
+                responseContent = response.choices[0].message.content
+                responseContent = responseContent.replace("```json", "")
+                responseContent = responseContent.replace("```", "")
+                print("response 'json'\n", responseContent)
+                flight = json.loads(responseContent)
             except (ValueError, json.decoder.JSONDecodeError):
                 Auxiliary.verbose_checkpoint.verbose(
                     f"Failed to extract JSON {attempt=}\n{response.choices[0].message.content=}\n{emailText=}", verbose_checkpoint

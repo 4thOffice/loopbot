@@ -1,6 +1,8 @@
+import base64
 import contextlib
 import io
 import json
+import mimetypes
 import time
 import httpx
 from openai import OpenAI
@@ -16,6 +18,23 @@ import exceptions
 from contextlib import ExitStack
 import Auxiliary.verbose_checkpoint
 from datetime import datetime
+import magic
+
+custom_mime_map = {
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+    'application/pdf': '.pdf',
+    'text/plain': '.txt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+    'application/json': '.json',
+    'application/msword': '.doc',
+    'image/png': '.png',
+    'image/jpg': '.jpg',
+    'image/jpeg': '.jpeg',
+    'image/jpeg': '.gif',
+    'image/.webp': '.webp'
+}
+
+supported_file_types = [".txt", ".doc", ".docx", ".pdf", ".json", ".pptx"]
 
 @contextlib.contextmanager
 def get_open_ai_client(api_key=None,  timeout=60):
@@ -23,60 +42,70 @@ def get_open_ai_client(api_key=None,  timeout=60):
         yield OpenAI(api_key=api_key, http_client=client)
         
 class AiAssistantManager:
-    def __init__(self, content_text, files):
+    def __init__(self, content_text, filesText, filesPicture):
         self.content_text = content_text
-        self.files = files
+        self.filesText = filesText
+        self.filesPicture = filesPicture
 
     def __enter__(self):
         with get_open_ai_client(api_key=keys.openAI_APIKEY) as client:
 
-            if len(self.files) > 0:
-                self.textFileAssistant = client.beta.assistants.create(
-                instructions="You are a helpful robot who extracts flight details from text.",
-                model="gpt-4-turbo-preview",
-                tools=[{"type": "retrieval"}],
-                file_ids=[]
-                )
+            self.textFileAssistant = client.beta.assistants.create(
+            instructions="You are a helpful robot who extracts flight details from text.",
+            model="gpt-4o",
+            tools=[{"type": "file_search"}]
+            )
 
-                self.thread = client.beta.threads.create(
-                messages=[
-                    {
-                    "role": "user",
-                    "content": self.content_text,
-                    "file_ids": self.files
-                    }
-                ]
-                )
-            else:
-                self.textFileAssistant = client.beta.assistants.create(
-                instructions="You are a helpful robot who extracts flight details from text.",
-                model="gpt-4-turbo-preview"
-                )
+            attachments = []
+            content = []
+            for fileID in self.filesText:
+                attachments.append({ "file_id": fileID, "tools": [{"type": "file_search"}] })
 
-                self.thread = client.beta.threads.create(
-                messages=[
-                    {
-                    "role": "user",
-                    "content": self.content_text
-                    }
-                ]
-                )
+            content.append({"type": "text", "text": self.content_text})
+            for index, imgFile in enumerate(self.filesPicture):
+                file_type = magic.from_buffer(imgFile.getvalue(), mime=True)
+                file_extension = mimetypes.guess_extension(file_type) or custom_mime_map.get(file_type, '')
+                print("filetypes", file_extension)
+                imgID = client.files.create(
+                file=(f"img.{file_extension}", imgFile),
+                purpose='assistants'
+                ).id
+                self.filesPicture[index] = imgID
+                content.append({"type": "image_file", "image_file": {"file_id": imgID, "detail": "high"}})
+
+            self.thread = client.beta.threads.create(
+            messages=[
+                {
+                "role": "user",
+                "content": content,
+                "attachments": attachments
+                }
+            ]
+            )
         
         return self.textFileAssistant, self.thread
 
     def __exit__(self, exc_type, exc_value, traceback):
         apiDataHandler.delete_assistant(self.textFileAssistant.id, keys.openAI_APIKEY)
-        for file_ in self.files:
+        for file_ in self.filesPicture:
+            apiDataHandler.delete_file(file_, keys.openAI_APIKEY)
+        for file_ in self.filesText:
             apiDataHandler.delete_file(file_, keys.openAI_APIKEY)
 
-def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
+def askGPT(emailText, filesText, filesPicture, verbose_checkpoint=None):
     with get_open_ai_client(api_key=keys.openAI_APIKEY) as client:
-        for index, file_ in enumerate(files):
-            files[index] = client.files.create(
-            file=file_,
-            purpose='assistants'
-            ).id
-        
+        for index, file_ in enumerate(filesText):
+            file_type = magic.from_buffer(file_.getvalue(), mime=True)
+            file_extension = mimetypes.guess_extension(file_type) or custom_mime_map.get(file_type, '')
+            print("filetypes", file_extension)
+            if file_extension in supported_file_types:
+                filesText[index] = client.files.create(
+                file=(f"document.{file_extension}", file_),
+                purpose='assistants'
+                ).id
+            else:
+                filesText.pop(index)
+
         current_date_time = datetime.now()
         formatted_current_date = current_date_time.strftime("%dth of %B %Y")
         
@@ -122,21 +151,19 @@ def askGPT(emailText, files, imageInfo=[], verbose_checkpoint=None):
         #content_text += emailText
 
         filesPromptText = ""
-        if len(files) > 0:
+        if len(filesText) > 0 or len(filesPicture) > 0:
             filesPromptText = "Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents (if they are any), as they all include critical information."
 
         print("filesPromptText", filesPromptText)
-        content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. " + filesPromptText + "\n\nProvide an answer without asking me any further questions." + "" if filesPromptText else " Ignore files if you didn't find any." + "\n\nText to extract details from:\n\n" + emailText
+        content_text += "Extract ALL flight details from the text which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. " + filesPromptText + "\n\nProvide an answer without asking me any further questions." + ("" if filesPromptText else " Ignore files if you didn't find any.") + "\n\nText to extract details from:\n\n" + emailText
             #content_text = "Extract ALL flight details from the email which I will give you. Extract data like origin, destionation, dates, timeframes, requested connection points (if specified explicitly) and ALL other flight information. Also, if there are any documents attached, read them too, they provide aditional information. You MUST read every single one of the attached documents, as they all include critical information.\n\nProvide an answer without asking me any further questions.\n\nEmail (in text format) to extract details from:\n\n" + emailText
-        if len(imageInfo) > 0:
-            content_text += "\n\nAlso take this important extra information into consideration:\n\n" + imageInfo
 
         print("--------------------------------------")
         print(f"content_text_docs:\n{content_text}")
         print("--------------------------------------")
         #content_text += "\n\nIf there is a specific flight written, say that it is a preffered option."
         
-        with AiAssistantManager(content_text, files) as (assistant, thread):
+        with AiAssistantManager(content_text, filesText, filesPicture) as (assistant, thread):
             answer = None
             try:
                 answer = runThread(assistant, thread, client, verbose_checkpoint)
@@ -191,8 +218,6 @@ def runThread(assistant, thread, client, verbose_checkpoint=None):
     )
     #print("Extracted non-structured data:\n", messages.data[0].content[0].text.value)
     answer = messages.data[0].content[0].text.value
-    print("RAW CHATGPT OUTPUT FOR DOCS:\n", answer)
-    Auxiliary.verbose_checkpoint.verbose(f"RAW CHATGPT OUTPUT FOR DOCS:\n{answer}", verbose_checkpoint)
     return answer
 
 def extractCities(emailText):
