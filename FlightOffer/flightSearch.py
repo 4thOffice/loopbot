@@ -20,6 +20,7 @@ import flightAuxiliary
 from miniRulesInfo import getMiniRulesInfo, convertMiniRulesAmenities
 from timeframeExpander import expandTimeframes
 from offersFetcher import fetchOffers
+from createOrder import create_order
 import copy
 
 apiType = "enterprise" #personal/enterprise
@@ -37,7 +38,7 @@ amadeus = Client(
 
 def get_access_token(api_key=keys.amadeus_client_id, api_secret=keys.amadeus_client_secret, enterprise=True):
     if enterprise:
-        auth_url = 'https://travel.api.amadeus.com/v1/security/oauth2/token'
+        auth_url = 'https://test.travel.api.amadeus.com/v1/security/oauth2/token'
     else:
         api_key=keys.amadeus_client_id_personal
         api_secret=keys.amadeus_client_secret_personal
@@ -55,7 +56,7 @@ def get_price_offer(access_token, ama_Client_Ref, flight_offers):
     if apiType == "personal":
         url = 'https://api.amadeus.com/v1/shopping/flight-offers/pricing'
     else:
-        url = 'https://travel.api.amadeus.com/v1/shopping/flight-offers/pricing'
+        url = 'https://test.travel.api.amadeus.com/v1/shopping/flight-offers/pricing'
         
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -358,8 +359,19 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
     print(f"final offers with amenities:\n{cheapestPriceOffers}")
     verbose(f"final offers with amenities:\n{cheapestPriceOffers}", verbose_checkpoint)
 
+    #create orders
+    order_reference = None
+    if len(people) > 0:
+        verbose("CREATING ORDER..", verbose_checkpoint)
+        print("CREATING ORDER..")
+        try:
+            order_reference = create_order(cheapestPriceOffers, people, ama_Client_Ref, access_token)
+        except:
+            verbose("FAILED CREATING ORDER", verbose_checkpoint)
+            print("FAILED CREATING ORDER")
+
     returnData = {"status": "ok", "data": {"offers": [], "people": people}}
-    for cheapest_price_offer in cheapestPriceOffers:
+    for index, cheapest_price_offer in enumerate(cheapestPriceOffers):
         geoCode, cityCode, airportName = get_airport_coordinates(access_token, cheapest_price_offer[0]["fare"]["itineraries"][0]["segments"][-1]["arrival"]["iataCode"])
         
         flights = []
@@ -402,7 +414,9 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
             fare["checkedBags"] = includedBags
             fares.append(fare)
             
-
-        returnData["data"]["offers"].append({"passengers": len(cheapest_price_offer[0]["fare"]["travelerPricings"]), "fares": fares, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode})
+        if index > 0:
+            order_reference = None
+            
+        returnData["data"]["offers"].append({"passengers": len(cheapest_price_offer[0]["fare"]["travelerPricings"]), "fares": fares, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode, "order_reference": order_reference})
         
     return returnData

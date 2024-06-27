@@ -24,7 +24,7 @@ def get_flight_offers(access_token, search_params, ama_Client_Ref, apiType, verb
     if apiType == "personal":
         endpoint = 'https://api.amadeus.com/v2/shopping/flight-offers'
     else:
-        endpoint = 'https://travel.api.amadeus.com/v2/shopping/flight-offers'
+        endpoint = 'https://test.travel.api.amadeus.com/v2/shopping/flight-offers'
 
     headers = {
         'Authorization': f'Bearer {access_token}',

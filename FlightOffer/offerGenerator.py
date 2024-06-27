@@ -201,6 +201,9 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None, ve
 
             flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration}) {cabinString}\n"
         
+        if offer["order_reference"]:
+            flights_string += "\nReservation reference: " + str(offer["order_reference"])
+            
         for fare in offer["fares"]:
             if fare['checkedBags'] == 0:
                 flights_string += "\nOnly carry-on included. "
