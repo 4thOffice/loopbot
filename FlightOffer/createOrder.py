@@ -45,6 +45,16 @@ def create_order(flight_offers, people, ama_Client_Ref, access_token):
             "name": {
                 "firstName": traveler["first_name"],
                 "lastName": traveler["last_name"]
+            },
+            "contact":{
+                "phones":[
+                    {
+                        "deviceType": "LANDLINE",
+                        "countryCallingCode": "386",
+                        "number": "51385823"
+                    }
+                ],
+                "emailAddress": "letala@nomago.si"
             }
         })
 
