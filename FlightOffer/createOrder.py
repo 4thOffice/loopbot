@@ -6,7 +6,7 @@ def create_order_API(flight_offers, travelers, contacts, ama_Client_Ref, access_
     if apiType == "personal":
         url = 'https://api.amadeus.com/v1/booking/flight-offers'
     else:
-        url = 'https://test.travel.api.amadeus.com/v1/booking/flight-orders'
+        url = 'https://travel.api.amadeus.com/v1/booking/flight-orders'
         
     headers = {
         'Authorization': f'Bearer {access_token}',

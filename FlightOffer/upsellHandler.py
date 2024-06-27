@@ -11,7 +11,7 @@ def get_upsell_offer(access_token, flight_offers, apiType, verbose_checkpoint=No
     if apiType == "personal":
         url = 'https://api.amadeus.com/v1/shopping/flight-offers/upselling'
     else:
-        url = 'https://test.travel.api.amadeus.com/v1/shopping/flight-offers/upselling'
+        url = 'https://travel.api.amadeus.com/v1/shopping/flight-offers/upselling'
 
     headers = {
         'Authorization': f'Bearer {access_token}',
