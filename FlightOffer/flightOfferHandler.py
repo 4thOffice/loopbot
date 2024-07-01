@@ -32,12 +32,12 @@ sys.path.append(transfer_offer_path)
 from TransferOffer import transferSearch
 
 
-def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, email_comment_id, upsell=False, verbose_checkpoint: typing.Callable[[str], None] = None):
+def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, email_comment_id, automatic_order=False, upsell=False, verbose_checkpoint: typing.Callable[[str], None] = None):
     try:
         print("attachments: ", attachments)
         commentData = classification.getFiles(attachments, htmlEmailtext, verbose_checkpoint)
         emailText = subject + "\n\n" + plainText
-        response = getResponse(emailText, commentData, upsell, email_comment_id, verbose_checkpoint)
+        response = getResponse(emailText, commentData, upsell, automatic_order, email_comment_id, verbose_checkpoint)
     except Exception as e:
         traceback_msg = traceback.format_exc()
         error_id = generate_error_id()
@@ -58,7 +58,7 @@ def getFlightOffer(cardID=None, authKey=None):
     emailText = classification.getCommentContent(commentData["id"], authKey)
     
     try:
-        response = getResponse(emailText, commentData, False)
+        response = getResponse(emailText, commentData, False, False)
     except Exception as e:
         traceback_msg = traceback.format_exc()
         error_id = generate_error_id()
@@ -110,7 +110,7 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
     return flightDetails
     
 
-def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_checkpoint=None, retries=0):
+def getResponse(emailText, commentData, upsell, automatic_order, email_comment_id=None, verbose_checkpoint=None, retries=0):
     answer = classification.classifyEmail(emailText)
     print("raw email text:", emailText)
     verbose(f"raw email text:\n{emailText}", verbose_checkpoint)
@@ -136,7 +136,7 @@ def getResponse(emailText, commentData, upsell, email_comment_id=None, verbose_c
             return({"parsedOffer": (f"{travelClassText}\n\n" + "Error requesting offers - Error ID: " + generate_error_id()), "details": None})
 
         ama_Client_Ref = str(uuid.uuid4())
-        details = flightSearch.getFlightOffer(structuredData, ama_Client_Ref, verbose_checkpoint)
+        details = flightSearch.getFlightOffer(structuredData, automatic_order, ama_Client_Ref, verbose_checkpoint)
 
         if details["status"] == "ok" and details["data"] is None:
             return({"parsedOffer": f"{travelClassText}\n\nNo flights found", "details": None})

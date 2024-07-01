@@ -102,7 +102,7 @@ def get_airport_coordinates(access_token, IATA):
         print(f'Failed to retrieve airport information: {response.status_code} - {response.text}')
         return None
     
-def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=None):
+def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, verbose_checkpoint=None):
     search_params = structuredFlightDetails["search_params"]
     extraTimeframes = structuredFlightDetails["extraTimeframes"]
     checkedBags = structuredFlightDetails["checkedbags"]
@@ -361,7 +361,7 @@ def getFlightOffer(structuredFlightDetails, ama_Client_Ref, verbose_checkpoint=N
 
     #create orders
     order_reference = None
-    if len(people) > 0:
+    if len(people) > 0 and automatic_order:
         verbose("CREATING ORDER..", verbose_checkpoint)
         print("CREATING ORDER..")
         try:
