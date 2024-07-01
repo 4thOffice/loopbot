@@ -54,7 +54,7 @@ def create_order(flight_offers, people, ama_Client_Ref, access_token):
                         "number": "51385823"
                     }
                 ],
-                "emailAddress": "letala@nomago.si"
+                "emailAddress": "letalo@nomago.si"
             }
         })
 
@@ -75,7 +75,7 @@ def create_order(flight_offers, people, ama_Client_Ref, access_token):
             "number": "51385823"
           }
         ],
-        "emailAddress": "letala@nomago.si",
+        "emailAddress": "letalo@nomago.si",
         "address": {
           "lines": [
             "Vošnjakova ulica, 3"
