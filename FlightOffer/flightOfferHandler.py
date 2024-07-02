@@ -73,32 +73,42 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
     filesPicture = []
 
     print(commentData["fileUrls"])
+    verbose(commentData["fileUrls"], verbose_checkpoint)
     for fileUrl in commentData["fileUrls"]:
+        verbose(f"fileUrl: {fileUrl}", verbose_checkpoint)
         if isinstance(fileUrl, str) and fileUrl.startswith("data:"):
+            verbose(f"1: {fileUrl}", verbose_checkpoint)
             filesPicture.append(fileUrl)
             continue
 
         if isinstance(fileUrl, bytes):
             file_content = fileUrl
             file_type = magic.from_buffer(fileUrl, mime=True)
+            verbose(f"2: {file_content} {file_type}", verbose_checkpoint)
         elif isinstance(fileUrl, tuple):
             # Union[Tuple[str, bytes], Tuple[str, bytes, Optional[str]]] -> filename, file_bytes, *mime_type
             file_content = fileUrl
             file_type = fileUrl[2] if len(fileUrl) == 3 and fileUrl[2] else magic.from_buffer(fileUrl[1], mime=True)
+            verbose(f"3: {file_content} {file_type}", verbose_checkpoint)
         else:
             response = requests.get(fileUrl)
             response.raise_for_status()
             file_content = io.BytesIO(response.content)
             file_type = magic.from_buffer(file_content.getvalue(), mime=True)
+            verbose(f"4: {file_content} {file_type}", verbose_checkpoint)
 
         if "image" in file_type:
             response = requests.get(fileUrl)
             response.raise_for_status()
             file_content = io.BytesIO(response.content)
             filesPicture.append(file_content)
+            verbose(f"5: {file_content}", verbose_checkpoint)
         else:
             filesText.append(file_content)
-
+            verbose(f"6: {file_content}", verbose_checkpoint)
+    
+    verbose(f"filesText: {filesText}", verbose_checkpoint)
+    verbose(f"filesPicture: {filesPicture}", verbose_checkpoint)
     flightDetails = dataExtractor.askGPT(emailText, filesText, filesPicture, verbose_checkpoint=verbose_checkpoint)
 
     if flightDetails == None:
