@@ -79,7 +79,7 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
         if isinstance(fileUrl, str) and fileUrl.startswith("data:"):
             verbose("1", verbose_checkpoint)
             #verbose(f"1: {fileUrl}", verbose_checkpoint)
-            file_content = io.StringIO(fileUrl)
+            #file_content = io.StringIO(fileUrl)
             filesPicture.append(file_content)
             continue
 
