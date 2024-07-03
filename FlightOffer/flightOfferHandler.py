@@ -20,6 +20,7 @@ import traceback
 import uuid
 from exceptions import Timeout
 import getParametersJson
+import base64
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
 hotel_offer_path = os.path.join(current_directory, 'HotelOffer')
@@ -87,6 +88,9 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
             verbose("1", verbose_checkpoint)
             #verbose(f"1: {fileUrl}", verbose_checkpoint)
             #file_content = io.StringIO(fileUrl)
+            header, base64_str = fileUrl.split(",", 1)
+            image_bytes = base64.b64decode(base64_str)
+            file_content = io.BytesIO(image_bytes)
             filesPicture.append(file_content)
             continue
 
