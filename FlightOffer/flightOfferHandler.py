@@ -102,7 +102,7 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
         elif isinstance(fileUrl, tuple):
             verbose("3", verbose_checkpoint)
             # Union[Tuple[str, bytes], Tuple[str, bytes, Optional[str]]] -> filename, file_bytes, *mime_type
-            file_content = fileUrl
+            file_content = fileUrl[1]
             file_type = fileUrl[2] if len(fileUrl) == 3 and fileUrl[2] else magic.from_buffer(fileUrl[1], mime=True)
             #verbose(f"3: {file_content} {file_type}", verbose_checkpoint)
         else:
