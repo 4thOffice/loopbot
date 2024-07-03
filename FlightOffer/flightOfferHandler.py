@@ -77,20 +77,24 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
     for fileUrl in commentData["fileUrls"]:
         #verbose(f"fileUrl: {fileUrl}", verbose_checkpoint)
         if isinstance(fileUrl, str) and fileUrl.startswith("data:"):
+            verbose("1", verbose_checkpoint)
             #verbose(f"1: {fileUrl}", verbose_checkpoint)
             filesPicture.append(fileUrl)
             continue
 
         if isinstance(fileUrl, bytes):
+            verbose("2", verbose_checkpoint)
             file_content = fileUrl
             file_type = magic.from_buffer(fileUrl, mime=True)
             #verbose(f"2: {file_content} {file_type}", verbose_checkpoint)
         elif isinstance(fileUrl, tuple):
+            verbose("3", verbose_checkpoint)
             # Union[Tuple[str, bytes], Tuple[str, bytes, Optional[str]]] -> filename, file_bytes, *mime_type
             file_content = fileUrl
             file_type = fileUrl[2] if len(fileUrl) == 3 and fileUrl[2] else magic.from_buffer(fileUrl[1], mime=True)
             #verbose(f"3: {file_content} {file_type}", verbose_checkpoint)
         else:
+            verbose("4", verbose_checkpoint)
             response = requests.get(fileUrl)
             response.raise_for_status()
             file_content = io.BytesIO(response.content)
@@ -98,12 +102,14 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
             #verbose(f"4: {file_content} {file_type}", verbose_checkpoint)
 
         if "image" in file_type:
+            verbose("5", verbose_checkpoint)
             response = requests.get(fileUrl)
             response.raise_for_status()
             file_content = io.BytesIO(response.content)
             filesPicture.append(file_content)
             #verbose(f"5: {file_content}", verbose_checkpoint)
         else:
+            verbose("6", verbose_checkpoint)
             filesText.append(file_content)
             #verbose(f"6: {file_content}", verbose_checkpoint)
     
