@@ -32,7 +32,14 @@ sys.path.append(transfer_offer_path)
 from TransferOffer import transferSearch
 
 
-def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, email_comment_id, automatic_order=False, upsell=False, verbose_checkpoint: typing.Callable[[str], None] = None):
+def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, email_comment_id, variables, verbose_checkpoint: typing.Callable[[str], None] = None):
+    automatic_order = False
+    upsell = False
+    if "No upsell" in variables:
+        automatic_order = variables["No upsell"]
+    if "No order" in variables:
+        upsell = variables["No order"]
+
     try:
         print("attachments: ", attachments)
         commentData = classification.getFiles(attachments, htmlEmailtext, verbose_checkpoint)
