@@ -90,6 +90,7 @@ def create_order(flight_offers, people, ama_Client_Ref, access_token, verbose_ch
     ]
 
     order_info = create_order_API(offers_to_order, travelers, contacts, ama_Client_Ref, access_token)
+    order_info["ama_Client_Ref"] = ama_Client_Ref
     verbose(f"ORDER INFO:\n {order_info}", verbose_checkpoint)
     print(f"ORDER INFO:\n {order_info}")
     order_reference = order_info["reference"]
