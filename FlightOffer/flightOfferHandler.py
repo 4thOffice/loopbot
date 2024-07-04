@@ -99,13 +99,13 @@ def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=N
 
         if isinstance(fileUrl, bytes):
             verbose("2", verbose_checkpoint)
-            file_content = fileUrl
+            file_content = io.BytesIO(fileUrl)
             file_type = magic.from_buffer(fileUrl, mime=True)
             #verbose(f"2: {file_content} {file_type}", verbose_checkpoint)
         elif isinstance(fileUrl, tuple):
             verbose("3", verbose_checkpoint)
             # Union[Tuple[str, bytes], Tuple[str, bytes, Optional[str]]] -> filename, file_bytes, *mime_type
-            file_content = fileUrl[1]
+            file_content = io.BytesIO(fileUrl[1])
             file_type = fileUrl[2] if len(fileUrl) == 3 and fileUrl[2] else magic.from_buffer(fileUrl[1], mime=True)
             #verbose(f"3: {file_content} {file_type}", verbose_checkpoint)
         else:
@@ -180,7 +180,7 @@ def getResponse(emailText, commentData, upsell, automatic_order, email_comment_i
             else:
                 print("Encountered an error, trying one more time...")
                 verbose("Encountered an error, trying one more time...", verbose_checkpoint)
-                return getResponse(emailText, commentData, upsell, email_comment_id=email_comment_id,
+                return getResponse(emailText, commentData, upsell, automatic_order, email_comment_id=email_comment_id,
                                    verbose_checkpoint=verbose_checkpoint, retries=1)
         
         #generatedOffer = offerGenerator.generateOffer(emailText, details)
