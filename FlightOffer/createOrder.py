@@ -30,7 +30,7 @@ def create_order_API(flight_offers, travelers, contacts, ama_Client_Ref, access_
         print('Flight order created successfully!')
         responseJson = response.json()
         print(responseJson)
-        return {"order_id": responseJson["data"]["id"], "queuingOfficeId": responseJson["data"]["queuingOfficeId"], "reference": responseJson["data"]["associatedRecords"][0]["reference"]}  # Return the JSON response
+        return {"order_id": responseJson["data"]["id"], "reference": responseJson["data"]["associatedRecords"][0]["reference"]}  # Return the JSON response
     else:
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
@@ -90,7 +90,8 @@ def create_order(flight_offers, people, ama_Client_Ref, access_token, verbose_ch
     ]
 
     order_info = create_order_API(offers_to_order, travelers, contacts, ama_Client_Ref, access_token)
-    verbose("ORDER INFO:\n", order_info)
+    verbose(f"ORDER INFO:\n {order_info}", verbose_checkpoint)
+    print(f"ORDER INFO:\n {order_info}")
     order_reference = order_info["reference"]
 
     return order_reference
