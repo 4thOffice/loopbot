@@ -37,9 +37,11 @@ def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, ema
     automatic_order = False
     upsell = False
     if "No upsell" in variables:
-        automatic_order = variables["No upsell"]
+        #upsell = variables["No upsell"]
+        verbose(f"no order variable {variables['No upsell']}")
     if "No order" in variables:
-        upsell = variables["No order"]
+        #automatic_order = variables["No order"]
+        verbose(f"no order variable {variables['No order']}")
 
     try:
         print("attachments: ", attachments)

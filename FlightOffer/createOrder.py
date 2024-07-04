@@ -1,5 +1,6 @@
 import json
 import requests
+from Auxiliary.verbose_checkpoint import verbose
 
 apiType = "Enterprise"
 def create_order_API(flight_offers, travelers, contacts, ama_Client_Ref, access_token):
@@ -27,13 +28,14 @@ def create_order_API(flight_offers, travelers, contacts, ama_Client_Ref, access_
     response = requests.post(url, headers=headers, data=json.dumps(payload))
     if response.status_code == 201:
         print('Flight order created successfully!')
-        print(response.json())
-        return response.json()  # Return the JSON response
+        responseJson = response.json()
+        print(responseJson)
+        return {"order_id": responseJson["data"]["id"], "queuingOfficeId": responseJson["data"]["queuingOfficeId"], "reference": responseJson["data"]["associatedRecords"][0]["reference"]}  # Return the JSON response
     else:
         print(f'Failed to retrieve data: {response.status_code} - {response.text}')
         return None
     
-def create_order(flight_offers, people, ama_Client_Ref, access_token):
+def create_order(flight_offers, people, ama_Client_Ref, access_token, verbose_checkpoint=None):
     offers_to_order = [flight_offers[0][0]["fare"]]
 
     print("offer to create order for:\n", offers_to_order)
@@ -88,6 +90,7 @@ def create_order(flight_offers, people, ama_Client_Ref, access_token):
     ]
 
     order_info = create_order_API(offers_to_order, travelers, contacts, ama_Client_Ref, access_token)
-    order_reference = order_info["data"]["associatedRecords"][0]["reference"]
+    verbose("ORDER INFO:\n", order_info)
+    order_reference = order_info["reference"]
 
     return order_reference

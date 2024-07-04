@@ -365,7 +365,7 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
         verbose("CREATING ORDER..", verbose_checkpoint)
         print("CREATING ORDER..")
         try:
-            order_reference = create_order(cheapestPriceOffers, people, ama_Client_Ref, access_token)
+            order_reference = create_order(cheapestPriceOffers, people, ama_Client_Ref, access_token, verbose_checkpoint)
         except:
             verbose("FAILED CREATING ORDER", verbose_checkpoint)
             print("FAILED CREATING ORDER")
