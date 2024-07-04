@@ -272,7 +272,7 @@ def getResponse(emailText, commentData, upsell, automatic_order, email_comment_i
         generatedOffer = offerGenerator.generateFlightsString({"offers": details["data"]["offers"]}, email_comment_id=email_comment_id, verbose_checkpoint=verbose_checkpoint)
 
         peopleString = ""
-        if "people" in details["data"]:
+        if "people" in details["data"] and details["data"]["offers"][0]["order_reference"]:
             if details["data"]["people"]:
                 peopleString += "Reservation for:\n"
             for person in details["data"]["people"]:
