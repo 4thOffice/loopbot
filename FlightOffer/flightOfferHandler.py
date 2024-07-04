@@ -36,12 +36,14 @@ from TransferOffer import transferSearch
 def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, email_comment_id, variables, verbose_checkpoint: typing.Callable[[str], None] = None):
     automatic_order = False
     upsell = False
+    #upsell = True
     if "No upsell" in variables:
-        #upsell = variables["No upsell"]
-        verbose(f"No upsell variable {variables['No upsell']}")
+        #if variables["No upsell"] == True:
+        #    upsell = False
+        verbose(f"No upsell variable {variables['No upsell']}", verbose_checkpoint)
     if "Order" in variables:
-        #automatic_order = variables["No order"]
-        verbose(f"Order variable {variables['Order']}")
+        #automatic_order = variables["Order"]
+        verbose(f"Order variable {variables['Order']}", verbose_checkpoint)
 
     try:
         print("attachments: ", attachments)
