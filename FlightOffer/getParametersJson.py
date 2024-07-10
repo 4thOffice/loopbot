@@ -137,8 +137,8 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
                 if not found:
                     usedDestinationLocationCodes.append(flightSegment["destinationLocationCode"])
 
-            if flight["maximumNumberOfConnections"] == 0:
-                search_params["searchCriteria"]["flightFilters"]["connectionRestriction"]["nonStopPreferred"] = "true"
+            #if flight["maximumNumberOfConnections"] == 0:
+            #    search_params["searchCriteria"]["flightFilters"]["connectionRestriction"]["nonStopPreferred"] = "true"
             
             search_params["searchCriteria"]["flightFilters"]["maxFlightTime"] = 200
 
