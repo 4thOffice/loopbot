@@ -34,6 +34,7 @@ from TransferOffer import transferSearch
 
 
 def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, email_comment_id, variables, verbose_checkpoint: typing.Callable[[str], None] = None):
+    verbose("TravelAI module started.", verbose_checkpoint)
     automatic_order = False
     upsell = True
     if "No upsell" in variables:
