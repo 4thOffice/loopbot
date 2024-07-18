@@ -54,7 +54,7 @@ def extractSearchParameters(emailText, offerCount, verbose_checkpoint=None):
     for attempt in range(max_attempts):
         openai.api_key = keys.openAI_APIKEY
         response = openai.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a helpful robot who extracts flight details from email and provides only a json of this data as output. Output must be ONLY JSON and no other text."},
                 {"role": "user", "content": user_msg}
