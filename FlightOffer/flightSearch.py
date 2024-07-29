@@ -284,7 +284,7 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
                 price_offer = get_price_offer(access_token, ama_Client_Ref, [offer])["data"]["flightOffers"][0]
                 price_offers.append(price_offer)
             except:
-                return {"status": "error", "data": "Error with getting current price for the offer."}
+                continue
         
         cheapestPriceOffers = flightAuxiliary.get_time_difference_data(price_offers, extraTimeframes)
         cheapestPriceOffers = sorted(cheapestPriceOffers, key=lambda x: (x["time_difference"], float(x["offer"]["price"]["grandTotal"])))
