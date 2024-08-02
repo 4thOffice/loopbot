@@ -400,7 +400,7 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
         for fareOffer in cheapest_price_offer:
             fare = {}
             fare["amenities"] = fareOffer["amenities"]
-            fare["price"] = {"grandTotal": fareOffer["fare"]["price"]["grandTotal"], "billingCurrency": fareOffer["fare"]["price"]["currency"]}
+            fare["price"] = {"grandTotal": str(round(float(fareOffer["fare"]["price"]["grandTotal"]), 2)), "billingCurrency": fareOffer["fare"]["price"]["currency"]}
 
             includedBags = 0
             if "includedCheckedBags" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]:
