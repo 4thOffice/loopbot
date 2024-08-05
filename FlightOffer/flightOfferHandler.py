@@ -11,7 +11,7 @@ import dataExtractor
 import magic
 import flightSearch
 import offerGenerator
-from models import OfferResult
+from travelModels import OfferResult
 from Auxiliary.verbose_checkpoint import verbose
 if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
