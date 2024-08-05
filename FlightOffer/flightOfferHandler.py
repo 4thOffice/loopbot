@@ -11,6 +11,7 @@ import dataExtractor
 import magic
 import flightSearch
 import offerGenerator
+from models import OfferResult
 from Auxiliary.verbose_checkpoint import verbose
 if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -56,12 +57,12 @@ def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, ema
         print(traceback_msg) 
         verbose(f"Error ID: {error_id}", verbose_checkpoint)
         verbose(traceback_msg, verbose_checkpoint)
-        response = {"parsedOffer": ("Error requesting offers - Error ID: " + error_id), "details": None}
+        response = OfferResult(("Error requesting offers - Error ID: " + error_id), None)
     
-    if "No flights found" in response["parsedOffer"] or "AI could not provide an offer for this inquiry." in response["parsedOffer"] or "Error ID:" in response["parsedOffer"] or "Error requesting offers" in response["parsedOffer"] or "Not a flight travel request" in response["parsedOffer"]:
-        verbose(f"Removed from message: {response['parsedOffer']}", verbose_checkpoint)
-        response["parsedOffer"] = ""
-
+    if "No flights found" in response.loop_chat_message or "AI could not provide an offer for this inquiry." in response.loop_chat_message or "Error ID:" in response.loop_chat_message or "Error requesting offers" in response.loop_chat_message or "Not a flight travel request" in response.loop_chat_message:
+        verbose(f"Removed from message: {response.loop_chat_message}", verbose_checkpoint)
+        response.loop_chat_message = ""
+    
     return response
 
 def getFlightOffer(cardID=None, authKey=None):
@@ -79,9 +80,9 @@ def getFlightOffer(cardID=None, authKey=None):
         error_id = generate_error_id()
         print(f"Error ID: {error_id}")
         print(traceback_msg)
-        response = {"parsedOffer": ("Error requesting offers - Error ID: " + error_id), "details": None}
+        response = OfferResult("Error requesting offers - Error ID: " + error_id, None)
 
-    return response
+    return {"parsedOffer": response.loop_chat_message, "details": response.offer_details}
 
 def getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint=None):
     filesText = []
@@ -155,7 +156,7 @@ def getResponse(emailText, commentData, upsell, automatic_order, email_comment_i
         try:
             unstructuredData = getUnstructuredData(AIregular_, commentData, emailText, verbose_checkpoint)
         except Timeout as ce:
-            return({"parsedOffer": "Error requesting offers - Timeout while asking AI to extract data.", "details": None})
+            return OfferResult("Error requesting offers - Timeout while asking AI to extract data.", None)
         
         intercontinentalText, travelClassText = getExtraInfo(unstructuredData)
 
@@ -169,18 +170,18 @@ def getResponse(emailText, commentData, upsell, automatic_order, email_comment_i
             print(traceback_msg) 
             verbose(f"Exception {e=} while trying to extract search parameters into json. Error ID: {error_id} {unstructuredData=}", verbose_checkpoint)
             verbose(traceback_msg, verbose_checkpoint)
-            return({"parsedOffer": (f"{travelClassText}\n\n" + "Error requesting offers - Error ID: " + generate_error_id()), "details": None})
+            return OfferResult((f"{travelClassText}\n\n" + "Error requesting offers - Error ID: " + generate_error_id()), None)
 
         ama_Client_Ref = str(uuid.uuid4())
         details = flightSearch.getFlightOffer(structuredData, automatic_order, ama_Client_Ref, verbose_checkpoint)
 
         if details["status"] == "ok" and details["data"] is None:
-            return({"parsedOffer": f"{travelClassText}\n\nNo flights found", "details": None})
+            return OfferResult(f"{travelClassText}\n\nNo flights found", None)
         elif details["status"] == "error":
             if retries > 0:
                 print(f"Error requesting offers - {details['data']}")
                 verbose(f"Error requesting offers - {details['data']}", verbose_checkpoint)
-                return({"parsedOffer": f"{travelClassText}\n\n" + "Error requesting offers - " + details["data"], "details": None})
+                return OfferResult(f"{travelClassText}\n\n" + "Error requesting offers - " + details["data"], None)
             else:
                 print("Encountered an error, trying one more time...")
                 verbose("Encountered an error, trying one more time...", verbose_checkpoint)
@@ -290,13 +291,14 @@ def getResponse(emailText, commentData, upsell, automatic_order, email_comment_i
         print("flight details gathered")
         
         if len(details["data"]["offers"][0]["flights"]) == 1 and details["data"]["offers"][0]["flights"][0]["departure"]["iataCode"] == "LJU" and details["data"]["offers"][0]["flights"][0]["arrival"]["iataCode"] == "CDG":
-            return({"parsedOffer": "AI could not provide an offer for this inquiry.", "details": None})
+            
+            return OfferResult("AI could not provide an offer for this inquiry.", None)
         else:
-            return({"parsedOffer": f"{peopleString}{travelClassText}\n\n{generatedOffer}", "details": details["data"]})
+            return OfferResult(f"{peopleString}{travelClassText}\n\n{generatedOffer}", details["data"])
 
     else:
         print("Not a flight tender inquiry")
-        return({"parsedOffer": f"Not a flight travel request", "details": None})
+        return OfferResult(f"Not a flight travel request", None)
 
 def getExtraInfo(emailText):
     intercontinentalText = ""
