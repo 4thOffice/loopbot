@@ -58,6 +58,10 @@ def getFlightOfferAutomation(attachments, subject, htmlEmailtext, plainText, ema
         verbose(traceback_msg, verbose_checkpoint)
         response = {"parsedOffer": ("Error requesting offers - Error ID: " + error_id), "details": None}
     
+    if "No flights found" in response["parsedOffer"] or "AI could not provide an offer for this inquiry." in response["parsedOffer"] or "Error ID:" in response["parsedOffer"] or "Error requesting offers" in response["parsedOffer"] or "Not a flight travel request" in response["parsedOffer"]:
+        verbose(f"Removed from message: {response['parsedOffer']}", verbose_checkpoint)
+        response["parsedOffer"] = ""
+
     return response
 
 def getFlightOffer(cardID=None, authKey=None):
