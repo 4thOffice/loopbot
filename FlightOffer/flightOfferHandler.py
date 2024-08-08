@@ -22,6 +22,7 @@ import uuid
 from exceptions import Timeout
 import getParametersJson
 import base64
+import flightSortin
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
 hotel_offer_path = os.path.join(current_directory, 'HotelOffer')
@@ -170,7 +171,11 @@ def getResponse(emailText, commentData, upsell, automatic_order, email_comment_i
             return OfferResult("", None)
 
         ama_Client_Ref = str(uuid.uuid4())
-        details = flightSearch.getFlightOffer(structuredData, automatic_order, ama_Client_Ref, verbose_checkpoint)
+        
+        details = flightSortin.callFlightApis(structuredData, automatic_order, ama_Client_Ref, verbose_checkpoint)
+        
+        import sys
+        sys.exit()
 
         if details["status"] == "ok" and details["data"] is None:
             verbose(f"{travelClassText}\n\nNo flights found", verbose_checkpoint)

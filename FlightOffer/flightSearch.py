@@ -19,7 +19,7 @@ import upsellHandler
 import flightAuxiliary
 from miniRulesInfo import getMiniRulesInfo, convertMiniRulesAmenities
 from timeframeExpander import expandTimeframes
-from offersFetcher import fetchOffers
+from FlightOffer.offersFetcherAmadeus import fetchOffers
 from createOrder import create_order
 import copy
 
