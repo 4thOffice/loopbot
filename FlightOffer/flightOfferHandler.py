@@ -22,6 +22,7 @@ import uuid
 from exceptions import Timeout
 import getParametersJson
 import base64
+import flightSortin
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
 hotel_offer_path = os.path.join(current_directory, 'HotelOffer')
@@ -170,9 +171,12 @@ def getResponse(emailText, commentData, upsell, automatic_order, email_comment_i
             return OfferResult("", None)
 
         ama_Client_Ref = str(uuid.uuid4())
+        
+        # details = flightSortin.callFlightApis(structuredData, automatic_order, ama_Client_Ref, verbose_checkpoint)
         details = flightSearch.getFlightOffer(structuredData, automatic_order, ama_Client_Ref, verbose_checkpoint)
+        
 
-        if details["status"] == "ok" and details["data"] is None:
+        if details["status"] == "ok" and details.data is None:
             verbose(f"{travelClassText}\n\nNo flights found", verbose_checkpoint)
             return OfferResult("", None)
         elif details["status"] == "error":
@@ -186,109 +190,28 @@ def getResponse(emailText, commentData, upsell, automatic_order, email_comment_i
                 return getResponse(emailText, commentData, upsell, automatic_order, email_comment_id=email_comment_id,
                                    verbose_checkpoint=verbose_checkpoint, retries=1)
         
-        #generatedOffer = offerGenerator.generateOffer(emailText, details)
 
-        upsellOffersPerCity = {}
-        if upsell:
-            try:
-                for index, offer in enumerate(details["data"]["offers"]):
-                    geoCode = offer["geoCode"]
-                    cityCode = offer["cityCode"]
-                    airportName = offer["airportName"]
-                    print("geoCode:", geoCode)
-                    print("cityCode:", cityCode)
-                    print("airportName:", airportName)
-                    
-                    del offer["cityCode"]
-                    del offer["geoCode"]
-                    del offer["airportName"]
-
-                    if cityCode in upsellOffersPerCity:
-                        details["data"]["offers"][index]["upsellOffers"] = upsellOffersPerCity[cityCode]
-                    else:
-                        checkInDate = offer["flights"][0]["arrival"]["at"]
-                        checkInDate = datetime.datetime.strptime(checkInDate, '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
-                        checkoutDate = offer["flights"][-1]["departure"]["at"]
-                        checkoutDate = datetime.datetime.strptime(checkoutDate, '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
-                        adults = int(offer["passengers"])
-                        currency = offer["fares"][0]["price"]["billingCurrency"]
-                        airportGooglePlaceID = googleAPI.get_place_id(geoCode["latitude"], geoCode["longitude"], 10, airportName)
-                        
-                        upsellOffers = []
-                        for i in range(3):
-                            hotelDetails = None
-                            try:
-                                hotelDetails = hotelSearch.getHotelOffer({"cityCode": cityCode, "latitude": geoCode["latitude"], "longitude": geoCode["longitude"], "checkInDate": checkInDate, "checkOutDate": checkoutDate, "adults": adults, "currency": currency, "stars": i+3})
-                                if not hotelDetails["hotelName"]:
-                                    raise Exception
-                                
-                                print("HOTEL SUCCESSFUL")
-                            except Exception:
-                                print(traceback.print_exc())
-                                verbose(traceback.format_exc(), verbose_checkpoint=verbose_checkpoint)
-                                continue
-                            
-                            transferStartTime = ""
-                            transferStartBackTime = ""
-                            LocationCode = ""
-                            for flight in offer["flights"]:
-                                if flight["iteraryNumber"] == 0:
-                                    transferStartTime = flight["arrival"]["at"]
-                                    LocationCode = flight["arrival"]["iataCode"]
-                                elif flight["iteraryNumber"] == 1 and not transferStartBackTime:
-                                    transferStartBackTime = flight["departure"]["at"]
-
-                            datetime_obj = datetime.datetime.fromisoformat(transferStartBackTime)
-                            one_hour_less = datetime_obj - datetime.timedelta(hours=2)
-                            transferStartBackTime = one_hour_less.strftime("%Y-%m-%dT%H:%M:%S")
-
-                            AirportToHotelTransferDetails = None
-                            HotelToAirportTransferDetails = None
-                            try:
-                                AirportToHotelTransferDetails = transferSearch.getTransferOffer(airportGooglePlaceID, hotelDetails["googlePlaceID"], LocationCode, adults, transferStartTime, currency)
-                                HotelToAirportTransferDetails = transferSearch.getTransferOffer(hotelDetails["googlePlaceID"], airportGooglePlaceID, LocationCode, adults, transferStartBackTime, currency)
-                                print("TRANSFER SUCESSFUL")
-                                print(AirportToHotelTransferDetails)
-                                print(HotelToAirportTransferDetails)
-                                
-                            except Exception:
-                                print("Failed gathering transfer offers")
-                                print(traceback.print_exc())
-                                verbose(traceback.format_exc(), verbose_checkpoint=verbose_checkpoint)
-
-                            upsellOffer = {"hotelDetails": hotelDetails, "AirportToHotelTransferDetails": AirportToHotelTransferDetails, "HotelToAirportTransferDetails": HotelToAirportTransferDetails}
-                            upsellOffers.append(upsellOffer)
-
-                        details["data"]["offers"][index]["upsellOffers"] = upsellOffers
-                        upsellOffersPerCity[cityCode] = upsellOffers
-            except Exception:
-                traceback.print_exc()
-                verbose(f'{details["data"]["offers"]=}\n{traceback.format_exc()}', verbose_checkpoint=verbose_checkpoint)
-                #dodaj prazen upsell v vsak offer
-                for index, offer in enumerate(details["data"]["offers"]):
-                    details["data"]["offers"][index]["upsellOffers"] = []
-        else:
-            for index, offer in enumerate(details["data"]["offers"]):
-                details["data"]["offers"][index]["upsellOffers"] = []
+    
         
-        print("final offer details with amenities:\n", details["data"]["offers"])
-        generatedOffer = offerGenerator.generateFlightsString({"offers": details["data"]["offers"]}, email_comment_id=email_comment_id, verbose_checkpoint=verbose_checkpoint)
+        print("final offer details with amenities:\n", details.data.flightOffers)
+        generatedOffer = offerGenerator.generateFlightsString({"offers": details.data.flightOffers}, email_comment_id=email_comment_id, verbose_checkpoint=verbose_checkpoint)
 
         peopleString = ""
-        if "people" in details["data"] and details["data"]["offers"][0]["order_reference"]:
-            if details["data"]["people"]:
+        if hasattr(details.data, "people"):
+            if details.data.people:
                 peopleString += "Reservation for:\n"
-            for person in details["data"]["people"]:
+            people_list = getattr(details.data.people, 'people', [])
+            for person in people_list:
                 peopleString += f"{person['first_name']} {person['last_name']}\n"
-            if details["data"]["people"]:
+            if people_list:
                 peopleString += "\n"
 
         #print(offerGenerator.generateOffer(details["data"]["offers"][0]))
 
-        print(details["data"])
+        print(details.data)
         print("flight details gathered")
         
-        if len(details["data"]["offers"][0]["flights"]) == 1 and details["data"]["offers"][0]["flights"][0]["departure"]["iataCode"] == "LJU" and details["data"]["offers"][0]["flights"][0]["arrival"]["iataCode"] == "CDG":
+        if len(details.data.flightOffers[0].flights) == 1 and details.data.flightOffers[0].flights[0]["departure"]["iataCode"] == "LJU" and details.data.flightOffers[0].flights[0]["arrival"]["iataCode"] == "CDG":
             verbose("AI could not provide an offer for this inquiry.", verbose_checkpoint)
             return OfferResult("", None)
         else:
