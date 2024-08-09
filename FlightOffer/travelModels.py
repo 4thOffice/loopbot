@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from mongoengine import EmbeddedDocument, EmbeddedDocumentField, ListField, StringField, DictField, FloatField
+from mongoengine import EmbeddedDocument, EmbeddedDocumentField, ListField, StringField, DictField, FloatField, Document
 
 @dataclass
 class OfferResult:
@@ -91,3 +91,24 @@ class FlightOffer(EmbeddedDocument):
                 f"GeoCode: {self.geoCode}, AirportName: {self.airportName}, CityCode: {self.cityCode}, "
                 f"UpsellOffer: {self.upsellOffer}) API {self.api}")
 
+class People(EmbeddedDocument):
+    people = StringField()
+
+    def __str__(self):
+        return f"People: {self.people}"
+    
+
+class Data(EmbeddedDocument):
+    people = ListField(EmbeddedDocumentField(People))
+    flightOffers = ListField(EmbeddedDocumentField(FlightOffer))
+    # hotelOffers = ListField(EmbeddedDocumentField(HotelOffers))
+
+    def __str__(self):
+        return f"Data(People: {self.people}, FlightOffers: {self.flightOffers}, HotelOffers: {self.hotelOffers})"
+
+class Offers(Document):
+    status = StringField()
+    data = EmbeddedDocumentField(Data)
+
+    def __str__(self):
+        return f"Offers(Status: {self.status}, Data: {self.data})"
