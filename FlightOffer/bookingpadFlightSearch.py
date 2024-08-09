@@ -3,7 +3,8 @@ from Auxiliary.generateErrorID import generate_error_id
 import offersFetcherBooking
 import traceback
 import time
-
+import pandas as pd
+import travelModels
 
 def getFlightOffer(structuredData,  verbose_checkpoint):
     
@@ -23,8 +24,8 @@ def getFlightOffer(structuredData,  verbose_checkpoint):
         time.sleep(0.5)
         return {"status": "error", "data": ("Error ID: " + error_id)}
     
-    print(f'\n\n{offersBooking}\n\n, Offers numbers {len(offersBooking["details"]["result"])}')
-
+    
+    return createObjectOffers(offers=offersBooking['details']['result'])    
 
     
 def removeEmptyProvides(offers):
@@ -36,3 +37,24 @@ def removeEmptyProvides(offers):
             valid_providers.append(item)
 
     return valid_providers
+
+def createObjectOffers(offers):
+    
+    offer_list = []
+    for index, offer in enumerate(offers):
+        
+        
+        cityCode = offer['flights'][0]['arrival']['airportCode']
+        airportName = offer['flights'][0]['arrival']['airportName']
+        flight_offer = travelModels.FlightOffer(
+            
+            airportName=travelModels.AirportName(airportName=airportName),
+            cityCode=travelModels.CityCode(cityCode=cityCode),
+        )
+        flight_offer.api = 'bookingPad'
+        
+        offer_list.append(flight_offer)
+    
+    return offer_list
+
+        

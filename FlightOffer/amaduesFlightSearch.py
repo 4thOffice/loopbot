@@ -22,6 +22,7 @@ from timeframeExpander import expandTimeframes
 from FlightOffer.offersFetcherAmadeus import fetchOffers
 from createOrder import create_order
 import copy
+import travelModels
 
 apiType = "enterprise" #personal/enterprise
 
@@ -101,7 +102,11 @@ def get_airport_coordinates(access_token, IATA):
     else:
         print(f'Failed to retrieve airport information: {response.status_code} - {response.text}')
         return None
-    
+
+if apiType == "personal":
+    access_token = get_access_token(enterprise=False)
+else:
+    access_token = get_access_token()    
 
 def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, verbose_checkpoint):
     search_params = structuredFlightDetails["search_params"]
@@ -119,11 +124,7 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
 
     print(f"Extra timeframes: {extraTimeframes}")
     verbose(f"Extra timeframes: {extraTimeframes}", verbose_checkpoint)
-    
-    if apiType == "personal":
-        access_token = get_access_token(enterprise=False)
-    else:
-        access_token = get_access_token()
+
     
     flightOffers = []
     index = 0
@@ -161,16 +162,30 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
                     
     print("removed duplicates:\n", len(flightOffers), flightOffers, '\n\n')
     
-    # crateObjectOffers(flightOffer)
+    return crateObjectOffers(flightOffers)
 
-# def crateObjectOffers(flightOffers):
+def crateObjectOffers(flightOffers):
     
-#     for index, flightOffer in enumerate(flightOffers):
+    airport_cache = {}
+    offerList = []
+    for index, flightOffer in enumerate(flightOffers):
+
+        aitacodeDestination = flightOffer['itineraries'][0]["segments"][-1]["arrival"]["iataCode"]
         
-#         access_token = get_access_token()
-#         geoCode, cityCode, airportName = get_airport_coordinates(access_token, flightOffer[0]["fare"]["itineraries"][0]["segments"][-1]["arrival"]["iataCode"])
+        if aitacodeDestination in airport_cache:
+            
+            geoCode, cityCode, airportName = airport_cache[aitacodeDestination]
+        else:
+            geoCode, cityCode, airportName = get_airport_coordinates(access_token, aitacodeDestination)
+            airport_cache[aitacodeDestination] = (geoCode, cityCode, airportName)
+            
+        flight_offer = travelModels.FlightOffer(
+            geoCode=travelModels.GeoCode(geoCode=geoCode),
+            airportName=travelModels.AirportName(airportName=airportName),
+            cityCode=travelModels.CityCode(cityCode=cityCode),
+        )
+        flight_offer.api = 'amadeus'
         
-#         print(geoCode)
-#         print(cityCode)
-#         print(airportName)
-    
+        offerList.append(flight_offer)
+        
+    return offerList

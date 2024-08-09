@@ -356,7 +356,7 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
 
     #just_offers = offerBagHandler.addBags(just_offers, checkedBags, get_price_offer, access_token, ama_Client_Ref, verbose_checkpoint)
 
-    print(f"final offers with amenities:\n{cheapestPriceOffers}")
+    print(f"\n\n\nfinal offers with amenities:\n{cheapestPriceOffers}\n\n\n")
     verbose(f"final offers with amenities:\n{cheapestPriceOffers}", verbose_checkpoint)
 
     #create orders

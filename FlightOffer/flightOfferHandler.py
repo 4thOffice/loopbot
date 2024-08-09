@@ -173,7 +173,10 @@ def getResponse(emailText, commentData, upsell, automatic_order, email_comment_i
         ama_Client_Ref = str(uuid.uuid4())
         
         details = flightSortin.callFlightApis(structuredData, automatic_order, ama_Client_Ref, verbose_checkpoint)
+        # details = flightSearch.getFlightOffer(structuredData, automatic_order, ama_Client_Ref, verbose_checkpoint)
         
+        
+           
         import sys
         sys.exit()
 
