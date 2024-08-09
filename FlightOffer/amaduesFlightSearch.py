@@ -150,17 +150,14 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
     verbose(("initial flight offers:\n", flightOffers), verbose_checkpoint)
     print("initial flight offers:\n", len(flightOffers))
     
-    originalFlightOffers = list(flightOffers)
-    for flightOffer in flightOffers:
-        sameFlights = flightAuxiliary.getSameFlights(flightOffer, originalFlightOffers, returnSelf=True)
-        if sameFlights:
-            lowestPrice = sorted(sameFlights, key=lambda x: (float(x["price"]["grandTotal"])))[0]
-            #remove everything but lowest price offer
-            for flightOffer1 in flightOffers:
-                if flightOffer1 in sameFlights and flightOffer1 != lowestPrice:
-                    flightOffers.remove(flightOffer1)
-                    
-    print("removed duplicates:\n", len(flightOffers), flightOffers, '\n\n')
+    
+    if flightNumbersPerItinerary:
+        flightOffers = checkForFlightNumbers(flightOffers, flightNumbersPerItinerary, verbose_checkpoint)
+    
+    if len(flightOffers) <= 0:
+        print("no flights")
+        verbose("no flights", verbose_checkpoint)
+        return {"status": "ok", "data": None}
     
     return crateObjectOffers(flightOffers)
 
@@ -169,7 +166,7 @@ def crateObjectOffers(flightOffers):
     airport_cache = {}
     offerList = []
     for index, flightOffer in enumerate(flightOffers):
-
+        # print(index, flightOffer, '\n')
         aitacodeDestination = flightOffer['itineraries'][0]["segments"][-1]["arrival"]["iataCode"]
         
         if aitacodeDestination in airport_cache:
@@ -180,12 +177,50 @@ def crateObjectOffers(flightOffers):
             airport_cache[aitacodeDestination] = (geoCode, cityCode, airportName)
             
         flight_offer = travelModels.FlightOffer(
+            api = 'amadeus',
             geoCode=travelModels.GeoCode(geoCode=geoCode),
             airportName=travelModels.AirportName(airportName=airportName),
             cityCode=travelModels.CityCode(cityCode=cityCode),
         )
-        flight_offer.api = 'amadeus'
+               
+        price = travelModels.Price(grandTotal=flightOffer['price']['total'], billingCurrency=flightOffer['price']['currency'])
+        fares = travelModels.Fare(price=price)
+        flight_offer.fares = fares
         
+        passanger = travelModels.Passengers(passengers=str(len(flightOffer["travelerPricings"])))
+        flight_offer.passengers = passanger
+        # flight_offer.offer = flightOffer
+        
+
         offerList.append(flight_offer)
         
     return offerList
+
+
+def checkForFlightNumbers(offers, flightNumbersPerItinerary, verbose_checkpoint):
+    
+    if flightNumbersPerItinerary:
+        flightOffersWithCorrectFlightNumbers = []
+        numberOfFlightNumbers = 0
+        for itineraryIndex in flightNumbersPerItinerary.keys():
+            numberOfFlightNumbers += len(flightNumbersPerItinerary[itineraryIndex]["flightNumbers"])
+
+        for flightOffer in offers:
+            numberOfFlightNumbersFound = 0
+            for index, itinerary in enumerate(flightOffer['itineraries']):
+                for segment in itinerary["segments"]:
+                    if index in flightNumbersPerItinerary:
+                        for flightNumber in flightNumbersPerItinerary[index]["flightNumbers"]:
+                            if flightNumber == segment["number"]:
+                                numberOfFlightNumbersFound += 1
+
+            if numberOfFlightNumbers == numberOfFlightNumbersFound:
+                flightOffersWithCorrectFlightNumbers.append(flightOffer)
+
+        verbose(f"Flight offers with correct flight numbers: {flightOffersWithCorrectFlightNumbers}", verbose_checkpoint)
+        print(f"Flight offers with correct flight numbers: {flightOffersWithCorrectFlightNumbers}")
+        if len(flightOffersWithCorrectFlightNumbers) > 0:
+            return flightOffersWithCorrectFlightNumbers
+        else:
+            verbose("no flight offers satisfied all flight numbers.. using not optimal flights..", verbose_checkpoint)
+            print("no flight offers satisfied all flight numbers.. using not optimal flights..")

@@ -25,7 +25,7 @@ def getFlightOffer(structuredData,  verbose_checkpoint):
         return {"status": "error", "data": ("Error ID: " + error_id)}
     
     
-    return createObjectOffers(offers=offersBooking['details']['result'])    
+    return createObjectOffers(offers=offersBooking['details']['result'], data=structuredData)    
 
     
 def removeEmptyProvides(offers):
@@ -38,23 +38,30 @@ def removeEmptyProvides(offers):
 
     return valid_providers
 
-def createObjectOffers(offers):
+def createObjectOffers(offers, data):
     
+    print(data)
     offer_list = []
     for index, offer in enumerate(offers):
         
-        
+        print(index, offer)
         cityCode = offer['flights'][0]['arrival']['airportCode']
         airportName = offer['flights'][0]['arrival']['airportName']
         flight_offer = travelModels.FlightOffer(
-            
+            api = 'bookingPad',
             airportName=travelModels.AirportName(airportName=airportName),
             cityCode=travelModels.CityCode(cityCode=cityCode),
         )
-        flight_offer.api = 'bookingPad'
         
+        price = travelModels.Price(grandTotal=offer['price']['consumer']['total'], billingCurrency=offer['price']['consumer']['currency'])
+        fares = travelModels.Fare(price=price)
+        flight_offer.fares = fares
+        
+        passanger = travelModels.Passengers(passengers=str(len(data['search_params']["travelers"])))
+        flight_offer.passengers = passanger
         offer_list.append(flight_offer)
-    
+
+        
     return offer_list
 
         

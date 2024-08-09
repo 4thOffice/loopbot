@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from mongoengine import EmbeddedDocument, EmbeddedDocumentField, ListField, StringField, DictField
+from mongoengine import EmbeddedDocument, EmbeddedDocumentField, ListField, StringField, DictField, FloatField
 
 @dataclass
 class OfferResult:
@@ -39,9 +39,16 @@ class Passengers(EmbeddedDocument):
     def __str__(self):
         return f"Passengers: {self.passengers}"
 
+class Price(EmbeddedDocument):
+    grandTotal = FloatField()
+    billingCurrency = StringField()
+    
+    def __str__(self):
+        return f"{{'Grand total': {self.grandTotal}, 'Billing currency': '{self.billingCurrency}'}}"
+    
 class Fare(EmbeddedDocument):
     amenities = StringField()
-    price = StringField()
+    price = EmbeddedDocumentField(Price)
     checkedBags = StringField()
     
     def __str__(self):
@@ -72,6 +79,7 @@ class FlightOffer(EmbeddedDocument):
     offer = DictField()    
     
     # upsellOffer = EmbeddedDocumentField(HotelOffers)  
+    
     upsellOffer = None
     def get_passengers_as_float(self):
         if self.passengers:
