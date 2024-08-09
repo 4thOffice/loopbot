@@ -1,13 +1,8 @@
 from dataclasses import dataclass
 from mongoengine import EmbeddedDocument, EmbeddedDocumentField, ListField, StringField, DictField, FloatField, Document
+import typing
 
-@dataclass
-class OfferResult:
-    loop_chat_message: str
-    offer_details: dict
     
-
-
 class GeoCode(EmbeddedDocument):
     geoCode = StringField()
 
@@ -104,11 +99,16 @@ class Data(EmbeddedDocument):
     # hotelOffers = ListField(EmbeddedDocumentField(HotelOffers))
 
     def __str__(self):
-        return f"Data(People: {self.people}, FlightOffers: {self.flightOffers}, HotelOffers: {self.hotelOffers})"
+        return f"Data(People: {self.people}, FlightOffers: {self.flightOffers}, "
 
-class Offers(Document):
+class Offers(EmbeddedDocument):
     status = StringField()
     data = EmbeddedDocumentField(Data)
 
     def __str__(self):
         return f"Offers(Status: {self.status}, Data: {self.data})"
+    
+@dataclass
+class OfferResult:
+    loop_chat_message: str
+    offer_details: typing.Optional[Offers]

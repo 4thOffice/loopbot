@@ -22,6 +22,7 @@ from timeframeExpander import expandTimeframes
 from FlightOffer.offersFetcherAmadeus import fetchOffers
 from createOrder import create_order
 import copy
+import travelModels
 
 apiType = "enterprise" #personal/enterprise
 
@@ -110,7 +111,7 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
     changeableTicket = structuredFlightDetails["changeableTicket"]
     flightNumbersPerItinerary = structuredFlightDetails["flightNumbersPerItinerary"]
     people = structuredFlightDetails["people"]
-
+    people_ = travelModels.People(people=people)
     travelClass = search_params["searchCriteria"]["flightFilters"]["cabinRestrictions"][0]["cabin"]
 
     print(f"Search parameters: {search_params}")
@@ -142,7 +143,8 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
             verbose(f"Error ID: {error_id}", verbose_checkpoint)
             verbose(traceback_msg, verbose_checkpoint)
             time.sleep(0.5)
-            return {"status": "error", "data": ("Error ID: " + error_id)}
+            return travelModels.Offers(status="error", data= ("Error ID: " + error_id))
+            # return {"status": "error", "data": ("Error ID: " + error_id)}
     
     verbose(("initial flight offers length:", len(flightOffers)), verbose_checkpoint)
     verbose(("initial flight offers:\n", flightOffers), verbose_checkpoint)
@@ -164,8 +166,8 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
     if len(flightOffers) <= 0:
         print("no flights")
         verbose("no flights", verbose_checkpoint)
-        return {"status": "ok", "data": None}
-
+        # return {"status": "ok", "data": None}
+        return travelModels.Offers(status="ok", data=None)
 
     if flightNumbersPerItinerary:
         flightOffersWithCorrectFlightNumbers = []
@@ -368,10 +370,13 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
             order_reference = create_order(cheapestPriceOffers, people, ama_Client_Ref, access_token, verbose_checkpoint)
         except:
             verbose("FAILED CREATING ORDER", verbose_checkpoint)
-            print("FAILED CREATING ORDER")
+            print("FAILED CREATING ORDER") 
+    order_reference = None
 
-    returnData = {"status": "ok", "data": {"offers": [], "people": people}}
-    for index, cheapest_price_offer in enumerate(cheapestPriceOffers):
+
+    offers_ = []
+    # offers_instance = offers(status="ok", data=[], people=people_)
+    for cheapest_price_offer in cheapestPriceOffers:
         geoCode, cityCode, airportName = get_airport_coordinates(access_token, cheapest_price_offer[0]["fare"]["itineraries"][0]["segments"][-1]["arrival"]["iataCode"])
         
         flights = []
@@ -394,29 +399,43 @@ def getFlightOffer(structuredFlightDetails, automatic_order, ama_Client_Ref, ver
                     duration = segment["duration"]
                 else:
                     duration = flightAuxiliary.getDuration(segment["departure"]["at"], segment["arrival"]["at"])
-                flights.append({"departure": segment["departure"], "arrival": segment["arrival"], "duration": duration, "flightNumber": (fareBasis + segment["number"]), "carrierCode": segment["carrierCode"], "iteraryNumber": iteraryIndex, "travelClass": travelClass})
+                
+                flights.append(travelModels.Flight(iteraryNumber=iteraryIndex, travelClass=travelClass,carrierCode=segment["carrierCode"],departure=segment["departure"], arrival=segment["arrival"], duration=duration, flightNumber= (fareBasis + segment["number"])))
         
         fares = []
-        for fareOffer in cheapest_price_offer:
-            fare = {}
-            fare["amenities"] = fareOffer["amenities"]
-            fare["price"] = {"grandTotal": str(round(float(fareOffer["fare"]["price"]["grandTotal"]), 2)), "billingCurrency": fareOffer["fare"]["price"]["currency"]}
 
+        for fareOffer in cheapest_price_offer:
+            amenities = fareOffer.get("amenities", [])
+            price = {
+                "grandTotal": fareOffer["fare"]["price"].get("grandTotal", ""),
+                "billingCurrency": fareOffer["fare"]["price"].get("currency", "")
+            }
+
+            # Extract included checked bags
             includedBags = 0
-            if "includedCheckedBags" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]:
-                if "quantity" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
-                    includedBags = fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]["quantity"]
-                elif "weight" in fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]["includedCheckedBags"]:
+            fare_details = fareOffer["fare"]["travelerPricings"][0]["fareDetailsBySegment"][0]
+            if "includedCheckedBags" in fare_details:
+                includedCheckedBags = fare_details["includedCheckedBags"]
+                if "quantity" in includedCheckedBags:
+                    includedBags = includedCheckedBags["quantity"]
+                elif "weight" in includedCheckedBags:
                     includedBags = 1
             else:
                 includedBags = 0
 
-            fare["checkedBags"] = includedBags
-            fares.append(fare)
+            # Create a Fare instance and append it to the list
+            fare_instance = travelModels.Fare(amenities=amenities, price=price, checkedBags=includedBags)
+            fares.append(fare_instance)
             
-        if index > 0:
-            order_reference = None
-            
-        returnData["data"]["offers"].append({"passengers": len(cheapest_price_offer[0]["fare"]["travelerPricings"]), "fares": fares, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode, "order_reference": order_reference})
+        passangers_ = travelModels.Passengers(passengers=len(cheapest_price_offer[0]["fare"]["travelerPricings"]))
+        geoCode_ = travelModels.GeoCode(geoCode=geoCode)    
+        airportName_ = travelModels.AirportName(airportName=airportName)
+        cityCode_ = travelModels.CityCode(cityCode=cityCode)
+        # returnData["data"]["offers"].append({"passengers": len(cheapest_price_offer[0]["fare"]["travelerPricings"]), "fares": fares, "flights": flights, "geoCode": geoCode, "airportName": airportName, "cityCode": cityCode})
+        offers_.append(travelModels.FlightOffer(passengers=passangers_,fares=fares, flights=flights, geoCode=geoCode_,airportName=airportName_,cityCode=cityCode_))
         
-    return returnData
+    
+    data = travelModels.Data(people=people_,flightOffers=offers_)  
+    FlightOffer = travelModels.Offers(status="ok", data=data)
+    print(FlightOffer)
+    return FlightOffer

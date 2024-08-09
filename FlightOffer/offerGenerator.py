@@ -93,35 +93,35 @@ def generateOffer(offerDetails):
         isChangeableTicket = False
         isChangeChargeable = False
 
-        if "REFUNDABLE TICKET" in fare["amenities"]:
+        if "REFUNDABLE TICKET" in fare.amenities:
             isRefundableTicket = True
-            if fare["amenities"]["REFUNDABLE TICKET"]["isChargeable"]:
+            if fare.amenities["REFUNDABLE TICKET"]["isChargeable"]:
                 isRefundChargeable = True
 
-        if "REFUNDS ANYTIME" in fare["amenities"] and not isRefundableTicket:
+        if "REFUNDS ANYTIME" in fare.amenities and not isRefundableTicket:
             isRefundableTicket = True
-            if fare["amenities"]["REFUNDS ANYTIME"]["isChargeable"]:
+            if fare.amenities["REFUNDS ANYTIME"]["isChargeable"]:
                 isRefundChargeable = True
 
-        if "REFUND BEFORE DEPARTURE" in fare["amenities"] and not isRefundableTicket:
+        if "REFUND BEFORE DEPARTURE" in fare.amenities and not isRefundableTicket:
             isRefundableTicket = True
-            if fare["amenities"]["REFUND BEFORE DEPARTURE"]["isChargeable"]:
+            if fare.amenities["REFUND BEFORE DEPARTURE"]["isChargeable"]:
                 isRefundChargeable = True
 
 
-        if "CHANGEABLE TICKET" in fare["amenities"]:
+        if "CHANGEABLE TICKET" in fare.amenities:
             isChangeableTicket = True
-            if fare["amenities"]["CHANGEABLE TICKET"]["isChargeable"]:
+            if fare.amenities["CHANGEABLE TICKET"]["isChargeable"]:
                 isChangeChargeable = True
 
-        if "CHANGE ANYTIME" in fare["amenities"]:
+        if "CHANGE ANYTIME" in fare.amenities:
             isChangeableTicket = True
-            if fare["amenities"]["CHANGE ANYTIME"]["isChargeable"]:
+            if fare.amenities["CHANGE ANYTIME"]["isChargeable"]:
                 isChangeChargeable = True
 
-        if "CHANGE BEFORE DEPARTURE" in fare["amenities"] and "CHANGE AFTER DEPARTURE" in fare["amenities"] and not isChangeableTicket:
+        if "CHANGE BEFORE DEPARTURE" in fare.amenities and "CHANGE AFTER DEPARTURE" in fare.amenities and not isChangeableTicket:
             isChangeableTicket = True
-            if fare["amenities"]["CHANGE BEFORE DEPARTURE"]["isChargeable"] or fare["amenities"]["CHANGE AFTER DEPARTURE"]["isChargeable"]:
+            if fare.amenities["CHANGE BEFORE DEPARTURE"]["isChargeable"] or fare.amenities["CHANGE AFTER DEPARTURE"]["isChargeable"]:
                 isChangeChargeable = True
                 
         if isRefundableTicket:
@@ -186,70 +186,71 @@ def generateFlightsString(details, usedForDraft=False, email_comment_id=None, ve
                 flights_string += f"\n\n\nAlternative offer 1:\n"
             elif index == 2:
                 flights_string += f"\n\n\nAlternative offer 2:\n"
-        for flight in offer["flights"]:
-            departure_date = iso_to_custom_date(flight["departure"]["at"])
-            flight_number = flight["carrierCode"] + " " + flight["flightNumber"]
-            origin = flight["departure"]["iataCode"]
-            destination = flight["arrival"]["iataCode"]
-            arrival_time = datetime.fromisoformat(flight["arrival"]["at"]).strftime("%H:%M")
-            departure_time = datetime.fromisoformat(flight["departure"]["at"]).strftime("%H:%M")
-            cabin = flight["travelClass"]
+        for flight in offer.flights:
+            departure_date = iso_to_custom_date(flight.departure["at"])
+            flight_number = flight.carrierCode + " " + flight.flightNumber
+            origin = flight.departure["iataCode"]
+            destination = flight.arrival["iataCode"]
+            arrival_time = datetime.fromisoformat(flight.arrival["at"]).strftime("%H:%M")
+            departure_time = datetime.fromisoformat(flight.departure["at"]).strftime("%H:%M")
+            cabin = flight.travelClass
             cabinString = "(" + cabin + ")"
             if cabin.lower() == "economy":
                 cabinString = ""
-            duration = iso_to_hours_minutes(flight["duration"])
+            duration = iso_to_hours_minutes(flight.duration)
 
             flights_string += f"{flight_number:<8} {departure_date}  {origin}{destination:<12} {departure_time}-{arrival_time} ({duration}) {cabinString}\n"
         
-        if offer["order_reference"]:
-            flights_string += "\nReservation reference: " + str(offer["order_reference"])
+        # if offer["order_reference"]:
+        #     flights_string += "\nReservation reference: " + str(offer["order_reference"])
             
-        for fare in offer["fares"]:
-            if fare['checkedBags'] == 0:
+        for fare in offer.fares:
+            if fare.checkedBags == 0:
                 flights_string += "\nOnly carry-on included. "
-            elif fare['checkedBags'] == 1:
-                flights_string += f"\n{fare['checkedBags']} checked bag & carry-on included. "
-            elif fare['checkedBags'] > 1:
-                flights_string += f"\n{fare['checkedBags']} checked bags & carry-on included. "
+            elif fare.checkedBags == 1:
+                flights_string += f"\n{fare.checkedBags} checked bag & carry-on included. "
+            elif fare.checkedBags > 1:
+                flights_string += f"\n{fare.checkedBags} checked bags & carry-on included. "
             #flights_string += "Number of passengers: " + str(offer["passengers"]) + "\n"
-            pricePerPerson = float(fare["price"]["grandTotal"])/float(offer["passengers"])
+            
+            pricePerPerson = float(fare.price["grandTotal"])/float(offer.get_passengers_as_float())
 
-            print("amenities of final offer:\n", fare["amenities"])
+            print("amenities of final offer:\n", fare.amenities)
               
             isRefundableTicket = False
             isRefundChargeable = False
             isChangeableTicket = False
             isChangeChargeable = False
 
-            if "REFUNDABLE TICKET" in fare["amenities"]:
+            if "REFUNDABLE TICKET" in fare.amenities:
                 isRefundableTicket = True
-                if fare["amenities"]["REFUNDABLE TICKET"]["isChargeable"]:
+                if fare.amenities["REFUNDABLE TICKET"]["isChargeable"]:
                     isRefundChargeable = True
 
-            if "REFUNDS ANYTIME" in fare["amenities"] and not isRefundableTicket:
+            if "REFUNDS ANYTIME" in fare.amenities and not isRefundableTicket:
                 isRefundableTicket = True
-                if fare["amenities"]["REFUNDS ANYTIME"]["isChargeable"]:
+                if fare.amenities["REFUNDS ANYTIME"]["isChargeable"]:
                     isRefundChargeable = True
 
-            if "REFUND BEFORE DEPARTURE" in fare["amenities"] and not isRefundableTicket:
+            if "REFUND BEFORE DEPARTURE" in fare.amenities and not isRefundableTicket:
                 isRefundableTicket = True
-                if fare["amenities"]["REFUND BEFORE DEPARTURE"]["isChargeable"]:
+                if fare.amenities["REFUND BEFORE DEPARTURE"]["isChargeable"]:
                     isRefundChargeable = True
 
 
-            if "CHANGEABLE TICKET" in fare["amenities"]:
+            if "CHANGEABLE TICKET" in fare.amenities:
                 isChangeableTicket = True
-                if fare["amenities"]["CHANGEABLE TICKET"]["isChargeable"]:
+                if fare.amenities["CHANGEABLE TICKET"]["isChargeable"]:
                     isChangeChargeable = True
 
-            if "CHANGE ANYTIME" in fare["amenities"]:
+            if "CHANGE ANYTIME" in fare.amenities:
                 isChangeableTicket = True
-                if fare["amenities"]["CHANGE ANYTIME"]["isChargeable"]:
+                if fare.amenities["CHANGE ANYTIME"]["isChargeable"]:
                     isChangeChargeable = True
 
-            if "CHANGE BEFORE DEPARTURE" in fare["amenities"] and "CHANGE AFTER DEPARTURE" in fare["amenities"] and not isChangeableTicket:
+            if "CHANGE BEFORE DEPARTURE" in fare.amenities and "CHANGE AFTER DEPARTURE" in fare.amenities and not isChangeableTicket:
                 isChangeableTicket = True
-                if fare["amenities"]["CHANGE BEFORE DEPARTURE"]["isChargeable"] or fare["amenities"]["CHANGE AFTER DEPARTURE"]["isChargeable"]:
+                if fare.amenities["CHANGE BEFORE DEPARTURE"]["isChargeable"] or fare.amenities["CHANGE AFTER DEPARTURE"]["isChargeable"]:
                     isChangeChargeable = True
                     
                     
